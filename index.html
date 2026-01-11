@@ -3,89 +3,171 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Leccionario Virtual - Dashboard</title>
+    <title>Leccionario Virtual - Admin Console</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="style.css">
 </head>
-<body class="bg-slate-100 min-h-screen flex items-center justify-center p-4">
+<body class="bg-slate-50 min-h-screen">
 
-    <!-- Cargador del sistema -->
     <div id="loader" class="fixed inset-0 bg-white z-50 flex items-center justify-center transition-opacity duration-500">
-        <div class="flex flex-col items-center">
-            <div class="animate-spin rounded-full h-12 w-12 border-t-4 border-blue-600 border-solid"></div>
-            <p class="mt-4 text-slate-600 font-medium">Cargando Leccionario...</p>
+        <div class="animate-spin rounded-full h-12 w-12 border-t-4 border-blue-600 border-solid"></div>
+    </div>
+
+    <!-- VISTA DE LOGIN -->
+    <div id="auth-container" class="min-h-screen flex items-center justify-center p-4">
+        <div class="bg-white p-8 rounded-3xl shadow-xl border border-slate-200 w-full max-w-md text-center">
+            <!-- Logo Institucional -->
+            <img src="logo.png" alt="Logo Leccionario" class="w-32 h-32 mx-auto mb-6 object-contain rounded-2xl" onerror="this.src='https://placehold.co/150x150?text=LOGO+PNG'">
+            
+            <h1 class="text-2xl font-bold mb-2 text-slate-800">Leccionario Virtual</h1>
+            <p class="text-slate-500 text-sm mb-8">Ingresa tus credenciales para continuar</p>
+
+            <form id="auth-form" class="space-y-4 text-left">
+                <div>
+                    <label class="block text-xs font-bold text-slate-400 uppercase mb-1 ml-1">Email</label>
+                    <input type="email" id="email" required class="w-full px-4 py-3 rounded-xl border border-slate-300 outline-none focus:ring-2 focus:ring-blue-500 transition">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-400 uppercase mb-1 ml-1">Contraseña</label>
+                    <input type="password" id="password" required class="w-full px-4 py-3 rounded-xl border border-slate-300 outline-none focus:ring-2 focus:ring-blue-500 transition">
+                </div>
+                <button type="submit" id="submit-btn" class="w-full bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700 transition shadow-lg shadow-blue-200">
+                    Acceder
+                </button>
+            </form>
+            <button id="toggle-auth" class="w-full mt-6 text-slate-500 text-sm hover:text-blue-600 transition">¿No tienes cuenta? Regístrate</button>
         </div>
     </div>
 
-    <div class="w-full max-w-4xl">
-        <div id="auth-container" class="max-w-md mx-auto">
-            <!-- Formulario de Login (Igual que antes) -->
-            <div class="bg-white p-8 rounded-3xl shadow-xl border border-slate-200">
-                <h2 id="form-title" class="text-xl font-semibold text-slate-700 mb-6">Iniciar Sesión</h2>
-                <form id="auth-form" class="space-y-4">
-                    <input type="email" id="email" placeholder="Correo" required class="w-full px-4 py-3 rounded-xl border border-slate-300 outline-none">
-                    <input type="password" id="password" placeholder="Contraseña" required class="w-full px-4 py-3 rounded-xl border border-slate-300 outline-none">
-                    <button type="submit" id="submit-btn" class="w-full bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700">Acceder</button>
-                </form>
-                <button id="toggle-auth" class="w-full mt-4 text-blue-600 text-sm">¿No tienes cuenta? Regístrate</button>
+    <!-- DASHBOARD PRINCIPAL -->
+    <div id="user-logged-in" class="hidden max-w-7xl mx-auto p-4 md:p-8">
+        
+        <!-- Vista Principal (Calendario) -->
+        <div id="main-dashboard-view">
+            <header class="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-4">
+                <div>
+                    <h1 class="text-3xl font-black text-slate-900 tracking-tight">Leccionario Virtual</h1>
+                    <div id="user-roles-container" class="flex flex-wrap gap-2 mt-2"></div>
+                </div>
+                <div class="flex items-center gap-3 bg-white p-2 pr-4 rounded-2xl border border-slate-200 shadow-sm">
+                    <div class="w-10 h-10 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center font-bold">U</div>
+                    <span id="user-email-display" class="text-slate-700 text-sm font-semibold"></span>
+                    <button id="logout-btn" class="ml-2 text-slate-400 hover:text-red-500 transition">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>
+                    </button>
+                </div>
+            </header>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                <!-- Calendario -->
+                <div class="lg:col-span-8 bg-white p-8 rounded-[2rem] shadow-sm border border-slate-200">
+                    <div class="flex items-center justify-between mb-8">
+                        <h2 id="current-month-year" class="text-2xl font-bold text-slate-800"></h2>
+                        <div class="flex gap-2">
+                            <button id="prev-month" class="w-10 h-10 flex items-center justify-center hover:bg-slate-100 rounded-xl transition"> < </button>
+                            <button id="next-month" class="w-10 h-10 flex items-center justify-center hover:bg-slate-100 rounded-xl transition"> > </button>
+                        </div>
+                    </div>
+                    <div class="calendar-grid text-slate-400 text-[11px] font-black uppercase mb-4 opacity-50">
+                        <div>Lun</div><div>Mar</div><div>Mié</div><div>Jue</div><div>Vie</div><div>Sáb</div><div>Dom</div>
+                    </div>
+                    <div id="calendar-days" class="calendar-grid gap-2"></div>
+                </div>
+
+                <!-- Lateral -->
+                <div class="lg:col-span-4 space-y-6">
+                    <div class="bg-slate-900 text-white p-8 rounded-[2rem] shadow-xl">
+                        <h3 id="selected-date-str" class="text-xl font-bold mb-6">Cargando...</h3>
+                        <div class="p-4 bg-white/5 rounded-2xl border border-white/10 italic text-white/60 text-sm">
+                            No hay lecciones registradas para esta fecha.
+                        </div>
+                    </div>
+
+                    <!-- BOTÓN PARA ADMIN -->
+                    <div id="admin-panel" class="hidden">
+                        <button id="btn-open-admin" class="w-full bg-indigo-600 text-white p-6 rounded-[2rem] font-bold flex items-center justify-between hover:bg-indigo-700 transition shadow-xl shadow-indigo-100 group">
+                            <div class="text-left">
+                                <span class="block text-indigo-200 text-xs uppercase tracking-widest font-black mb-1">Consola de Control</span>
+                                <span class="text-lg">Gestión de Usuarios</span>
+                            </div>
+                            <div class="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center group-hover:scale-110 transition">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                            </div>
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
 
-        <!-- DASHBOARD PRINCIPAL CON CALENDARIO -->
-        <div id="user-logged-in" class="hidden">
-            <div class="flex flex-col md:flex-row gap-6">
+        <!-- VISTA DE ADMINISTRACIÓN DE USUARIOS -->
+        <div id="admin-users-view" class="hidden">
+            <button id="btn-back-dashboard" class="flex items-center gap-2 text-slate-500 hover:text-slate-800 font-bold mb-6 transition">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+                Volver al Calendario
+            </button>
+            
+            <div class="bg-white rounded-[2rem] shadow-sm border border-slate-200 overflow-hidden">
+                <div class="p-8 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+                    <div>
+                        <h2 class="text-2xl font-bold text-slate-800">Directorio de Usuarios</h2>
+                        <p class="text-slate-500 text-sm">Gestiona roles y acceso del personal institucional.</p>
+                    </div>
+                    <button id="btn-refresh-users" class="bg-white border border-slate-200 p-3 rounded-xl hover:shadow-md transition">
+                        Actualizar Lista
+                    </button>
+                </div>
                 
-                <!-- Columna Izquierda: Calendario -->
-                <div class="flex-1 bg-white p-6 rounded-3xl shadow-xl border border-slate-200">
-                    <div class="flex items-center justify-between mb-6">
-                        <h2 id="current-month-year" class="text-xl font-bold text-slate-800 uppercase tracking-wide">Mes Año</h2>
-                        <div class="flex gap-2">
-                            <button id="prev-month" class="p-2 hover:bg-slate-100 rounded-full text-slate-600">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
-                            </button>
-                            <button id="next-month" class="p-2 hover:bg-slate-100 rounded-full text-slate-600">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Nombres de los días -->
-                    <div class="calendar-grid text-slate-400 text-xs font-bold mb-2">
-                        <div class="flex justify-center">LUN</div>
-                        <div class="flex justify-center">MAR</div>
-                        <div class="flex justify-center">MIÉ</div>
-                        <div class="flex justify-center">JUE</div>
-                        <div class="flex justify-center">VIE</div>
-                        <div class="flex justify-center">SÁB</div>
-                        <div class="flex justify-center">DOM</div>
-                    </div>
-
-                    <!-- Cuadrícula de días -->
-                    <div id="calendar-days" class="calendar-grid gap-1">
-                        <!-- Generado por JS -->
-                    </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-slate-50 text-slate-400 text-[10px] uppercase font-black tracking-widest border-b border-slate-100">
+                                <th class="px-8 py-4">Usuario / Email</th>
+                                <th class="px-8 py-4">Roles Asignados</th>
+                                <th class="px-8 py-4 text-right">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="users-table-body">
+                            <!-- Filas generadas por JS -->
+                        </tbody>
+                    </table>
                 </div>
+            </div>
+        </div>
 
-                <!-- Columna Derecha: Detalles del día -->
-                <div class="w-full md:w-80 bg-slate-800 text-white p-6 rounded-3xl shadow-xl">
-                    <div class="flex justify-between items-start mb-6">
-                        <div>
-                            <p class="text-slate-400 text-sm">Leccionario</p>
-                            <h3 id="selected-date-str" class="text-lg font-bold">Seleccione un día</h3>
-                        </div>
-                        <button id="logout-btn" class="text-slate-400 hover:text-white">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>
-                        </button>
-                    </div>
+    </div>
 
-                    <div id="day-content" class="space-y-4">
-                        <div class="bg-slate-700/50 p-4 rounded-xl border border-slate-600">
-                            <p class="text-xs text-slate-400 mb-1">Actividad</p>
-                            <p class="text-sm italic">Haga clic en un día para ver las lecciones programadas.</p>
-                        </div>
-                    </div>
-                </div>
+    <!-- MODAL PARA EDITAR ROLES -->
+    <div id="modal-edit-user" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[60] hidden items-center justify-center p-4">
+        <div class="bg-white w-full max-w-lg rounded-[2.5rem] shadow-2xl p-10">
+            <h3 class="text-2xl font-bold mb-2">Editar Permisos</h3>
+            <p id="edit-user-email" class="text-slate-500 mb-8 font-medium"></p>
+            
+            <div class="space-y-3 mb-10">
+                <label class="flex items-center p-4 rounded-2xl border border-slate-100 hover:bg-slate-50 cursor-pointer transition">
+                    <input type="checkbox" value="admin" class="role-checkbox w-5 h-5 rounded border-slate-300 text-indigo-600">
+                    <span class="ml-4 font-bold text-slate-700">Administrador</span>
+                </label>
+                <label class="flex items-center p-4 rounded-2xl border border-slate-100 hover:bg-slate-50 cursor-pointer transition">
+                    <input type="checkbox" value="docente" class="role-checkbox w-5 h-5 rounded border-slate-300 text-indigo-600">
+                    <span class="ml-4 font-bold text-slate-700">Docente</span>
+                </label>
+                <label class="flex items-center p-4 rounded-2xl border border-slate-100 hover:bg-slate-50 cursor-pointer transition">
+                    <input type="checkbox" value="administrativo" class="role-checkbox w-5 h-5 rounded border-slate-300 text-indigo-600">
+                    <span class="ml-4 font-bold text-slate-700">Administrativo</span>
+                </label>
+                <label class="flex items-center p-4 rounded-2xl border border-slate-100 hover:bg-slate-50 cursor-pointer transition">
+                    <input type="checkbox" value="director_nivel" class="role-checkbox w-5 h-5 rounded border-slate-300 text-indigo-600">
+                    <span class="ml-4 font-bold text-slate-700">Director de Nivel</span>
+                </label>
+                <label class="flex items-center p-4 rounded-2xl border border-slate-100 hover:bg-slate-50 cursor-pointer transition">
+                    <input type="checkbox" value="director_area" class="role-checkbox w-5 h-5 rounded border-slate-300 text-indigo-600">
+                    <span class="ml-4 font-bold text-slate-700">Director de Área</span>
+                </label>
+            </div>
 
+            <div class="flex gap-4">
+                <button id="btn-save-roles" class="flex-1 bg-indigo-600 text-white py-4 rounded-2xl font-bold hover:bg-indigo-700 transition">Guardar Cambios</button>
+                <button id="btn-close-modal" class="flex-1 bg-slate-100 text-slate-600 py-4 rounded-2xl font-bold hover:bg-slate-200 transition">Cancelar</button>
             </div>
         </div>
     </div>
