@@ -116,12 +116,24 @@
             <input type="password" id="password" placeholder="••••••••">
         </div>
 
-        <a href="clases.html" class="btn-ingresar">Ingresar</a>
+        <button type="button" class="btn-ingresar" onclick="manejarLogin()">Ingresar</button>
 
         <div class="footer-text">
             © 2024 Unidad Educativa Ecomundo
         </div>
     </div>
+    <script src="app.js"></script>
+<script>
+    function manejarLogin() {
+        const user = document.getElementById('usuario').value;
+        const pass = document.getElementById('password').value;
+        iniciarSesion(user, pass);
+    }
 
+    // Permitir dar Enter para entrar
+    document.addEventListener('keypress', function (e) {
+        if (e.key === 'Enter') manejarLogin();
+    });
+</script>
 </body>
 </html>
