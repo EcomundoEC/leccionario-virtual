@@ -42,18 +42,17 @@
             <form id="formCrearUsuario">
                 <div class="form-grid">
                     <input type="email" id="email" placeholder="Correo Institucional (@ecomundo.edu.ec)" required class="full-width">
-                    <input type="password" id="pass" placeholder="Contraseña Temporal" required>
                     <input type="text" id="area" placeholder="Área (Ej: Matemáticas)" required>
                     <input type="text" id="cursos" placeholder="Cursos (Ej: 1ro, 2do Bach)" required>
                     <input type="text" id="nivel" placeholder="Nivel (Ej: Secundaria)" required>
                     <input type="text" id="materias" placeholder="Materias (Ej: Física, Álgebra)" required class="full-width">
                 </div>
-                <button type="submit">Registrar Docente</button>
+                <button type="submit">Guardar Datos del Docente</button>
             </form>
         </div>
 
         <div class="lista-usuarios card">
-            <h2>Usuarios Registrados</h2>
+            <h2>Usuarios Registrados (Base de Datos)</h2>
             <table id="tablaUsuarios">
                 <thead>
                     <tr>
@@ -67,51 +66,7 @@
         </div>
     </div>
 
-    <script src="app.js"></script>
-    <script>
-        // 1. Verificar seguridad (Solo Admin entra aquí)
-        verificarSesion('admin');
+    <script type="module" src="admin.js"></script>
 
-        // 2. Manejar el formulario
-        document.getElementById('formCrearUsuario').addEventListener('submit', (e) => {
-            e.preventDefault();
-            const nuevoUsuario = {
-                email: document.getElementById('email').value,
-                pass: document.getElementById('pass').value,
-                area: document.getElementById('area').value,
-                cursos: document.getElementById('cursos').value,
-                nivel: document.getElementById('nivel').value,
-                materias: document.getElementById('materias').value,
-                rol: 'docente', // Por defecto creamos docentes
-                nombre: 'Docente'
-            };
-
-            if(crearUsuario(nuevoUsuario)) {
-                e.target.reset(); // Limpiar form
-                cargarTabla();   // Actualizar lista
-            }
-        });
-
-        // 3. Cargar tabla visual
-        function cargarTabla() {
-            const usuarios = JSON.parse(localStorage.getItem('usuarios')) || [];
-            const tbody = document.querySelector('#tablaUsuarios tbody');
-            tbody.innerHTML = '';
-            
-            usuarios.forEach(u => {
-                if(u.rol !== 'admin') { // Mostrar solo docentes
-                    tbody.innerHTML += `<tr><td>${u.email}</td><td>${u.area}</td><td>${u.materias}</td></tr>`;
-                }
-            });
-        }
-
-        function cerrarSesion() {
-            localStorage.removeItem('sesionActual');
-            window.location.href = 'index.html';
-        }
-
-        // Cargar al inicio
-        cargarTabla();
-    </script>
 </body>
 </html>
