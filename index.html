@@ -3,47 +3,93 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - Leccionario Virtual</title>
-    <!-- Tailwind CSS para diseño rápido -->
+    <title>Leccionario Virtual - Dashboard</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="style.css">
 </head>
 <body class="bg-slate-100 min-h-screen flex items-center justify-center p-4">
 
-    <!-- Pantalla de Carga -->
+    <!-- Cargador del sistema -->
     <div id="loader" class="fixed inset-0 bg-white z-50 flex items-center justify-center transition-opacity duration-500">
         <div class="flex flex-col items-center">
             <div class="animate-spin rounded-full h-12 w-12 border-t-4 border-blue-600 border-solid"></div>
-            <p class="mt-4 text-slate-600 font-medium">Iniciando sistema...</p>
+            <p class="mt-4 text-slate-600 font-medium">Cargando Leccionario...</p>
         </div>
     </div>
 
-    <div class="w-full max-w-md">
-        <div class="text-center mb-8">
-            <h1 class="text-3xl font-bold text-slate-800">Leccionario Virtual</h1>
-        </div>
-
-        <div class="bg-white p-8 rounded-3xl shadow-xl border border-slate-200">
-            <!-- Contenedor de Formulario -->
-            <div id="auth-container">
+    <div class="w-full max-w-4xl">
+        <div id="auth-container" class="max-w-md mx-auto">
+            <!-- Formulario de Login (Igual que antes) -->
+            <div class="bg-white p-8 rounded-3xl shadow-xl border border-slate-200">
                 <h2 id="form-title" class="text-xl font-semibold text-slate-700 mb-6">Iniciar Sesión</h2>
                 <form id="auth-form" class="space-y-4">
                     <input type="email" id="email" placeholder="Correo" required class="w-full px-4 py-3 rounded-xl border border-slate-300 outline-none">
                     <input type="password" id="password" placeholder="Contraseña" required class="w-full px-4 py-3 rounded-xl border border-slate-300 outline-none">
-                    <button type="submit" id="submit-btn" class="w-full bg-blue-600 text-white py-3 rounded-xl font-bold">Acceder</button>
+                    <button type="submit" id="submit-btn" class="w-full bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700">Acceder</button>
                 </form>
                 <button id="toggle-auth" class="w-full mt-4 text-blue-600 text-sm">¿No tienes cuenta? Regístrate</button>
             </div>
+        </div>
 
-            <!-- Dashboard cuando ya entró -->
-            <div id="user-logged-in" class="hidden text-center">
-                <p class="mb-4">Bienvenido, <span id="user-email-display" class="font-bold"></span></p>
-                <button id="logout-btn" class="w-full bg-red-500 text-white py-2 rounded-xl">Cerrar Sesión</button>
+        <!-- DASHBOARD PRINCIPAL CON CALENDARIO -->
+        <div id="user-logged-in" class="hidden">
+            <div class="flex flex-col md:flex-row gap-6">
+                
+                <!-- Columna Izquierda: Calendario -->
+                <div class="flex-1 bg-white p-6 rounded-3xl shadow-xl border border-slate-200">
+                    <div class="flex items-center justify-between mb-6">
+                        <h2 id="current-month-year" class="text-xl font-bold text-slate-800 uppercase tracking-wide">Mes Año</h2>
+                        <div class="flex gap-2">
+                            <button id="prev-month" class="p-2 hover:bg-slate-100 rounded-full text-slate-600">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+                            </button>
+                            <button id="next-month" class="p-2 hover:bg-slate-100 rounded-full text-slate-600">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Nombres de los días -->
+                    <div class="calendar-grid text-slate-400 text-xs font-bold mb-2">
+                        <div class="flex justify-center">LUN</div>
+                        <div class="flex justify-center">MAR</div>
+                        <div class="flex justify-center">MIÉ</div>
+                        <div class="flex justify-center">JUE</div>
+                        <div class="flex justify-center">VIE</div>
+                        <div class="flex justify-center">SÁB</div>
+                        <div class="flex justify-center">DOM</div>
+                    </div>
+
+                    <!-- Cuadrícula de días -->
+                    <div id="calendar-days" class="calendar-grid gap-1">
+                        <!-- Generado por JS -->
+                    </div>
+                </div>
+
+                <!-- Columna Derecha: Detalles del día -->
+                <div class="w-full md:w-80 bg-slate-800 text-white p-6 rounded-3xl shadow-xl">
+                    <div class="flex justify-between items-start mb-6">
+                        <div>
+                            <p class="text-slate-400 text-sm">Leccionario</p>
+                            <h3 id="selected-date-str" class="text-lg font-bold">Seleccione un día</h3>
+                        </div>
+                        <button id="logout-btn" class="text-slate-400 hover:text-white">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>
+                        </button>
+                    </div>
+
+                    <div id="day-content" class="space-y-4">
+                        <div class="bg-slate-700/50 p-4 rounded-xl border border-slate-600">
+                            <p class="text-xs text-slate-400 mb-1">Actividad</p>
+                            <p class="text-sm italic">Haga clic en un día para ver las lecciones programadas.</p>
+                        </div>
+                    </div>
+                </div>
+
             </div>
         </div>
     </div>
 
-    <!-- Vinculamos el archivo de lógica como Módulo -->
     <script type="module" src="app.js"></script>
 </body>
 </html>

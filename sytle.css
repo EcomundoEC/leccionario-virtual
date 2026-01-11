@@ -11,3 +11,41 @@ input:focus {
     border-color: #2563eb !important;
     box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
 }
+
+/* Estilos específicos para el Calendario del Leccionario */
+.calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 12.5%); /* 7 días de la semana */
+    justify-content: center;
+}
+
+.calendar-day {
+    aspect-ratio: 1 / 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    border-radius: 0.75rem;
+    transition: all 0.2s ease;
+    font-weight: 500;
+}
+
+.calendar-day:hover {
+    background-color: #dbeafe; /* blue-100 */
+    color: #1e40af; /* blue-800 */
+}
+
+.calendar-day.today {
+    background-color: #2563eb; /* blue-600 */
+    color: white;
+    box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.4);
+}
+
+.calendar-day.selected {
+    border: 2px solid #2563eb;
+    color: #2563eb;
+}
+
+.calendar-day.other-month {
+    color: #cbd5e1; /* text-slate-300 */
+}
