@@ -1,0 +1,13 @@
+/* Estilos personalizados para complementar Tailwind */
+body {
+    background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+}
+
+#loader {
+    transition: opacity 0.5s ease;
+}
+
+input:focus {
+    border-color: #2563eb !important;
+    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
+}
