@@ -3,130 +3,157 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Leccionario Virtual - Admin Console</title>
+    <title>Leccionario Virtual - Gestión Académica</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="style.css">
 </head>
 <body class="bg-slate-50 min-h-screen">
 
-    <div id="loader" class="fixed inset-0 bg-white z-50 flex items-center justify-center transition-opacity duration-500">
-        <div class="animate-spin rounded-full h-12 w-12 border-t-4 border-blue-600 border-solid"></div>
+    <!-- Loader mejorado con escape de seguridad -->
+    <div id="loader" class="fixed inset-0 bg-white z-[100] flex items-center justify-center transition-all duration-500">
+        <div class="flex flex-col items-center">
+            <div class="animate-spin rounded-full h-16 w-16 border-t-4 border-blue-600 border-solid mb-4"></div>
+            <p class="text-slate-400 font-medium animate-pulse">Sincronizando datos...</p>
+        </div>
     </div>
 
     <!-- VISTA DE LOGIN -->
     <div id="auth-container" class="min-h-screen flex items-center justify-center p-4">
-        <div class="bg-white p-8 rounded-3xl shadow-xl border border-slate-200 w-full max-w-md text-center">
-            <!-- Logo Institucional -->
-            <img src="logo.png" alt="Logo Leccionario" class="w-32 h-32 mx-auto mb-6 object-contain rounded-2xl" onerror="this.src='https://placehold.co/150x150?text=LOGO+PNG'">
-            
-            <h1 class="text-2xl font-bold mb-2 text-slate-800">Leccionario Virtual</h1>
-            <p class="text-slate-500 text-sm mb-8">Ingresa tus credenciales para continuar</p>
+        <div class="bg-white p-10 rounded-[2.5rem] shadow-2xl border border-slate-200 w-full max-w-md text-center">
+            <img src="logo.png" alt="Logo Leccionario" class="w-32 h-32 mx-auto mb-8 object-contain rounded-3xl shadow-sm" onerror="this.src='https://placehold.co/200x200?text=LOGO'">
+            <h1 class="text-3xl font-black mb-2 text-slate-800 tracking-tight">Bienvenido</h1>
+            <p class="text-slate-400 text-sm mb-10">Accede al Leccionario Institucional</p>
 
-            <form id="auth-form" class="space-y-4 text-left">
-                <div>
-                    <label class="block text-xs font-bold text-slate-400 uppercase mb-1 ml-1">Email</label>
-                    <input type="email" id="email" required class="w-full px-4 py-3 rounded-xl border border-slate-300 outline-none focus:ring-2 focus:ring-blue-500 transition">
+            <form id="auth-form" class="space-y-5 text-left">
+                <div class="group">
+                    <label class="block text-[10px] font-black text-slate-400 uppercase mb-2 ml-1 tracking-widest">Correo Electrónico</label>
+                    <input type="email" id="email" required class="w-full px-5 py-4 rounded-2xl border border-slate-200 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-50 focus:bg-white bg-slate-50 transition-all">
                 </div>
-                <div>
-                    <label class="block text-xs font-bold text-slate-400 uppercase mb-1 ml-1">Contraseña</label>
-                    <input type="password" id="password" required class="w-full px-4 py-3 rounded-xl border border-slate-300 outline-none focus:ring-2 focus:ring-blue-500 transition">
+                <div class="group">
+                    <label class="block text-[10px] font-black text-slate-400 uppercase mb-2 ml-1 tracking-widest">Contraseña</label>
+                    <input type="password" id="password" required class="w-full px-5 py-4 rounded-2xl border border-slate-200 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-50 focus:bg-white bg-slate-50 transition-all">
                 </div>
-                <button type="submit" id="submit-btn" class="w-full bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700 transition shadow-lg shadow-blue-200">
-                    Acceder
+                <button type="submit" id="submit-btn" class="w-full bg-blue-600 text-white py-4 rounded-2xl font-black text-sm uppercase tracking-widest hover:bg-blue-700 active:scale-[0.98] transition-all shadow-xl shadow-blue-100">
+                    Ingresar al Sistema
                 </button>
             </form>
-            <button id="toggle-auth" class="w-full mt-6 text-slate-500 text-sm hover:text-blue-600 transition">¿No tienes cuenta? Regístrate</button>
+            <button id="toggle-auth" class="w-full mt-8 text-slate-400 text-xs font-bold hover:text-blue-600 transition uppercase tracking-tighter">¿Problemas con tu cuenta? Contacta a soporte</button>
         </div>
     </div>
 
     <!-- DASHBOARD PRINCIPAL -->
-    <div id="user-logged-in" class="hidden max-w-7xl mx-auto p-4 md:p-8">
+    <div id="user-logged-in" class="hidden max-w-7xl mx-auto p-4 md:p-10">
         
-        <!-- Vista Principal (Calendario) -->
+        <!-- Vista Principal -->
         <div id="main-dashboard-view">
-            <header class="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-4">
+            <header class="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-12 gap-6">
                 <div>
-                    <h1 class="text-3xl font-black text-slate-900 tracking-tight">Leccionario Virtual</h1>
-                    <div id="user-roles-container" class="flex flex-wrap gap-2 mt-2"></div>
+                    <h1 class="text-4xl font-black text-slate-900 tracking-tighter mb-2">Mi Dashboard</h1>
+                    <div id="user-roles-container" class="flex flex-wrap gap-2"></div>
                 </div>
-                <div class="flex items-center gap-3 bg-white p-2 pr-4 rounded-2xl border border-slate-200 shadow-sm">
-                    <div class="w-10 h-10 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center font-bold">U</div>
-                    <span id="user-email-display" class="text-slate-700 text-sm font-semibold"></span>
-                    <button id="logout-btn" class="ml-2 text-slate-400 hover:text-red-500 transition">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>
+                <div class="flex items-center gap-4 bg-white p-3 pr-6 rounded-[2rem] border border-slate-200 shadow-sm">
+                    <div class="w-12 h-12 bg-gradient-to-tr from-blue-600 to-indigo-600 text-white rounded-2xl flex items-center justify-center font-black shadow-lg shadow-blue-100">
+                        <span id="user-initial">U</span>
+                    </div>
+                    <div>
+                        <p class="text-xs font-black text-slate-400 uppercase tracking-widest">Sesión activa</p>
+                        <span id="user-email-display" class="text-slate-800 text-sm font-bold"></span>
+                    </div>
+                    <button id="logout-btn" class="ml-4 w-10 h-10 flex items-center justify-center rounded-xl bg-slate-50 text-slate-400 hover:text-red-500 hover:bg-red-50 transition-all">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>
                     </button>
                 </div>
             </header>
 
-            <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
-                <!-- Calendario -->
-                <div class="lg:col-span-8 bg-white p-8 rounded-[2rem] shadow-sm border border-slate-200">
-                    <div class="flex items-center justify-between mb-8">
-                        <h2 id="current-month-year" class="text-2xl font-bold text-slate-800"></h2>
-                        <div class="flex gap-2">
-                            <button id="prev-month" class="w-10 h-10 flex items-center justify-center hover:bg-slate-100 rounded-xl transition"> < </button>
-                            <button id="next-month" class="w-10 h-10 flex items-center justify-center hover:bg-slate-100 rounded-xl transition"> > </button>
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-10">
+                <!-- Columna Central: Registro Diario -->
+                <div class="lg:col-span-8 space-y-8">
+                    <div class="bg-white p-10 rounded-[3rem] shadow-sm border border-slate-200">
+                        <div class="flex items-center justify-between mb-10">
+                            <div>
+                                <h2 class="text-2xl font-black text-slate-800 tracking-tight">Leccionario Diario</h2>
+                                <p class="text-slate-400 text-sm">Gestiona la actividad pedagógica del día</p>
+                            </div>
+                            <div class="flex bg-slate-100 p-1.5 rounded-2xl">
+                                <button id="day-prev" class="w-12 h-12 flex items-center justify-center hover:bg-white hover:shadow-sm rounded-xl transition-all"> < </button>
+                                <div id="day-current-display" class="px-6 flex items-center font-black text-slate-700 text-sm">Cargando...</div>
+                                <button id="day-next" class="w-12 h-12 flex items-center justify-center hover:bg-white hover:shadow-sm rounded-xl transition-all"> > </button>
+                            </div>
+                        </div>
+
+                        <!-- Área de Contenido del Día -->
+                        <div class="bg-slate-50 rounded-[2rem] p-8 border-2 border-dashed border-slate-200 text-center">
+                            <div class="w-20 h-20 bg-white rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-sm">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="text-slate-300" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
+                            </div>
+                            <p class="text-slate-500 font-bold mb-2">No hay lecciones registradas</p>
+                            <p class="text-slate-400 text-xs max-w-xs mx-auto mb-8">Selecciona una materia para comenzar a registrar la actividad de hoy.</p>
+                            <button class="bg-white border border-slate-200 px-6 py-3 rounded-xl font-black text-xs uppercase tracking-widest text-slate-600 hover:bg-slate-50 transition">Iniciar Registro</button>
                         </div>
                     </div>
-                    <div class="calendar-grid text-slate-400 text-[11px] font-black uppercase mb-4 opacity-50">
-                        <div>Lun</div><div>Mar</div><div>Mié</div><div>Jue</div><div>Vie</div><div>Sáb</div><div>Dom</div>
-                    </div>
-                    <div id="calendar-days" class="calendar-grid gap-2"></div>
                 </div>
 
-                <!-- Lateral -->
+                <!-- Columna Lateral: Acciones Globales -->
                 <div class="lg:col-span-4 space-y-6">
-                    <div class="bg-slate-900 text-white p-8 rounded-[2rem] shadow-xl">
-                        <h3 id="selected-date-str" class="text-xl font-bold mb-6">Cargando...</h3>
-                        <div class="p-4 bg-white/5 rounded-2xl border border-white/10 italic text-white/60 text-sm">
-                            No hay lecciones registradas para esta fecha.
+                    <button id="btn-open-admin" class="w-full bg-slate-900 text-white p-8 rounded-[3rem] flex flex-col items-start hover:scale-[1.02] transition-all shadow-2xl shadow-slate-200">
+                        <div class="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center mb-6">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
                         </div>
-                    </div>
+                        <span class="text-xs font-black text-white/40 uppercase tracking-[0.2em] mb-1">Configuración</span>
+                        <span class="text-xl font-bold">Gestión de Usuarios y Entidades</span>
+                    </button>
 
-                    <!-- BOTÓN PARA ADMIN -->
-                    <div id="admin-panel" class="hidden">
-                        <button id="btn-open-admin" class="w-full bg-indigo-600 text-white p-6 rounded-[2rem] font-bold flex items-center justify-between hover:bg-indigo-700 transition shadow-xl shadow-indigo-100 group">
-                            <div class="text-left">
-                                <span class="block text-indigo-200 text-xs uppercase tracking-widest font-black mb-1">Consola de Control</span>
-                                <span class="text-lg">Gestión de Usuarios</span>
+                    <div class="bg-blue-600 p-8 rounded-[3rem] text-white shadow-xl shadow-blue-100">
+                        <h3 class="font-black text-lg mb-4">Resumen Semanal</h3>
+                        <div class="space-y-4">
+                            <div class="flex justify-between items-center text-sm border-b border-white/10 pb-4">
+                                <span class="text-white/60">Clases Dictadas</span>
+                                <span class="font-bold">12</span>
                             </div>
-                            <div class="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center group-hover:scale-110 transition">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                            <div class="flex justify-between items-center text-sm">
+                                <span class="text-white/60">Pendientes</span>
+                                <span class="font-bold">2</span>
                             </div>
-                        </button>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- VISTA DE ADMINISTRACIÓN DE USUARIOS -->
-        <div id="admin-users-view" class="hidden">
-            <button id="btn-back-dashboard" class="flex items-center gap-2 text-slate-500 hover:text-slate-800 font-bold mb-6 transition">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
-                Volver al Calendario
-            </button>
-            
-            <div class="bg-white rounded-[2rem] shadow-sm border border-slate-200 overflow-hidden">
-                <div class="p-8 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
-                    <div>
-                        <h2 class="text-2xl font-bold text-slate-800">Directorio de Usuarios</h2>
-                        <p class="text-slate-500 text-sm">Gestiona roles y acceso del personal institucional.</p>
-                    </div>
-                    <button id="btn-refresh-users" class="bg-white border border-slate-200 p-3 rounded-xl hover:shadow-md transition">
-                        Actualizar Lista
+        <!-- VISTA DE ADMINISTRACIÓN EXPANDIDA -->
+        <div id="admin-users-view" class="hidden space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div class="flex items-center justify-between">
+                <button id="btn-back-dashboard" class="flex items-center gap-3 text-slate-400 hover:text-slate-900 font-black text-xs uppercase tracking-widest transition">
+                    <div class="w-10 h-10 rounded-full bg-white border border-slate-200 flex items-center justify-center shadow-sm"> < </div>
+                    Volver al Dashboard
+                </button>
+                <div class="flex gap-4">
+                    <button id="btn-add-entity" class="bg-slate-800 text-white px-6 py-3 rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-slate-700 transition">
+                        Configurar Parámetros (Materias/Áreas)
+                    </button>
+                    <button id="btn-refresh-users" class="bg-white border border-slate-200 p-3 rounded-2xl hover:bg-slate-50 transition">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2v6h-6"/><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M3 22v-6h6"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/></svg>
                     </button>
                 </div>
+            </div>
+
+            <div class="bg-white rounded-[3rem] shadow-xl shadow-slate-200/50 border border-slate-100 overflow-hidden">
+                <div class="p-10 border-b border-slate-50">
+                    <h2 class="text-3xl font-black text-slate-800 tracking-tighter">Directorio Institucional</h2>
+                    <p class="text-slate-400 text-sm">Administra la información detallada de cada integrante.</p>
+                </div>
                 
-                <div class="overflow-x-auto">
-                    <table class="w-full text-left border-collapse">
+                <div class="overflow-x-auto px-4 pb-4">
+                    <table class="w-full text-left">
                         <thead>
-                            <tr class="bg-slate-50 text-slate-400 text-[10px] uppercase font-black tracking-widest border-b border-slate-100">
-                                <th class="px-8 py-4">Usuario / Email</th>
-                                <th class="px-8 py-4">Roles Asignados</th>
-                                <th class="px-8 py-4 text-right">Acciones</th>
+                            <tr class="text-slate-400 text-[10px] uppercase font-black tracking-widest border-b border-slate-50">
+                                <th class="px-8 py-6">Información Básica</th>
+                                <th class="px-8 py-6">Estructura Académica</th>
+                                <th class="px-8 py-6">Roles</th>
+                                <th class="px-8 py-6 text-right">Gestión</th>
                             </tr>
                         </thead>
-                        <tbody id="users-table-body">
+                        <tbody id="users-table-body" class="divide-y divide-slate-50">
                             <!-- Filas generadas por JS -->
                         </tbody>
                     </table>
@@ -136,39 +163,64 @@
 
     </div>
 
-    <!-- MODAL PARA EDITAR ROLES -->
-    <div id="modal-edit-user" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[60] hidden items-center justify-center p-4">
-        <div class="bg-white w-full max-w-lg rounded-[2.5rem] shadow-2xl p-10">
-            <h3 class="text-2xl font-bold mb-2">Editar Permisos</h3>
-            <p id="edit-user-email" class="text-slate-500 mb-8 font-medium"></p>
+    <!-- MODAL INTEGRAL DE EDICIÓN DE USUARIO -->
+    <div id="modal-edit-user" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[110] hidden items-center justify-center p-4">
+        <div class="bg-white w-full max-w-2xl rounded-[3rem] shadow-2xl p-10 overflow-y-auto max-h-[90vh]">
+            <div class="flex justify-between items-start mb-8">
+                <div>
+                    <h3 class="text-3xl font-black text-slate-800 tracking-tighter">Perfil de Usuario</h3>
+                    <p id="edit-user-email-label" class="text-blue-600 font-bold text-sm"></p>
+                </div>
+                <button id="btn-close-modal" class="w-12 h-12 flex items-center justify-center rounded-full bg-slate-50 text-slate-400 hover:text-red-500 transition">✕</button>
+            </div>
             
-            <div class="space-y-3 mb-10">
-                <label class="flex items-center p-4 rounded-2xl border border-slate-100 hover:bg-slate-50 cursor-pointer transition">
-                    <input type="checkbox" value="admin" class="role-checkbox w-5 h-5 rounded border-slate-300 text-indigo-600">
-                    <span class="ml-4 font-bold text-slate-700">Administrador</span>
-                </label>
-                <label class="flex items-center p-4 rounded-2xl border border-slate-100 hover:bg-slate-50 cursor-pointer transition">
-                    <input type="checkbox" value="docente" class="role-checkbox w-5 h-5 rounded border-slate-300 text-indigo-600">
-                    <span class="ml-4 font-bold text-slate-700">Docente</span>
-                </label>
-                <label class="flex items-center p-4 rounded-2xl border border-slate-100 hover:bg-slate-50 cursor-pointer transition">
-                    <input type="checkbox" value="administrativo" class="role-checkbox w-5 h-5 rounded border-slate-300 text-indigo-600">
-                    <span class="ml-4 font-bold text-slate-700">Administrativo</span>
-                </label>
-                <label class="flex items-center p-4 rounded-2xl border border-slate-100 hover:bg-slate-50 cursor-pointer transition">
-                    <input type="checkbox" value="director_nivel" class="role-checkbox w-5 h-5 rounded border-slate-300 text-indigo-600">
-                    <span class="ml-4 font-bold text-slate-700">Director de Nivel</span>
-                </label>
-                <label class="flex items-center p-4 rounded-2xl border border-slate-100 hover:bg-slate-50 cursor-pointer transition">
-                    <input type="checkbox" value="director_area" class="role-checkbox w-5 h-5 rounded border-slate-300 text-indigo-600">
-                    <span class="ml-4 font-bold text-slate-700">Director de Área</span>
-                </label>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10">
+                <!-- Sección Académica -->
+                <div class="space-y-4">
+                    <h4 class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Información Académica</h4>
+                    <div class="group">
+                        <label class="block text-xs font-bold text-slate-500 mb-2 ml-1">Área Responsable</label>
+                        <select id="edit-user-area" class="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-100 outline-none focus:bg-white focus:border-blue-500 transition-all"></select>
+                    </div>
+                    <div class="group">
+                        <label class="block text-xs font-bold text-slate-500 mb-2 ml-1">Materia Principal</label>
+                        <select id="edit-user-materia" class="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-100 outline-none focus:bg-white focus:border-blue-500 transition-all"></select>
+                    </div>
+                    <div class="group">
+                        <label class="block text-xs font-bold text-slate-500 mb-2 ml-1">Nivel / Grado</label>
+                        <select id="edit-user-nivel" class="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-100 outline-none focus:bg-white focus:border-blue-500 transition-all"></select>
+                    </div>
+                </div>
+
+                <!-- Sección Grupos -->
+                <div class="space-y-4">
+                    <h4 class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Distribución</h4>
+                    <div class="group">
+                        <label class="block text-xs font-bold text-slate-500 mb-2 ml-1">Cursos Asignados</label>
+                        <input type="text" id="edit-user-cursos" placeholder="Ej: 1ero, 2do, 3ero" class="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-100 outline-none focus:bg-white focus:border-blue-500 transition-all">
+                    </div>
+                    <div class="group">
+                        <label class="block text-xs font-bold text-slate-500 mb-2 ml-1">Secciones / Paralelos</label>
+                        <input type="text" id="edit-user-secciones" placeholder="Ej: A, B, C" class="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-100 outline-none focus:bg-white focus:border-blue-500 transition-all">
+                    </div>
+                </div>
             </div>
 
-            <div class="flex gap-4">
-                <button id="btn-save-roles" class="flex-1 bg-indigo-600 text-white py-4 rounded-2xl font-bold hover:bg-indigo-700 transition">Guardar Cambios</button>
-                <button id="btn-close-modal" class="flex-1 bg-slate-100 text-slate-600 py-4 rounded-2xl font-bold hover:bg-slate-200 transition">Cancelar</button>
+            <!-- Roles -->
+            <div class="mb-10">
+                <h4 class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-6">Permisos de Acceso</h4>
+                <div class="flex flex-wrap gap-3">
+                    <label class="role-chip"><input type="checkbox" value="admin" class="hidden role-cb"><span>Admin</span></label>
+                    <label class="role-chip"><input type="checkbox" value="administrativo" class="hidden role-cb"><span>Administrativo</span></label>
+                    <label class="role-chip"><input type="checkbox" value="docente" class="hidden role-cb"><span>Docente</span></label>
+                    <label class="role-chip"><input type="checkbox" value="director_nivel" class="hidden role-cb"><span>Dir. Nivel</span></label>
+                    <label class="role-chip"><input type="checkbox" value="director_area" class="hidden role-cb"><span>Dir. Área</span></label>
+                </div>
             </div>
+
+            <button id="btn-save-user-full" class="w-full bg-blue-600 text-white py-5 rounded-[2rem] font-black uppercase tracking-widest text-sm hover:bg-blue-700 transition shadow-2xl shadow-blue-100">
+                Actualizar Información del Usuario
+            </button>
         </div>
     </div>
 
