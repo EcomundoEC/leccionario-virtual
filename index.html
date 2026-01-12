@@ -3,227 +3,601 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Leccionario Virtual - Gestión Académica</title>
+    <title>Leccionario Virtual - Conectado</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="style.css">
+    <style>
+        /* Estilos UI */
+        .role-badge { padding: 0.25rem 0.5rem; border-radius: 0.5rem; font-size: 9px; font-weight: 900; text-transform: uppercase; background: #f1f5f9; color: #64748b; display: inline-block; margin-right: 4px; margin-bottom: 2px; }
+        .role-Admin { background: #fee2e2; color: #ef4444; }
+        .role-Docente { background: #dcfce7; color: #16a34a; }
+        .data-badge { display: inline-block; padding: 2px 6px; background: #eef2ff; color: #4f46e5; border-radius: 4px; font-size: 10px; font-weight: 700; margin-right: 2px; margin-bottom: 2px; border: 1px solid #e0e7ff; }
+        .modal-animate { animation: fadeIn 0.2s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+        .tab-btn { border-bottom: 3px solid transparent; color: #94a3b8; transition: all 0.2s; }
+        .tab-btn.active { border-color: #2563eb; color: #1e293b; font-weight: 900; }
+        .check-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 0.5rem; max-height: 120px; overflow-y: auto; padding: 0.5rem; background: #f8fafc; border-radius: 0.75rem; border: 1px solid #e2e8f0; }
+        .check-item { display: flex; align-items: center; font-size: 11px; color: #475569; cursor: pointer; user-select: none; }
+        .check-item input { margin-right: 6px; accent-color: #2563eb; }
+        .schedule-cell { height: 60px; border: 1px solid #e2e8f0; background: #fff; cursor: pointer; transition: all 0.2s; font-size: 11px; text-align: center; vertical-align: middle; padding: 4px; position: relative; }
+        .schedule-cell:hover { background: #f8fafc; }
+        .schedule-cell.filled { background: #eff6ff; color: #1e40af; font-weight: 700; border-color: #dbeafe; }
+        .time-col { background: #f1f5f9; color: #64748b; font-weight: 800; font-size: 10px; width: 80px; text-align: center; }
+    </style>
 </head>
-<body class="bg-slate-50 min-h-screen">
+<body class="bg-slate-50 min-h-screen font-sans text-slate-900">
 
-    <!-- Loader mejorado con escape de seguridad -->
+    <!-- Loader -->
     <div id="loader" class="fixed inset-0 bg-white z-[100] flex items-center justify-center transition-all duration-500">
         <div class="flex flex-col items-center">
-            <div class="animate-spin rounded-full h-16 w-16 border-t-4 border-blue-600 border-solid mb-4"></div>
-            <p class="text-slate-400 font-medium animate-pulse">Sincronizando datos...</p>
+            <div class="animate-spin rounded-full h-16 w-16 border-t-4 border-blue-600 mb-4"></div>
+            <p id="loader-text" class="text-slate-400 font-medium animate-pulse">Conectando con Firebase...</p>
         </div>
     </div>
 
     <!-- VISTA DE LOGIN -->
     <div id="auth-container" class="min-h-screen flex items-center justify-center p-4">
         <div class="bg-white p-10 rounded-[2.5rem] shadow-2xl border border-slate-200 w-full max-w-md text-center">
-            <img src="logo.png" alt="Logo Leccionario" class="w-32 h-32 mx-auto mb-8 object-contain rounded-3xl shadow-sm" onerror="this.src='https://placehold.co/200x200?text=LOGO'">
-            <h1 class="text-3xl font-black mb-2 text-slate-800 tracking-tight">Bienvenido</h1>
-            <p class="text-slate-400 text-sm mb-10">Accede al Leccionario Institucional</p>
-
+            <div class="w-32 h-32 bg-blue-50 mx-auto mb-8 rounded-3xl flex items-center justify-center text-blue-600 font-black text-4xl">EV</div>
+            <h1 class="text-3xl font-black mb-2 text-slate-800">Leccionario Virtual</h1>
+            <p class="text-slate-400 text-sm mb-8">Ingresa tus credenciales institucionales</p>
             <form id="auth-form" class="space-y-5 text-left">
-                <div class="group">
-                    <label class="block text-[10px] font-black text-slate-400 uppercase mb-2 ml-1 tracking-widest">Correo Electrónico</label>
-                    <input type="email" id="email" required class="w-full px-5 py-4 rounded-2xl border border-slate-200 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-50 focus:bg-white bg-slate-50 transition-all">
-                </div>
-                <div class="group">
-                    <label class="block text-[10px] font-black text-slate-400 uppercase mb-2 ml-1 tracking-widest">Contraseña</label>
-                    <input type="password" id="password" required class="w-full px-5 py-4 rounded-2xl border border-slate-200 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-50 focus:bg-white bg-slate-50 transition-all">
-                </div>
-                <button type="submit" id="submit-btn" class="w-full bg-blue-600 text-white py-4 rounded-2xl font-black text-sm uppercase tracking-widest hover:bg-blue-700 active:scale-[0.98] transition-all shadow-xl shadow-blue-100">
-                    Ingresar al Sistema
-                </button>
+                <input type="email" id="email" required placeholder="Correo" class="w-full px-5 py-4 rounded-2xl border border-slate-200 outline-none focus:ring-4 focus:ring-blue-50 bg-slate-50">
+                <input type="password" id="password" required placeholder="Contraseña" class="w-full px-5 py-4 rounded-2xl border border-slate-200 outline-none focus:ring-4 focus:ring-blue-50 bg-slate-50">
+                <button type="submit" class="w-full bg-blue-600 text-white py-4 rounded-2xl font-black uppercase tracking-widest hover:bg-blue-700 transition-all">Ingresar</button>
             </form>
-            <button id="toggle-auth" class="w-full mt-8 text-slate-400 text-xs font-bold hover:text-blue-600 transition uppercase tracking-tighter">¿Problemas con tu cuenta? Contacta a soporte</button>
+            <p id="login-error" class="text-red-500 text-xs mt-4 font-bold hidden"></p>
         </div>
     </div>
 
-    <!-- DASHBOARD PRINCIPAL -->
+    <!-- DASHBOARD -->
     <div id="user-logged-in" class="hidden max-w-7xl mx-auto p-4 md:p-10">
-        
-        <!-- Vista Principal -->
         <div id="main-dashboard-view">
             <header class="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-12 gap-6">
                 <div>
                     <h1 class="text-4xl font-black text-slate-900 tracking-tighter mb-2">Mi Dashboard</h1>
-                    <div id="user-roles-container" class="flex flex-wrap gap-2"></div>
+                    <p class="text-slate-400 font-medium">Panel de Gestión Académica</p>
                 </div>
                 <div class="flex items-center gap-4 bg-white p-3 pr-6 rounded-[2rem] border border-slate-200 shadow-sm">
-                    <div class="w-12 h-12 bg-gradient-to-tr from-blue-600 to-indigo-600 text-white rounded-2xl flex items-center justify-center font-black shadow-lg shadow-blue-100">
-                        <span id="user-initial">U</span>
-                    </div>
+                    <div id="avatar-circle" class="w-12 h-12 bg-blue-600 text-white rounded-2xl flex items-center justify-center font-black">U</div>
                     <div>
-                        <p class="text-xs font-black text-slate-400 uppercase tracking-widest">Sesión activa</p>
-                        <span id="user-email-display" class="text-slate-800 text-sm font-bold"></span>
+                        <span id="user-email-display" class="text-slate-800 text-sm font-bold block"></span>
+                        <span id="user-role-display" class="text-[10px] text-slate-400 uppercase font-black tracking-widest"></span>
                     </div>
-                    <button id="logout-btn" class="ml-4 w-10 h-10 flex items-center justify-center rounded-xl bg-slate-50 text-slate-400 hover:text-red-500 hover:bg-red-50 transition-all">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>
-                    </button>
+                    <button id="logout-btn" class="ml-4 text-slate-400 hover:text-red-500 font-bold text-sm">Salir</button>
                 </div>
             </header>
 
             <div class="grid grid-cols-1 lg:grid-cols-12 gap-10">
-                <!-- Columna Central: Registro Diario -->
-                <div class="lg:col-span-8 space-y-8">
+                <div class="lg:col-span-8">
                     <div class="bg-white p-10 rounded-[3rem] shadow-sm border border-slate-200">
                         <div class="flex items-center justify-between mb-10">
                             <div>
-                                <h2 class="text-2xl font-black text-slate-800 tracking-tight">Leccionario Diario</h2>
-                                <p class="text-slate-400 text-sm">Gestiona la actividad pedagógica del día</p>
+                                <h2 class="text-2xl font-black text-slate-800">Clases del Día</h2>
+                                <p class="text-slate-400 text-xs font-bold uppercase tracking-widest mt-1">
+                                    <span id="day-of-week-label"></span> • <span id="day-current-display"></span>
+                                </p>
                             </div>
-                            <div class="flex bg-slate-100 p-1.5 rounded-2xl">
-                                <button id="day-prev" class="w-12 h-12 flex items-center justify-center hover:bg-white hover:shadow-sm rounded-xl transition-all"> < </button>
-                                <div id="day-current-display" class="px-6 flex items-center font-black text-slate-700 text-sm">Cargando...</div>
-                                <button id="day-next" class="w-12 h-12 flex items-center justify-center hover:bg-white hover:shadow-sm rounded-xl transition-all"> > </button>
+                            <div class="flex gap-2">
+                                <button onclick="changeDay(-1)" class="w-10 h-10 rounded-xl bg-slate-100 hover:bg-slate-200 flex items-center justify-center font-bold text-slate-600"><</button>
+                                <button onclick="changeDay(1)" class="w-10 h-10 rounded-xl bg-slate-100 hover:bg-slate-200 flex items-center justify-center font-bold text-slate-600">></button>
                             </div>
                         </div>
-
-                        <!-- Área de Contenido del Día -->
-                        <div class="bg-slate-50 rounded-[2rem] p-8 border-2 border-dashed border-slate-200 text-center">
-                            <div class="w-20 h-20 bg-white rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-sm">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="text-slate-300" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
-                            </div>
-                            <p class="text-slate-500 font-bold mb-2">No hay lecciones registradas</p>
-                            <p class="text-slate-400 text-xs max-w-xs mx-auto mb-8">Selecciona una materia para comenzar a registrar la actividad de hoy.</p>
-                            <button class="bg-white border border-slate-200 px-6 py-3 rounded-xl font-black text-xs uppercase tracking-widest text-slate-600 hover:bg-slate-50 transition">Iniciar Registro</button>
+                        <div id="daily-classes-list" class="space-y-6">
+                            <!-- Inyectado por JS -->
                         </div>
                     </div>
                 </div>
-
-                <!-- Columna Lateral: Acciones Globales -->
                 <div class="lg:col-span-4 space-y-6">
-                    <button id="btn-open-admin" class="w-full bg-slate-900 text-white p-8 rounded-[3rem] flex flex-col items-start hover:scale-[1.02] transition-all shadow-2xl shadow-slate-200">
-                        <div class="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center mb-6">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                    <button id="btn-open-admin" class="w-full bg-slate-900 text-white p-8 rounded-[3rem] text-left hover:scale-[1.02] transition-all relative overflow-hidden group hidden">
+                        <div class="relative z-10">
+                            <div class="text-xs font-black text-white/40 uppercase mb-2">Administración</div>
+                            <div class="text-xl font-bold">Configuración Global</div>
+                            <p class="text-white/60 text-xs mt-2">Usuarios, Materias, Horarios...</p>
                         </div>
-                        <span class="text-xs font-black text-white/40 uppercase tracking-[0.2em] mb-1">Configuración</span>
-                        <span class="text-xl font-bold">Gestión de Usuarios y Entidades</span>
                     </button>
-
-                    <div class="bg-blue-600 p-8 rounded-[3rem] text-white shadow-xl shadow-blue-100">
-                        <h3 class="font-black text-lg mb-4">Resumen Semanal</h3>
-                        <div class="space-y-4">
-                            <div class="flex justify-between items-center text-sm border-b border-white/10 pb-4">
-                                <span class="text-white/60">Clases Dictadas</span>
-                                <span class="font-bold">12</span>
-                            </div>
-                            <div class="flex justify-between items-center text-sm">
-                                <span class="text-white/60">Pendientes</span>
-                                <span class="font-bold">2</span>
-                            </div>
+                    <div class="bg-blue-600 text-white p-8 rounded-[3rem] shadow-xl shadow-blue-200/50 relative overflow-hidden">
+                        <div class="relative z-10">
+                            <h3 class="font-black text-lg mb-2">Resumen</h3>
+                            <div class="text-sm opacity-80 mb-4">Clases hoy:</div>
+                            <div class="text-4xl font-black" id="classes-count">0</div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- VISTA DE ADMINISTRACIÓN EXPANDIDA -->
-        <div id="admin-users-view" class="hidden space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div class="flex items-center justify-between">
-                <button id="btn-back-dashboard" class="flex items-center gap-3 text-slate-400 hover:text-slate-900 font-black text-xs uppercase tracking-widest transition">
-                    <div class="w-10 h-10 rounded-full bg-white border border-slate-200 flex items-center justify-center shadow-sm"> < </div>
-                    Volver al Dashboard
+        <div id="admin-view" class="hidden space-y-8">
+            <div class="flex flex-col sm:flex-row justify-between items-end gap-4">
+                <button id="btn-back-dashboard" class="font-black text-xs text-slate-400 uppercase tracking-widest hover:text-blue-600 flex items-center gap-2">
+                    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg> Volver
                 </button>
-                <div class="flex gap-4">
-                    <button id="btn-add-entity" class="bg-slate-800 text-white px-6 py-3 rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-slate-700 transition">
-                        Configurar Parámetros (Materias/Áreas)
-                    </button>
-                    <button id="btn-refresh-users" class="bg-white border border-slate-200 p-3 rounded-2xl hover:bg-slate-50 transition">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2v6h-6"/><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M3 22v-6h6"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/></svg>
-                    </button>
+                <div class="flex space-x-6 border-b border-slate-200 w-full sm:w-auto overflow-x-auto">
+                    <button onclick="switchTab('users')" id="tab-users" class="tab-btn active px-4 py-2 text-sm uppercase tracking-widest">Usuarios</button>
+                    <button onclick="switchTab('catalogs')" id="tab-catalogs" class="tab-btn px-4 py-2 text-sm uppercase tracking-widest">Parámetros</button>
+                    <button onclick="switchTab('schedules')" id="tab-schedules" class="tab-btn px-4 py-2 text-sm uppercase tracking-widest">Horarios</button>
                 </div>
             </div>
 
-            <div class="bg-white rounded-[3rem] shadow-xl shadow-slate-200/50 border border-slate-100 overflow-hidden">
-                <div class="p-10 border-b border-slate-50">
-                    <h2 class="text-3xl font-black text-slate-800 tracking-tighter">Directorio Institucional</h2>
-                    <p class="text-slate-400 text-sm">Administra la información detallada de cada integrante.</p>
+            <!-- CONTENIDO TABS -->
+            <div id="content-users" class="space-y-6">
+                <div class="flex justify-end">
+                    <button id="btn-add-user" class="bg-blue-600 text-white px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-blue-700 shadow-lg shadow-blue-200 flex items-center gap-2"><span>+</span> Nuevo Usuario</button>
                 </div>
-                
-                <div class="overflow-x-auto px-4 pb-4">
-                    <table class="w-full text-left">
-                        <thead>
-                            <tr class="text-slate-400 text-[10px] uppercase font-black tracking-widest border-b border-slate-50">
-                                <th class="px-8 py-6">Información Básica</th>
-                                <th class="px-8 py-6">Estructura Académica</th>
-                                <th class="px-8 py-6">Roles</th>
-                                <th class="px-8 py-6 text-right">Gestión</th>
-                            </tr>
-                        </thead>
-                        <tbody id="users-table-body" class="divide-y divide-slate-50">
-                            <!-- Filas generadas por JS -->
-                        </tbody>
-                    </table>
+                <div class="bg-white rounded-[3rem] shadow-xl border border-slate-100 overflow-hidden">
+                    <div class="overflow-x-auto"><table class="w-full text-left min-w-[800px]"><thead><tr class="text-slate-400 text-[10px] uppercase font-black border-b border-slate-50"><th class="px-8 py-6">Usuario</th><th class="px-8 py-6">Materias y Áreas</th><th class="px-8 py-6">Cursos</th><th class="px-8 py-6">Rol</th><th class="px-8 py-6 text-right">Acciones</th></tr></thead><tbody id="users-table-body" class="divide-y divide-slate-50"></tbody></table></div>
                 </div>
+            </div>
+
+            <div id="content-catalogs" class="hidden grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+
+            <div id="content-schedules" class="hidden space-y-6">
+                <div class="bg-white p-6 rounded-[2.5rem] shadow-sm border border-slate-100 flex flex-wrap gap-4 items-end justify-between">
+                    <div class="flex gap-4 flex-wrap">
+                        <div><label class="block text-xs font-black text-slate-400 mb-2 uppercase">Sección</label><select id="sch-seccion" class="p-3 bg-slate-50 rounded-xl text-sm border-none outline-none font-bold text-slate-700 min-w-[150px]"></select></div>
+                        <div><label class="block text-xs font-black text-slate-400 mb-2 uppercase">Curso</label><select id="sch-curso" class="p-3 bg-slate-50 rounded-xl text-sm border-none outline-none font-bold text-slate-700 min-w-[150px]"></select></div>
+                        <div><label class="block text-xs font-black text-slate-400 mb-2 uppercase">Paralelo</label><select id="sch-paralelo" class="p-3 bg-slate-50 rounded-xl text-sm border-none outline-none font-bold text-slate-700 min-w-[100px]"></select></div>
+                        <button onclick="loadSchedule()" class="bg-slate-800 text-white px-6 py-3 rounded-xl font-black text-xs uppercase hover:bg-black transition-all h-[44px] self-end">Cargar</button>
+                    </div>
+                    <div class="flex gap-2">
+                         <button onclick="openTimeConfig()" class="bg-blue-50 text-blue-600 px-6 py-3 rounded-xl font-black text-xs uppercase hover:bg-blue-100 transition-all border border-blue-100 h-[44px]">Configurar Horas</button>
+                        <button onclick="saveCurrentSchedule()" class="bg-green-600 text-white px-6 py-3 rounded-xl font-black text-xs uppercase hover:bg-green-700 transition-all h-[44px] shadow-lg shadow-green-100">Guardar</button>
+                    </div>
+                </div>
+                <div id="schedule-container" class="bg-white rounded-[3rem] shadow-xl border border-slate-100 p-8 overflow-x-auto"><div class="text-center py-10 text-slate-400 font-bold italic">Selecciona los parámetros y carga el horario.</div></div>
             </div>
         </div>
-
     </div>
 
-    <!-- MODAL INTEGRAL DE EDICIÓN DE USUARIO -->
-    <div id="modal-edit-user" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[110] hidden items-center justify-center p-4">
-        <div class="bg-white w-full max-w-2xl rounded-[3rem] shadow-2xl p-10 overflow-y-auto max-h-[90vh]">
-            <div class="flex justify-between items-start mb-8">
-                <div>
-                    <h3 class="text-3xl font-black text-slate-800 tracking-tighter">Perfil de Usuario</h3>
-                    <p id="edit-user-email-label" class="text-blue-600 font-bold text-sm"></p>
+    <!-- MODAL USUARIO -->
+    <div id="modal-user" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[110] hidden items-center justify-center p-4">
+        <div class="bg-white w-full max-w-3xl rounded-[3rem] p-10 modal-animate max-h-[95vh] overflow-y-auto">
+            <div class="flex justify-between mb-8"><h3 id="modal-title" class="text-3xl font-black text-slate-800 tracking-tighter text-blue-600">Usuario</h3><button onclick="closeModal('modal-user')" class="text-slate-400 hover:text-red-500 text-2xl">✕</button></div>
+            <form id="user-form" class="space-y-6">
+                <input type="hidden" id="form-user-id">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    <div><label class="block text-xs font-black text-slate-400 mb-2 uppercase">Correo</label><input type="email" id="form-email" required class="w-full p-4 rounded-2xl bg-slate-50 border-none outline-none focus:ring-2 focus:ring-blue-500/20"></div>
+                    <div><label class="block text-xs font-black text-slate-400 mb-2 uppercase">Contraseña</label><input type="text" id="form-pass" disabled placeholder="Gestionar en Auth Console" class="w-full p-4 rounded-2xl bg-slate-100 border-none outline-none text-slate-400 cursor-not-allowed"></div>
                 </div>
-                <button id="btn-close-modal" class="w-12 h-12 flex items-center justify-center rounded-full bg-slate-50 text-slate-400 hover:text-red-500 transition">✕</button>
-            </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-6 border-t border-slate-100 pt-6">
+                    <div><label class="block text-xs font-black text-slate-400 mb-2 uppercase flex justify-between">Áreas</label><div id="container-areas" class="check-grid"></div></div>
+                    <div><label class="block text-xs font-black text-slate-400 mb-2 uppercase flex justify-between">Materias</label><div id="container-materias" class="check-grid"></div></div>
+                    <div><label class="block text-xs font-black text-slate-400 mb-2 uppercase flex justify-between">Cursos</label><div id="container-cursos" class="check-grid"></div></div>
+                    <div><label class="block text-xs font-black text-slate-400 mb-2 uppercase flex justify-between">Paralelos</label><div id="container-paralelos" class="check-grid"></div></div>
+                    <div><label class="block text-xs font-black text-slate-400 mb-2 uppercase">Sección</label><select id="sel-seccion" class="w-full p-3 rounded-xl bg-slate-50 outline-none cursor-pointer"></select></div>
+                    <div><label class="block text-xs font-black text-slate-400 mb-2 uppercase">Rol</label><select id="sel-rol" class="w-full p-3 rounded-xl bg-slate-50 outline-none cursor-pointer font-bold text-blue-600"></select></div>
+                </div>
+                <button type="submit" class="w-full bg-slate-900 text-white py-5 rounded-[2rem] font-black uppercase tracking-widest hover:bg-black transition-all shadow-xl">Guardar en Base de Datos</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL CATÁLOGO -->
+    <div id="modal-catalog" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[120] hidden items-center justify-center p-4">
+        <div class="bg-white w-full max-w-md rounded-[2.5rem] p-8 modal-animate">
+            <h3 id="catalog-title" class="text-2xl font-black text-slate-800 mb-6">Administrar</h3>
+            <div class="flex gap-2 mb-6"><input type="text" id="catalog-input" placeholder="Nueva opción..." class="flex-1 p-4 rounded-xl bg-slate-50 border outline-none"><button onclick="addCatalogItem()" class="bg-blue-600 text-white px-6 rounded-xl font-bold hover:bg-blue-700">+</button></div>
+            <div id="catalog-list" class="max-h-60 overflow-y-auto space-y-2 pr-2"></div>
+            <button onclick="closeModal('modal-catalog')" class="mt-6 w-full text-slate-400 font-bold uppercase text-xs hover:text-slate-600">Cerrar</button>
+        </div>
+    </div>
+
+    <!-- MODAL TIME SLOTS -->
+    <div id="modal-time-slots" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[130] hidden items-center justify-center p-4">
+        <div class="bg-white w-full max-w-lg rounded-[2.5rem] p-8 modal-animate">
+            <div class="flex justify-between items-center mb-6"><h3 class="text-2xl font-black text-slate-800">Franjas Horarias</h3><button onclick="closeModal('modal-time-slots')" class="text-slate-400 hover:text-red-500 font-bold">✕</button></div>
+            <div class="flex gap-2 mb-4 bg-slate-50 p-4 rounded-2xl"><input type="time" id="ts-start" class="p-2 rounded-lg border border-slate-200 text-sm"><span class="self-center text-slate-400">-</span><input type="time" id="ts-end" class="p-2 rounded-lg border border-slate-200 text-sm"><button onclick="addTimeSlot()" class="flex-1 bg-slate-800 text-white rounded-lg font-bold text-xs uppercase">Agregar</button></div>
+            <div id="slots-list" class="space-y-2 max-h-64 overflow-y-auto"></div>
+        </div>
+    </div>
+
+    <!-- MODAL ASSIGN SUBJECT -->
+    <div id="modal-assign-subject" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[140] hidden items-center justify-center p-4">
+        <div class="bg-white w-full max-w-sm rounded-[2.5rem] p-8 modal-animate">
+            <h3 class="text-xl font-black text-slate-800 mb-4">Asignar Materia</h3>
+            <div id="subject-selector-list" class="grid grid-cols-2 gap-2 max-h-64 overflow-y-auto"></div>
+            <button onclick="closeModal('modal-assign-subject')" class="mt-6 w-full bg-slate-100 text-slate-500 py-3 rounded-xl font-bold text-xs uppercase">Cancelar</button>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, setDoc, collection, getDocs, updateDoc, onSnapshot, query, where } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // --- PEGA AQUÍ TU CONFIGURACIÓN DE FIREBASE ---
+        const firebaseConfig = {
+            apiKey: "TU_API_KEY",
+            authDomain: "TU_PROYECTO.firebaseapp.com",
+            projectId: "TU_PROYECTO",
+            storageBucket: "TU_PROYECTO.appspot.com",
+            messagingSenderId: "TU_SENDER_ID",
+            appId: "TU_APP_ID"
+        };
+
+        let app, auth, db;
+        
+        try {
+            app = initializeApp(firebaseConfig);
+            auth = getAuth(app);
+            db = getFirestore(app);
+        } catch(e) {
+            console.error("Error iniciando Firebase", e);
+            document.getElementById('loader-text').textContent = "Error: Configura Firebase en el código.";
+        }
+
+        // --- ESTADO GLOBAL ---
+        let state = {
+            catalogs: { areas: [], materias: [], cursos: [], paralelos: [], secciones: [], roles: [] },
+            users: [],
+            currentUser: null,
+            currentSchedule: null, // { id, slots, grid }
+            currentCatalog: null,
+            viewDate: new Date()
+        };
+
+        const dom = {
+            loader: document.getElementById('loader'),
+            auth: document.getElementById('auth-container'),
+            dashboard: document.getElementById('user-logged-in'),
+            userTable: document.getElementById('users-table-body'),
+            userEmail: document.getElementById('user-email-display'),
+            userRole: document.getElementById('user-role-display'),
+            avatar: document.getElementById('avatar-circle'),
+            catalogGrid: document.getElementById('content-catalogs'),
+            catalogList: document.getElementById('catalog-list'),
+            scheduleContainer: document.getElementById('schedule-container'),
+            dailyList: document.getElementById('daily-classes-list')
+        };
+
+        // --- AUTHENTICATION ---
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                // Obtener perfil desde Firestore
+                const userDoc = await getDoc(doc(db, "users", user.uid));
+                if (userDoc.exists()) {
+                    state.currentUser = { uid: user.uid, email: user.email, ...userDoc.data() };
+                    dom.userEmail.textContent = user.email;
+                    dom.userRole.textContent = state.currentUser.rol || "Usuario";
+                    dom.avatar.textContent = user.email[0].toUpperCase();
+                    
+                    if (state.currentUser.rol === "Admin") {
+                        document.getElementById('btn-open-admin').classList.remove('hidden');
+                    } else {
+                        document.getElementById('btn-open-admin').classList.add('hidden');
+                    }
+
+                    dom.auth.classList.add('hidden');
+                    dom.dashboard.classList.remove('hidden');
+                    
+                    // Inicializar Datos
+                    await loadCatalogs();
+                    await updateDashboardDate();
+                    
+                    // Solo cargar usuarios si es admin (optimización)
+                    if(state.currentUser.rol === "Admin") subscribeToUsers();
+
+                } else {
+                    // Usuario sin perfil en DB (Puede ocurrir si creaste user en Auth pero no en DB)
+                    // Solución: Crear perfil básico o avisar
+                    alert("Tu usuario no tiene perfil asignado en la base de datos.");
+                    await signOut(auth);
+                }
+            } else {
+                dom.dashboard.classList.add('hidden');
+                dom.auth.classList.remove('hidden');
+            }
+            dom.loader.style.opacity = '0';
+            setTimeout(() => dom.loader.style.display = 'none', 500);
+        });
+
+        document.getElementById('auth-form').onsubmit = async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('email').value;
+            const pass = document.getElementById('password').value;
+            const errDiv = document.getElementById('login-error');
+            errDiv.classList.add('hidden');
             
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10">
-                <!-- Sección Académica -->
-                <div class="space-y-4">
-                    <h4 class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Información Académica</h4>
-                    <div class="group">
-                        <label class="block text-xs font-bold text-slate-500 mb-2 ml-1">Área Responsable</label>
-                        <select id="edit-user-area" class="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-100 outline-none focus:bg-white focus:border-blue-500 transition-all"></select>
-                    </div>
-                    <div class="group">
-                        <label class="block text-xs font-bold text-slate-500 mb-2 ml-1">Materia Principal</label>
-                        <select id="edit-user-materia" class="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-100 outline-none focus:bg-white focus:border-blue-500 transition-all"></select>
-                    </div>
-                    <div class="group">
-                        <label class="block text-xs font-bold text-slate-500 mb-2 ml-1">Nivel / Grado</label>
-                        <select id="edit-user-nivel" class="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-100 outline-none focus:bg-white focus:border-blue-500 transition-all"></select>
-                    </div>
-                </div>
+            try {
+                await signInWithEmailAndPassword(auth, email, pass);
+            } catch (error) {
+                console.error(error);
+                errDiv.textContent = "Error: Credenciales inválidas o problema de red.";
+                errDiv.classList.remove('hidden');
+            }
+        };
 
-                <!-- Sección Grupos -->
-                <div class="space-y-4">
-                    <h4 class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Distribución</h4>
-                    <div class="group">
-                        <label class="block text-xs font-bold text-slate-500 mb-2 ml-1">Cursos Asignados</label>
-                        <input type="text" id="edit-user-cursos" placeholder="Ej: 1ero, 2do, 3ero" class="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-100 outline-none focus:bg-white focus:border-blue-500 transition-all">
+        document.getElementById('logout-btn').onclick = () => signOut(auth);
+
+        // --- CATALOGS ---
+        async function loadCatalogs() {
+            const docSnap = await getDoc(doc(db, "config", "catalogs"));
+            if (docSnap.exists()) {
+                state.catalogs = docSnap.data();
+            } else {
+                // Inicializar si no existe
+                await setDoc(doc(db, "config", "catalogs"), state.catalogs);
+            }
+            renderCatalogs();
+            populateScheduleSelectors();
+        }
+
+        window.saveCatalog = async () => {
+            await setDoc(doc(db, "config", "catalogs"), state.catalogs);
+        };
+
+        // --- USERS MANAGEMENT ---
+        function subscribeToUsers() {
+            onSnapshot(collection(db, "users"), (snapshot) => {
+                state.users = [];
+                snapshot.forEach(doc => state.users.push({ id: doc.id, ...doc.data() }));
+                renderUserTable();
+            });
+        }
+
+        document.getElementById('user-form').onsubmit = async (e) => {
+            e.preventDefault();
+            const id = document.getElementById('form-user-id').value;
+            const userData = {
+                email: document.getElementById('form-email').value,
+                areas: getCheckedValues('chk-area'),
+                materias: getCheckedValues('chk-materia'),
+                cursos: getCheckedValues('chk-curso'),
+                paralelos: getCheckedValues('chk-paralelo'),
+                seccion: document.getElementById('sel-seccion').value,
+                rol: document.getElementById('sel-rol').value
+            };
+
+            try {
+                if (id) {
+                    await updateDoc(doc(db, "users", id), userData);
+                } else {
+                    // Nota: Crear un usuario nuevo solo crea el registro en DB.
+                    // La cuenta de Auth debe crearse manualmente o via Admin SDK.
+                    await setDoc(doc(db, "users", userData.email), userData); // Usamos email como ID simple
+                    alert("Usuario guardado en base de datos. Recuerda crear las credenciales en Firebase Auth.");
+                }
+                closeModal('modal-user');
+            } catch (error) {
+                console.error(error);
+                alert("Error guardando usuario.");
+            }
+        };
+
+        // --- SCHEDULES ---
+        window.loadSchedule = async () => {
+            const sec = document.getElementById('sch-seccion').value;
+            const cur = document.getElementById('sch-curso').value;
+            const par = document.getElementById('sch-paralelo').value;
+            const scheduleId = `${sec}_${cur}_${par}`;
+            
+            const docRef = doc(db, "schedules", scheduleId);
+            const docSnap = await getDoc(docRef);
+
+            if (docSnap.exists()) {
+                state.currentSchedule = { id: scheduleId, ...docSnap.data() };
+            } else {
+                state.currentSchedule = { id: scheduleId, slots: [], grid: {} };
+            }
+            renderScheduleTable(state.currentSchedule);
+        };
+
+        window.saveCurrentSchedule = async () => {
+            if (!state.currentSchedule) return;
+            try {
+                await setDoc(doc(db, "schedules", state.currentSchedule.id), {
+                    slots: state.currentSchedule.slots,
+                    grid: state.currentSchedule.grid
+                });
+                alert("Horario guardado correctamente.");
+            } catch (e) {
+                console.error(e);
+                alert("Error al guardar horario.");
+            }
+        };
+
+        // --- DASHBOARD & LOGS ---
+        window.updateDashboardDate = async () => {
+            const options = { year: 'numeric', month: 'long', day: 'numeric' };
+            document.getElementById('day-current-display').textContent = state.viewDate.toLocaleDateString('es-ES', options);
+            
+            const days = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
+            const dayIndex = state.viewDate.getDay();
+            document.getElementById('day-of-week-label').textContent = days[dayIndex];
+
+            const allSchedulesSnap = await getDocs(collection(db, "schedules"));
+            const allSchedules = [];
+            allSchedulesSnap.forEach(d => allSchedules.push({id: d.id, ...d.data()}));
+            
+            renderDailyClasses(dayIndex, allSchedules);
+        };
+
+        window.changeDay = (delta) => {
+            state.viewDate.setDate(state.viewDate.getDate() + delta);
+            updateDashboardDate();
+        };
+
+        async function renderDailyClasses(dayIndex, allSchedules) {
+            const scheduleDayIndex = dayIndex - 1; 
+            if (scheduleDayIndex < 0 || scheduleDayIndex > 4) {
+                dom.dailyList.innerHTML = `<div class="bg-slate-50 p-8 rounded-2xl text-center text-slate-400 font-bold">Fin de semana libre 🎉</div>`;
+                document.getElementById('classes-count').textContent = "0";
+                return;
+            }
+
+            const myClasses = [];
+            const userSubjects = state.currentUser.materias || [];
+            const isAdmin = state.currentUser.rol === "Admin";
+
+            for (const sched of allSchedules) {
+                const parts = sched.id.split('_'); // Seccion_Curso_Paralelo
+                if (sched.slots) {
+                    for (const slot of sched.slots) {
+                        const cellKey = `${slot.id}_${scheduleDayIndex}`;
+                        const subject = sched.grid[cellKey];
+
+                        if (subject && (isAdmin || userSubjects.includes(subject))) {
+                            // Buscar Log
+                            const dateKey = state.viewDate.toISOString().split('T')[0];
+                            const logId = `${dateKey}_${sched.id}_${slot.id}`;
+                            let logData = { topic: "", content: "" };
+                            
+                            // Obtener log existente
+                            const logSnap = await getDoc(doc(db, "class_logs", logId));
+                            if (logSnap.exists()) logData = logSnap.data();
+
+                            myClasses.push({
+                                time: `${slot.start} - ${slot.end}`,
+                                subject,
+                                course: `${parts[1]} "${parts[2]}"`,
+                                logId,
+                                data: logData,
+                                sortTime: slot.start
+                            });
+                        }
+                    }
+                }
+            }
+
+            myClasses.sort((a,b) => a.sortTime.localeCompare(b.sortTime));
+            document.getElementById('classes-count').textContent = myClasses.length;
+
+            if (myClasses.length === 0) {
+                dom.dailyList.innerHTML = `<div class="bg-slate-50 p-8 rounded-2xl text-center text-slate-400 font-bold">No tienes clases asignadas.</div>`;
+            } else {
+                dom.dailyList.innerHTML = myClasses.map(cls => `
+                    <div class="bg-slate-50 border border-slate-100 rounded-[2rem] p-6 hover:shadow-md transition-shadow">
+                        <div class="flex justify-between items-start mb-4 border-b border-slate-200 pb-4">
+                            <div>
+                                <span class="bg-blue-100 text-blue-600 px-3 py-1 rounded-lg text-xs font-black mb-2 inline-block">${cls.time}</span>
+                                <h3 class="text-xl font-black text-slate-800">${cls.subject}</h3>
+                                <p class="text-sm text-slate-500 font-bold">${cls.course}</p>
+                            </div>
+                            <button onclick="saveLog('${cls.logId}')" class="bg-slate-900 text-white p-3 rounded-xl hover:bg-black transition shadow-lg">
+                                <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8"/><path d="M7 3v5h8"/></svg>
+                            </button>
+                        </div>
+                        <div class="space-y-3">
+                            <input type="text" id="topic_${cls.logId}" value="${cls.data.topic || ''}" placeholder="Tema de la clase..." class="w-full p-3 rounded-xl border border-slate-200 text-sm font-bold text-slate-700 outline-none focus:border-blue-500">
+                            <textarea id="content_${cls.logId}" placeholder="Actividades realizadas..." class="w-full p-3 rounded-xl border border-slate-200 text-sm text-slate-600 h-20 resize-none outline-none focus:border-blue-500">${cls.data.content || ''}</textarea>
+                        </div>
                     </div>
-                    <div class="group">
-                        <label class="block text-xs font-bold text-slate-500 mb-2 ml-1">Secciones / Paralelos</label>
-                        <input type="text" id="edit-user-secciones" placeholder="Ej: A, B, C" class="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-100 outline-none focus:bg-white focus:border-blue-500 transition-all">
-                    </div>
-                </div>
-            </div>
+                `).join('');
+            }
+        }
 
-            <!-- Roles -->
-            <div class="mb-10">
-                <h4 class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-6">Permisos de Acceso</h4>
-                <div class="flex flex-wrap gap-3">
-                    <label class="role-chip"><input type="checkbox" value="admin" class="hidden role-cb"><span>Admin</span></label>
-                    <label class="role-chip"><input type="checkbox" value="administrativo" class="hidden role-cb"><span>Administrativo</span></label>
-                    <label class="role-chip"><input type="checkbox" value="docente" class="hidden role-cb"><span>Docente</span></label>
-                    <label class="role-chip"><input type="checkbox" value="director_nivel" class="hidden role-cb"><span>Dir. Nivel</span></label>
-                    <label class="role-chip"><input type="checkbox" value="director_area" class="hidden role-cb"><span>Dir. Área</span></label>
-                </div>
-            </div>
+        window.saveLog = async (logId) => {
+            const topic = document.getElementById(`topic_${logId}`).value;
+            const content = document.getElementById(`content_${logId}`).value;
+            try {
+                await setDoc(doc(db, "class_logs", logId), {
+                    topic, content,
+                    date: state.viewDate.toISOString(),
+                    teacherEmail: state.currentUser.email
+                });
+                alert("Actividad registrada.");
+            } catch(e) {
+                console.error(e);
+                alert("Error al guardar.");
+            }
+        };
 
-            <button id="btn-save-user-full" class="w-full bg-blue-600 text-white py-5 rounded-[2rem] font-black uppercase tracking-widest text-sm hover:bg-blue-700 transition shadow-2xl shadow-blue-100">
-                Actualizar Información del Usuario
-            </button>
-        </div>
-    </div>
+        // --- HELPERS UI ---
+        window.switchTab = (tab) => {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(`tab-${tab}`).classList.add('active');
+            ['users', 'catalogs', 'schedules'].forEach(t => document.getElementById(`content-${t}`).classList.add('hidden'));
+            document.getElementById(`content-${tab}`).classList.remove('hidden');
+        };
+        
+        window.openModal = (id) => document.getElementById(id).classList.replace('hidden', 'flex');
+        window.closeModal = (id) => document.getElementById(id).classList.replace('flex', 'hidden');
+        
+        function renderUserTable() {
+            dom.userTable.innerHTML = state.users.map(u => `
+                <tr class="hover:bg-slate-50/50 transition-colors group border-b border-slate-50 last:border-0">
+                    <td class="px-8 py-4 align-top"><div class="font-bold text-slate-800">${u.email}</div></td>
+                    <td class="px-8 py-4 align-top">${(u.materias||[]).map(m => `<span class="data-badge">${m}</span>`).join('')}</td>
+                    <td class="px-8 py-4 align-top">${(u.cursos||[]).map(c => `<span class="text-xs font-bold text-slate-700 block">${c}</span>`).join('')}</td>
+                    <td class="px-8 py-4 align-top"><span class="role-badge role-${u.rol}">${u.rol}</span></td>
+                    <td class="px-8 py-4 align-top text-right"><button onclick="editUser('${u.id}')" class="text-blue-600 font-black text-[10px] uppercase">Editar</button></td>
+                </tr>`).join('');
+        }
+        
+        window.editUser = (id) => {
+            renderFormOptions();
+            const u = state.users.find(x => x.id === id);
+            document.getElementById('form-user-id').value = u.id;
+            document.getElementById('form-email').value = u.email;
+            document.getElementById('sel-seccion').value = u.seccion;
+            document.getElementById('sel-rol').value = u.rol;
+            setCheckedValues('chk-area', u.areas || []);
+            setCheckedValues('chk-materia', u.materias || []);
+            setCheckedValues('chk-curso', u.cursos || []);
+            setCheckedValues('chk-paralelo', u.paralelos || []);
+            openModal('modal-user');
+        };
 
-    <script type="module" src="app.js"></script>
+        function renderFormOptions() {
+            createCheckboxes('container-areas', state.catalogs.areas, 'chk-area');
+            createCheckboxes('container-materias', state.catalogs.materias, 'chk-materia');
+            createCheckboxes('container-cursos', state.catalogs.cursos, 'chk-curso');
+            createCheckboxes('container-paralelos', state.catalogs.paralelos, 'chk-paralelo');
+            populateSelect('sel-seccion', state.catalogs.secciones);
+            populateSelect('sel-rol', state.catalogs.roles);
+        }
+        
+        function createCheckboxes(cid, opts, name) { document.getElementById(cid).innerHTML = opts.map(o => `<label class="check-item"><input type="checkbox" name="${name}" value="${o}"><span>${o}</span></label>`).join(''); }
+        function populateSelect(id, opts) { document.getElementById(id).innerHTML = opts.map(o => `<option value="${o}">${o}</option>`).join(''); }
+        function populateScheduleSelectors() { populateSelect('sch-seccion', state.catalogs.secciones); populateSelect('sch-curso', state.catalogs.cursos); populateSelect('sch-paralelo', state.catalogs.paralelos); }
+        window.setCheckedValues = (name, vals) => document.querySelectorAll(`input[name="${name}"]`).forEach(cb => cb.checked = vals.includes(cb.value));
+        window.getCheckedValues = (name) => Array.from(document.querySelectorAll(`input[name="${name}"]:checked`)).map(cb => cb.value);
+
+        function renderCatalogs() {
+            dom.catalogGrid.innerHTML = Object.keys(state.catalogs).map(key => `
+                <div onclick="openCatalogManager('${key}')" class="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm hover:shadow-md transition cursor-pointer group">
+                    <div class="flex justify-between items-center mb-4"><h4 class="font-black text-slate-800 uppercase tracking-widest text-xs">${key}</h4><span class="bg-slate-100 text-slate-500 text-[10px] font-bold px-2 py-1 rounded-lg">${state.catalogs[key].length}</span></div>
+                    <div class="flex flex-wrap gap-1 max-h-20 overflow-hidden">${state.catalogs[key].slice(0, 4).map(item => `<span class="text-[9px] bg-slate-50 text-slate-400 px-2 py-1 rounded-md border border-slate-100">${item}</span>`).join('')}</div>
+                </div>`).join('');
+        }
+        window.openCatalogManager = (key) => { state.currentCatalog = key; document.getElementById('catalog-title').textContent = key.toUpperCase(); renderCatalogList(); openModal('modal-catalog'); };
+        function renderCatalogList() { document.getElementById('catalog-list').innerHTML = state.catalogs[state.currentCatalog].map((item, index) => `<div class="flex justify-between items-center bg-slate-50 p-3 rounded-xl border border-slate-100"><span class="text-sm font-bold text-slate-600">${item}</span><button onclick="removeCatalogItem(${index})" class="text-red-400 font-black text-xs">✕</button></div>`).join(''); }
+        window.addCatalogItem = async () => { const val = document.getElementById('catalog-input').value.trim(); if(val){ state.catalogs[state.currentCatalog].push(val); document.getElementById('catalog-input').value=''; renderCatalogList(); await saveCatalog(); renderCatalogs(); populateScheduleSelectors(); } };
+        window.removeCatalogItem = async (idx) => { state.catalogs[state.currentCatalog].splice(idx, 1); renderCatalogList(); await saveCatalog(); renderCatalogs(); populateScheduleSelectors(); };
+
+        function renderScheduleTable(schedule) {
+            if (!schedule.slots || schedule.slots.length === 0) {
+                dom.scheduleContainer.innerHTML = `<div class="text-center py-10"><p class="text-slate-400 font-bold mb-4">Sin horas configuradas.</p><button onclick="openTimeConfig()" class="text-blue-600 underline text-sm font-bold">Configurar</button></div>`; return;
+            }
+            const days = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes"];
+            let html = `<table class="w-full border-collapse"><thead><tr><th class="p-3 text-[10px] uppercase font-black text-slate-400 bg-slate-50 border border-slate-200">Hora</th>${days.map(d => `<th class="p-3 text-[10px] uppercase font-black text-slate-400 bg-slate-50 border border-slate-200">${d}</th>`).join('')}</tr></thead><tbody>`;
+            schedule.slots.sort((a,b) => a.start.localeCompare(b.start)).forEach(slot => {
+                html += `<tr><td class="time-col border border-slate-200 p-2">${slot.start} - ${slot.end}</td>`;
+                days.forEach((day, index) => {
+                    const cellId = `${slot.id}_${index}`;
+                    const subject = schedule.grid[cellId] || "";
+                    const filledClass = subject ? 'filled' : '';
+                    html += `<td onclick="openAssignSubject('${cellId}')" class="schedule-cell ${filledClass}">${subject}</td>`;
+                });
+                html += `</tr>`;
+            });
+            html += `</tbody></table>`;
+            dom.scheduleContainer.innerHTML = html;
+        }
+        window.openTimeConfig = () => { if (!state.currentSchedule) { alert("Carga un horario primero"); return; } renderTimeSlotsList(); openModal('modal-time-slots'); };
+        function renderTimeSlotsList() {
+            document.getElementById('slots-list').innerHTML = state.currentSchedule.slots.map((slot, idx) => `<div class="flex justify-between items-center bg-slate-50 p-3 rounded-xl border border-slate-100"><span class="text-sm font-bold text-slate-700">${slot.start} - ${slot.end}</span><button onclick="removeTimeSlot(${idx})" class="text-red-400 font-black text-xs">✕</button></div>`).join('');
+        }
+        window.addTimeSlot = () => { const s = document.getElementById('ts-start').value; const e = document.getElementById('ts-end').value; if(s && e) { state.currentSchedule.slots.push({id: Date.now(), start:s, end:e}); renderTimeSlotsList(); renderScheduleTable(state.currentSchedule); } };
+        window.removeTimeSlot = (i) => { state.currentSchedule.slots.splice(i, 1); renderTimeSlotsList(); renderScheduleTable(state.currentSchedule); };
+        window.openAssignSubject = (cid) => { state.tempCellTarget = cid; const c = document.getElementById('subject-selector-list'); c.innerHTML = state.catalogs.materias.map(m => `<button onclick="assignSubject('${m}')" class="p-3 bg-slate-50 hover:bg-blue-50 text-slate-600 font-bold border border-slate-100 text-xs">${m}</button>`).join('') + `<button onclick="assignSubject('')" class="p-3 bg-red-50 text-red-500 font-bold border border-red-100 text-xs col-span-2">Borrar</button>`; openModal('modal-assign-subject'); };
+        window.assignSubject = (sub) => { if(sub) state.currentSchedule.grid[state.tempCellTarget] = sub; else delete state.currentSchedule.grid[state.tempCellTarget]; renderScheduleTable(state.currentSchedule); closeModal('modal-assign-subject'); };
+        
+        document.getElementById('btn-add-user').onclick = () => { 
+            renderFormOptions(); 
+            document.getElementById('user-form').reset(); 
+            document.getElementById('form-user-id').value = ""; 
+            openModal('modal-user'); 
+        };
+    </script>
 </body>
 </html>
