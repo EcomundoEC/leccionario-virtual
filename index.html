@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Leccionario Virtual - Híbrido</title>
+    <title>Leccionario Virtual - Gestión Total</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         /* Estilos UI */
@@ -41,7 +41,6 @@
             <h1 class="text-3xl font-black mb-2 text-slate-800">Leccionario Virtual</h1>
             <p class="text-slate-400 text-sm mb-4">Ingresa tus credenciales institucionales</p>
             
-            <!-- LABEL DE ESTADO DE CONEXIÓN -->
             <div id="firebase-status" class="mb-6 py-2 px-4 rounded-xl bg-slate-50 border border-slate-200 text-xs font-mono text-slate-400 flex items-center justify-center gap-2">
                 <span class="w-2 h-2 rounded-full bg-slate-300"></span>
                 Iniciando conexión...
@@ -126,6 +125,7 @@
                 </div>
             </div>
 
+            <!-- TAB USUARIOS -->
             <div id="content-users" class="space-y-6">
                 <div class="flex justify-end">
                     <button id="btn-add-user" class="bg-blue-600 text-white px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-blue-700 shadow-lg shadow-blue-200 flex items-center gap-2"><span>+</span> Nuevo Usuario</button>
@@ -135,8 +135,30 @@
                 </div>
             </div>
 
-            <div id="content-catalogs" class="hidden grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+            <!-- TAB CATÁLOGOS (ACTUALIZADA) -->
+            <div id="content-catalogs" class="hidden space-y-6">
+                <!-- Cabecera con Botón Guardar -->
+                <div class="flex justify-between items-center bg-white p-4 rounded-[2rem] border border-slate-100 shadow-sm">
+                    <div class="flex items-center gap-3 px-2">
+                        <div class="p-2 bg-blue-50 text-blue-600 rounded-lg">
+                            <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/></svg>
+                        </div>
+                        <div>
+                            <h3 class="font-black text-slate-800 text-lg">Catálogos del Sistema</h3>
+                            <p class="text-xs text-slate-400 font-bold uppercase tracking-widest">Listas Desplegables</p>
+                        </div>
+                    </div>
+                    <button onclick="manualSaveCatalogs()" class="bg-slate-900 text-white px-6 py-3 rounded-xl font-black text-xs uppercase tracking-widest hover:bg-black transition-all shadow-lg shadow-slate-200 flex items-center gap-2">
+                        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8"/><path d="M7 3v5h8"/></svg>
+                        Guardar Todo
+                    </button>
+                </div>
+                
+                <!-- Grid de Catálogos -->
+                <div id="catalog-grid-inner" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+            </div>
 
+            <!-- TAB HORARIOS -->
             <div id="content-schedules" class="hidden space-y-6">
                 <div class="bg-white p-6 rounded-[2.5rem] shadow-sm border border-slate-100 flex flex-wrap gap-4 items-end justify-between">
                     <div class="flex gap-4 flex-wrap">
@@ -155,6 +177,7 @@
         </div>
     </div>
 
+    <!-- MODALES -->
     <!-- MODAL USUARIO -->
     <div id="modal-user" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[110] hidden items-center justify-center p-4">
         <div class="bg-white w-full max-w-3xl rounded-[3rem] p-10 modal-animate max-h-[95vh] overflow-y-auto">
@@ -208,24 +231,25 @@
 
     <!-- SEGURO DE VIDA PARA LOADER (Script estándar fuera del módulo) -->
     <script>
-        window.addEventListener('load', function() {
-            setTimeout(function() {
-                const loader = document.getElementById('loader');
-                if (loader && loader.style.opacity !== '0') {
-                    console.warn("Forzando ocultar loader por tiempo de espera.");
-                    loader.style.opacity = '0';
-                    setTimeout(() => loader.style.display = 'none', 500);
-                }
-            }, 3000); // 3 segundos máximo
-        });
+        function resolveLoader() {
+            const loader = document.getElementById('loader');
+            if (loader && loader.style.display !== 'none') {
+                console.warn("Loader retirado por mecanismo de seguridad.");
+                loader.style.opacity = '0';
+                setTimeout(() => loader.style.display = 'none', 500);
+            }
+        }
+        window.addEventListener('load', () => setTimeout(resolveLoader, 2000));
+        setTimeout(resolveLoader, 5000);
     </script>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-analytics.js"; // IMPORTANTE: Analytics añadido
         import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, getDoc, setDoc, collection, getDocs, updateDoc, onSnapshot, query, where } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, setDoc, collection, getDocs, updateDoc, deleteDoc, onSnapshot, query, where } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // --- CONFIGURACIÓN FIREBASE (REAL) ---
+        // --- CONFIGURACIÓN FIREBASE (TUS DATOS) ---
         const firebaseConfig = {
             apiKey: "AIzaSyB1eXkCiF5VZcTin0W5hBQv2X2PEE2bAJc",
             authDomain: "leccionario-virtual.firebaseapp.com",
@@ -236,14 +260,14 @@
             measurementId: "G-ZR0SXQDNY9"
         };
 
-        let app, auth, db;
+        let app, auth, db, analytics;
         
         try {
             app = initializeApp(firebaseConfig);
+            analytics = getAnalytics(app); // Inicializar Analytics
             auth = getAuth(app);
             db = getFirestore(app);
             
-            // ACTUALIZAR LABEL DE ESTADO
             const statusEl = document.getElementById('firebase-status');
             if(statusEl) {
                 statusEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-green-500"></span> Conexión Firebase OK`;
@@ -276,7 +300,7 @@
             userEmail: document.getElementById('user-email-display'),
             userRole: document.getElementById('user-role-display'),
             avatar: document.getElementById('avatar-circle'),
-            catalogGrid: document.getElementById('content-catalogs'),
+            catalogGrid: document.getElementById('catalog-grid-inner'), // UPDATED ID
             catalogList: document.getElementById('catalog-list'),
             scheduleContainer: document.getElementById('schedule-container'),
             dailyList: document.getElementById('daily-classes-list')
@@ -289,17 +313,23 @@
                 if (userDoc.exists()) {
                     loginSuccess({ uid: user.uid, email: user.email, ...userDoc.data() });
                 } else {
-                    const basicProfile = { email: user.email, rol: "Docente", materias: [], areas: [] };
-                    await setDoc(doc(db, "users", user.uid), basicProfile);
-                    loginSuccess({ uid: user.uid, ...basicProfile });
+                    const userByEmail = await getDoc(doc(db, "users", user.email));
+                    if (userByEmail.exists()) {
+                        const existingData = userByEmail.data();
+                        await setDoc(doc(db, "users", user.uid), existingData);
+                        try { await deleteDoc(doc(db, "users", user.email)); } catch(e) {}
+                        loginSuccess({ uid: user.uid, email: user.email, ...existingData });
+                    } else {
+                        const basicProfile = { email: user.email, rol: "Docente", materias: [], areas: [] };
+                        await setDoc(doc(db, "users", user.uid), basicProfile);
+                        loginSuccess({ uid: user.uid, ...basicProfile });
+                    }
                 }
             } else {
                 dom.dashboard.classList.add('hidden');
                 dom.auth.classList.remove('hidden');
             }
-            // Loader se oculta aquí también por si acaso
-            dom.loader.style.opacity = '0';
-            setTimeout(() => dom.loader.style.display = 'none', 500);
+            resolveLoader();
         });
 
         async function loginSuccess(userData) {
@@ -329,7 +359,7 @@
             const errDiv = document.getElementById('login-error');
             errDiv.classList.add('hidden');
 
-            // BYPASS LOCAL ADMIN (Funciona incluso sin internet)
+            // BYPASS LOCAL ADMIN
             if (email === "admin" && pass === "admin") {
                 loginSuccess({ 
                     uid: "local_admin", 
@@ -381,9 +411,14 @@
             populateScheduleSelectors();
         }
 
-        window.saveCatalog = async () => {
-            if (state.currentUser.uid !== "local_admin") {
+        window.manualSaveCatalogs = async () => {
+            if (state.currentUser.uid === "local_admin") { alert("Guardado simulado (Local)"); return; }
+            try {
                 await setDoc(doc(db, "config", "catalogs"), state.catalogs);
+                alert("✅ Parámetros guardados correctamente en Firebase.");
+            } catch(e) {
+                console.error(e);
+                alert("❌ Error al guardar: " + e.message);
             }
         };
 
@@ -395,6 +430,15 @@
                 renderUserTable();
             });
         }
+
+        window.deleteUser = async (id) => {
+            if(confirm("¿Eliminar usuario de DB?")) {
+                try {
+                    await deleteDoc(doc(db, "users", id));
+                    alert("Usuario eliminado.");
+                } catch (e) { console.error(e); alert("Error al eliminar."); }
+            }
+        };
 
         document.getElementById('user-form').onsubmit = async (e) => {
             e.preventDefault();
@@ -411,7 +455,7 @@
             };
 
             if (state.currentUser.uid === "local_admin") {
-                alert("En modo prueba no se guardan usuarios reales.");
+                alert("Modo prueba: No guarda usuarios reales.");
                 return;
             }
 
@@ -420,10 +464,10 @@
                     await updateDoc(doc(db, "users", id), userData);
                 } else {
                     await setDoc(doc(db, "users", email), userData); 
-                    alert("Usuario guardado en DB. ¡Recuerda crearlo en Auth!");
+                    alert("Usuario guardado en DB.");
                 }
                 closeModal('modal-user');
-            } catch (e) { console.error(e); alert("Error guardando: " + e.message); }
+            } catch (e) { console.error(e); alert("Error: " + e.message); }
         };
 
         // --- SCHEDULES & DASHBOARD ---
@@ -464,9 +508,9 @@
             document.getElementById('day-of-week-label').textContent = days[state.viewDate.getDay()];
             
             if(state.currentUser.uid === "local_admin") {
-                document.getElementById('daily-classes-list').innerHTML = `<div class="p-8 text-center text-slate-400">Modo prueba: Sin clases asignadas.</div>`;
+                document.getElementById('daily-classes-list').innerHTML = `<div class="p-8 text-center text-slate-400">Modo prueba: Sin clases.</div>`;
             } else {
-                document.getElementById('daily-classes-list').innerHTML = `<div class="p-8 text-center text-slate-400">Selecciona una fecha con clases.</div>`;
+                document.getElementById('daily-classes-list').innerHTML = `<div class="p-8 text-center text-slate-400">Selecciona fecha.</div>`;
             }
         };
 
@@ -484,7 +528,10 @@
                     <td class="px-8 py-4 align-top">${(u.materias||[]).map(m => `<span class="data-badge">${m}</span>`).join('')}</td>
                     <td class="px-8 py-4 align-top">${(u.cursos||[]).map(c => `<span class="text-xs font-bold text-slate-700 block">${c}</span>`).join('')}</td>
                     <td class="px-8 py-4 align-top"><span class="role-badge role-${u.rol}">${u.rol}</span></td>
-                    <td class="px-8 py-4 align-top text-right"><button onclick="editUser('${u.id}')" class="text-blue-600 font-black text-[10px] uppercase">Editar</button></td>
+                    <td class="px-8 py-4 align-top text-right">
+                        <button onclick="editUser('${u.id}')" class="text-blue-600 font-black text-[10px] uppercase hover:underline">Editar</button>
+                        <button onclick="deleteUser('${u.id}')" class="text-red-400 font-black text-[10px] uppercase ml-4 hover:text-red-600">Eliminar</button>
+                    </td>
                 </tr>`).join('');
         }
         
@@ -511,8 +558,8 @@
             populateSelect('sel-rol', state.catalogs.roles);
         }
         
-        function createCheckboxes(cid, opts, name) { document.getElementById(cid).innerHTML = opts.map(o => `<label class="check-item"><input type="checkbox" name="${name}" value="${o}"><span>${o}</span></label>`).join(''); }
-        function populateSelect(id, opts) { document.getElementById(id).innerHTML = opts.map(o => `<option value="${o}">${o}</option>`).join(''); }
+        function createCheckboxes(cid, opts, name) { document.getElementById(cid).innerHTML = (opts||[]).map(o => `<label class="check-item"><input type="checkbox" name="${name}" value="${o}"><span>${o}</span></label>`).join(''); }
+        function populateSelect(id, opts) { document.getElementById(id).innerHTML = (opts||[]).map(o => `<option value="${o}">${o}</option>`).join(''); }
         function populateScheduleSelectors() { populateSelect('sch-seccion', state.catalogs.secciones); populateSelect('sch-curso', state.catalogs.cursos); populateSelect('sch-paralelo', state.catalogs.paralelos); }
         window.setCheckedValues = (name, vals) => document.querySelectorAll(`input[name="${name}"]`).forEach(cb => cb.checked = vals.includes(cb.value));
         window.getCheckedValues = (name) => Array.from(document.querySelectorAll(`input[name="${name}"]:checked`)).map(cb => cb.value);
@@ -520,15 +567,15 @@
         function renderCatalogs() {
             dom.catalogGrid.innerHTML = Object.keys(state.catalogs).map(key => `
                 <div onclick="openCatalogManager('${key}')" class="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm hover:shadow-md transition cursor-pointer group">
-                    <div class="flex justify-between items-center mb-4"><h4 class="font-black text-slate-800 uppercase tracking-widest text-xs">${key}</h4><span class="bg-slate-100 text-slate-500 text-[10px] font-bold px-2 py-1 rounded-lg">${state.catalogs[key].length}</span></div>
-                    <div class="flex flex-wrap gap-1 max-h-20 overflow-hidden">${state.catalogs[key].slice(0, 4).map(item => `<span class="text-[9px] bg-slate-50 text-slate-400 px-2 py-1 rounded-md border border-slate-100">${item}</span>`).join('')}</div>
+                    <div class="flex justify-between items-center mb-4"><h4 class="font-black text-slate-800 uppercase tracking-widest text-xs">${key}</h4><span class="bg-slate-100 text-slate-500 text-[10px] font-bold px-2 py-1 rounded-lg">${(state.catalogs[key]||[]).length}</span></div>
+                    <div class="flex flex-wrap gap-1 max-h-20 overflow-hidden">${(state.catalogs[key]||[]).slice(0, 4).map(item => `<span class="text-[9px] bg-slate-50 text-slate-400 px-2 py-1 rounded-md border border-slate-100">${item}</span>`).join('')}</div>
                 </div>`).join('');
         }
         window.openCatalogManager = (key) => { state.currentCatalog = key; document.getElementById('catalog-title').textContent = key.toUpperCase(); renderCatalogList(); openModal('modal-catalog'); };
         function renderCatalogList() { document.getElementById('catalog-list').innerHTML = state.catalogs[state.currentCatalog].map((item, index) => `<div class="flex justify-between items-center bg-slate-50 p-3 rounded-xl border border-slate-100"><span class="text-sm font-bold text-slate-600">${item}</span><button onclick="removeCatalogItem(${index})" class="text-red-400 font-black text-xs">✕</button></div>`).join(''); }
         
-        window.addCatalogItem = async () => { const val = document.getElementById('catalog-input').value.trim(); if(val){ state.catalogs[state.currentCatalog].push(val); document.getElementById('catalog-input').value=''; renderCatalogList(); await saveCatalog(); renderCatalogs(); populateScheduleSelectors(); } };
-        window.removeCatalogItem = async (idx) => { state.catalogs[state.currentCatalog].splice(idx, 1); renderCatalogList(); await saveCatalog(); renderCatalogs(); populateScheduleSelectors(); };
+        window.addCatalogItem = async () => { const val = document.getElementById('catalog-input').value.trim(); if(val){ state.catalogs[state.currentCatalog].push(val); document.getElementById('catalog-input').value=''; renderCatalogList(); renderCatalogs(); populateScheduleSelectors(); } };
+        window.removeCatalogItem = async (idx) => { state.catalogs[state.currentCatalog].splice(idx, 1); renderCatalogList(); renderCatalogs(); populateScheduleSelectors(); };
 
         function renderScheduleTable(schedule) {
             if (!schedule.slots || schedule.slots.length === 0) {
@@ -563,6 +610,19 @@
             document.getElementById('user-form').reset(); 
             document.getElementById('form-user-id').value = ""; 
             openModal('modal-user'); 
+        };
+
+        // NAVEGACIÓN ENTRE VISTAS (DASHBOARD <-> ADMIN)
+        document.getElementById('btn-open-admin').onclick = () => {
+            document.getElementById('main-dashboard-view').classList.add('hidden');
+            document.getElementById('admin-view').classList.remove('hidden');
+            switchTab('users'); // Ir a usuarios por defecto
+            renderUserTable();
+        };
+
+        document.getElementById('btn-back-dashboard').onclick = () => {
+            document.getElementById('admin-view').classList.add('hidden');
+            document.getElementById('main-dashboard-view').classList.remove('hidden');
         };
     </script>
 </body>
