@@ -104,6 +104,7 @@
                             </div>
                             <div class="flex gap-2">
                                 <button onclick="changeDay(-1)" class="w-10 h-10 rounded-xl bg-slate-100 hover:bg-slate-200 flex items-center justify-center font-bold text-slate-600"><</button>
+                                <button onclick="goToToday()" class="px-4 h-10 rounded-xl bg-blue-100 hover:bg-blue-200 flex items-center justify-center font-bold text-blue-600 text-xs uppercase">Hoy</button>
                                 <button onclick="changeDay(1)" class="w-10 h-10 rounded-xl bg-slate-100 hover:bg-slate-200 flex items-center justify-center font-bold text-slate-600">></button>
                             </div>
                         </div>
@@ -118,6 +119,7 @@
                             <h3 class="font-black text-lg text-slate-800" id="calendar-month-year">Calendario</h3>
                             <div class="flex gap-2 text-xs">
                                 <button onclick="changeCalendarMonth(-1)" class="bg-slate-100 px-3 py-1 rounded-lg hover:bg-slate-200">Anterior</button>
+                                <button onclick="goToToday()" class="bg-blue-100 px-3 py-1 rounded-lg hover:bg-blue-200 text-blue-700 font-bold">Hoy</button>
                                 <button onclick="changeCalendarMonth(1)" class="bg-slate-100 px-3 py-1 rounded-lg hover:bg-slate-200">Siguiente</button>
                             </div>
                         </div>
@@ -310,6 +312,11 @@
 
         let app, auth, db, analytics;
         
+        // GLOBAL HELPER FOR ARTIFACTS PATH
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'leccionario-v1';
+        const getCollectionRef = (name) => collection(db, 'artifacts', appId, 'public', 'data', name);
+        const getDocRef = (col, id) => doc(db, 'artifacts', appId, 'public', 'data', col, id);
+
         try {
             app = initializeApp(firebaseConfig);
             analytics = getAnalytics(app);
@@ -339,19 +346,19 @@
         // --- AUTHENTICATION ---
         onAuthStateChanged(auth, async (user) => {
             if (user) {
-                const userDoc = await getDoc(doc(db, "users", user.uid));
+                const userDoc = await getDoc(getDocRef("users", user.uid));
                 if (userDoc.exists()) {
                     loginSuccess({ uid: user.uid, email: user.email, ...userDoc.data() });
                 } else {
-                    const userByEmail = await getDoc(doc(db, "users", user.email));
+                    const userByEmail = await getDoc(getDocRef("users", user.email));
                     if (userByEmail.exists()) {
                         const existingData = userByEmail.data();
-                        await setDoc(doc(db, "users", user.uid), existingData);
-                        try { await deleteDoc(doc(db, "users", user.email)); } catch(e) {}
+                        await setDoc(getDocRef("users", user.uid), existingData);
+                        try { await deleteDoc(getDocRef("users", user.email)); } catch(e) {}
                         loginSuccess({ uid: user.uid, email: user.email, ...existingData });
                     } else {
                         const basicProfile = { email: user.email, rol: "Docente", materias: [], areas: [] };
-                        await setDoc(doc(db, "users", user.uid), basicProfile);
+                        await setDoc(getDocRef("users", user.uid), basicProfile);
                         loginSuccess({ uid: user.uid, ...basicProfile });
                     }
                 }
@@ -425,11 +432,11 @@
 
         // --- CATALOGS ---
         async function loadCatalogs() {
-            const docSnap = await getDoc(doc(db, "config", "catalogs"));
+            const docSnap = await getDoc(getDocRef("config", "catalogs"));
             if (docSnap.exists()) {
                 state.catalogs = docSnap.data();
             } else {
-                await setDoc(doc(db, "config", "catalogs"), state.catalogs);
+                await setDoc(getDocRef("config", "catalogs"), state.catalogs);
             }
             renderCatalogs();
             populateScheduleSelectors();
@@ -437,14 +444,14 @@
 
         window.saveCatalog = async () => {
             if (state.currentUser.uid !== "local_admin") {
-                await setDoc(doc(db, "config", "catalogs"), state.catalogs);
+                await setDoc(getDocRef("config", "catalogs"), state.catalogs);
             }
         };
 
         window.manualSaveCatalogs = async () => {
             if (state.currentUser.uid === "local_admin") { alert("Guardado simulado (Local)"); return; }
             try {
-                await setDoc(doc(db, "config", "catalogs"), state.catalogs);
+                await setDoc(getDocRef("config", "catalogs"), state.catalogs);
                 alert("✅ Parámetros guardados correctamente en Firebase.");
             } catch(e) { console.error(e); alert("❌ Error: " + e.message); }
         };
@@ -510,7 +517,7 @@
 
         // --- USERS ---
         function subscribeToUsers() {
-            onSnapshot(collection(db, "users"), (snapshot) => {
+            onSnapshot(getCollectionRef("users"), (snapshot) => {
                 state.users = [];
                 snapshot.forEach(doc => state.users.push({ id: doc.id, ...doc.data() }));
                 renderUserTable();
@@ -519,7 +526,7 @@
 
         window.deleteUser = async (id) => {
             if(confirm("¿Eliminar usuario de DB?")) {
-                try { await deleteDoc(doc(db, "users", id)); } catch (e) { alert("Error al eliminar."); }
+                try { await deleteDoc(getDocRef("users", id)); } catch (e) { alert("Error al eliminar."); }
             }
         };
 
@@ -547,12 +554,12 @@
             try {
                 if (id) {
                     // Actualizar existente
-                    await updateDoc(doc(db, "users", id), userData);
+                    await updateDoc(getDocRef("users", id), userData);
                 } else {
                     // Crear nuevo
                     // Si se dio un UID, usarlo. Si no, usar email como ID.
                     const docId = uidInput ? uidInput : email;
-                    await setDoc(doc(db, "users", docId), userData); 
+                    await setDoc(getDocRef("users", docId), userData); 
                 }
                 closeModal('modal-user');
             } catch (e) { alert("Error: " + e.message); }
@@ -692,8 +699,36 @@
             return checked;
         };
 
-        window.loadSchedule = async () => { /* ... misma lógica anterior ... */ };
-        window.saveCurrentSchedule = async () => { /* ... misma lógica anterior ... */ };
+        window.loadSchedule = async () => { 
+            const sec = document.getElementById('sch-seccion').value;
+            const cur = document.getElementById('sch-curso').value;
+            const par = document.getElementById('sch-paralelo').value;
+            const scheduleId = `${sec}_${cur}_${par}`;
+            
+            if (state.currentUser.uid === "local_admin") {
+                state.currentSchedule = { id: scheduleId, slots: [], grid: {} };
+                renderScheduleTable(state.currentSchedule);
+                return;
+            }
+
+            const docSnap = await getDoc(getDocRef("schedules", scheduleId));
+            if (docSnap.exists()) state.currentSchedule = { id: scheduleId, ...docSnap.data() };
+            else state.currentSchedule = { id: scheduleId, slots: [], grid: {} };
+            renderScheduleTable(state.currentSchedule);
+        };
+
+        window.saveCurrentSchedule = async () => {
+            if (!state.currentSchedule) return;
+            if (state.currentUser.uid === "local_admin") { alert("Guardado simulado."); return; }
+            try {
+                await setDoc(getDocRef("schedules", state.currentSchedule.id), {
+                    slots: state.currentSchedule.slots,
+                    grid: state.currentSchedule.grid
+                });
+                alert("Horario guardado.");
+            } catch(e) { alert("Error: " + e.message); }
+        };
+
         window.openTimeConfig = () => { if (!state.currentSchedule) { alert("Carga un horario primero"); return; } renderTimeSlotsList(); openModal('modal-time-slots'); };
         function renderTimeSlotsList() { document.getElementById('slots-list').innerHTML = (state.currentSchedule.slots||[]).map((slot, idx) => `<div class="flex justify-between items-center bg-slate-50 p-3 rounded-xl border border-slate-100"><span class="text-sm font-bold text-slate-700">${slot.start} - ${slot.end}</span><button onclick="removeTimeSlot(${idx})" class="text-red-400 font-black text-xs">✕</button></div>`).join(''); }
         window.addTimeSlot = () => { const s = document.getElementById('ts-start').value; const e = document.getElementById('ts-end').value; if(s && e) { if(!state.currentSchedule.slots) state.currentSchedule.slots = []; state.currentSchedule.slots.push({id: Date.now(), start:s, end:e}); renderTimeSlotsList(); renderScheduleTable(state.currentSchedule); } };
@@ -724,6 +759,14 @@
             html += `</tbody></table>`;
             container.innerHTML = html;
         }
+
+        window.goToToday = () => {
+            const now = new Date();
+            state.viewDate = new Date(now);
+            state.calendarDate = new Date(now);
+            updateDashboardDate();
+            renderMonthCalendar();
+        };
 
         document.getElementById('btn-add-user').onclick = () => { renderFormOptions(); document.getElementById('user-form').reset(); document.getElementById('form-user-id').value = ""; openModal('modal-user'); };
         
