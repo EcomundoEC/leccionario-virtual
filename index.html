@@ -220,6 +220,13 @@
                     <div><label class="block text-xs font-black text-slate-400 mb-2 uppercase">Correo</label><input type="email" id="form-email" required class="w-full p-4 rounded-2xl bg-slate-50 border-none outline-none focus:ring-2 focus:ring-blue-500/20"></div>
                     <div><label class="block text-xs font-black text-slate-400 mb-2 uppercase">Contraseña</label><input type="text" id="form-pass" placeholder="Ingresar para modificar" class="w-full p-4 rounded-2xl bg-slate-50 border-none outline-none focus:ring-2 focus:ring-blue-500/20"></div>
                 </div>
+                <!-- CAMPO UID PARA VINCULACIÓN DIRECTA -->
+                <div class="mb-4 bg-yellow-50 p-4 rounded-2xl border border-yellow-100">
+                    <label class="block text-[10px] font-black text-yellow-600 mb-1 uppercase tracking-widest">ID de Vinculación (UID) - Opcional</label>
+                    <input type="text" id="form-uid" placeholder="Pegar UID de Firebase Auth aquí para vincular..." class="w-full p-2 bg-transparent text-sm font-mono outline-none text-yellow-700 placeholder-yellow-300">
+                    <p class="text-[9px] text-yellow-500 mt-1">Si dejas esto vacío, se usará el correo como ID temporal hasta el primer login.</p>
+                </div>
+
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-6 border-t border-slate-100 pt-6">
                     <div><label class="block text-xs font-black text-slate-400 mb-2 uppercase flex justify-between">Áreas</label><div id="container-areas" class="check-grid"></div></div>
                     <div><label class="block text-xs font-black text-slate-400 mb-2 uppercase flex justify-between">Materias</label><div id="container-materias" class="check-grid"></div></div>
@@ -521,6 +528,7 @@
             const id = document.getElementById('form-user-id').value;
             const email = document.getElementById('form-email').value;
             const pass = document.getElementById('form-pass').value; // Nueva contraseña si se ingresó
+            const uidInput = document.getElementById('form-uid').value.trim(); // NUEVO: UID para vincular
             
             const userData = {
                 email: email,
@@ -537,8 +545,15 @@
             if (state.currentUser.uid === "local_admin") { alert("Simulado."); return; }
 
             try {
-                if (id) await updateDoc(doc(db, "users", id), userData);
-                else await setDoc(doc(db, "users", email), userData); 
+                if (id) {
+                    // Actualizar existente
+                    await updateDoc(doc(db, "users", id), userData);
+                } else {
+                    // Crear nuevo
+                    // Si se dio un UID, usarlo. Si no, usar email como ID.
+                    const docId = uidInput ? uidInput : email;
+                    await setDoc(doc(db, "users", docId), userData); 
+                }
                 closeModal('modal-user');
             } catch (e) { alert("Error: " + e.message); }
         };
@@ -608,7 +623,14 @@
         };
 
         // --- HELPERS UI ---
-        window.switchTab = (tab) => { document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active')); document.getElementById(`tab-${tab}`).classList.add('active'); ['users', 'catalogs', 'schedules'].forEach(t => document.getElementById(`content-${t}`).classList.add('hidden')); document.getElementById(`content-${tab}`).classList.remove('hidden'); };
+        window.switchTab = (tab) => { 
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active')); 
+            document.getElementById(`tab-${tab}`).classList.add('active'); 
+            ['users', 'catalogs', 'schedules'].forEach(t => document.getElementById(`content-${t}`).classList.add('hidden')); 
+            document.getElementById(`content-${tab}`).classList.remove('hidden'); 
+            
+            if (tab === 'users') renderUserTable(); // RE-RENDERIZAR SIEMPRE AL CAMBIAR
+        };
         window.openModal = (id) => document.getElementById(id).classList.replace('hidden', 'flex');
         window.closeModal = (id) => document.getElementById(id).classList.replace('flex', 'hidden');
         
@@ -634,6 +656,7 @@
             document.getElementById('form-pass').value = u.password || "";
             document.getElementById('sel-seccion').value = u.seccion;
             document.getElementById('sel-rol').value = u.rol;
+            document.getElementById('form-uid').value = ""; // Clear UID input for edit, ID is fixed
             
             setCheckedValues('chk-area', u.areas || []);
             const materiaNames = (u.materias || []).map(m => (typeof m === 'object') ? m.name : m);
