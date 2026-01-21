@@ -22,15 +22,6 @@
         .schedule-cell:hover { background: #f8fafc; }
         .schedule-cell.filled { background: #eff6ff; color: #1e40af; font-weight: 700; border-color: #dbeafe; }
         .time-col { background: #f1f5f9; color: #64748b; font-weight: 800; font-size: 10px; width: 80px; text-align: center; }
-        
-        /* Estilos Calendario Dashboard */
-        .mini-calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; text-align: center; }
-        .mini-day { aspect-ratio: 1; display: flex; align-items: center; justify-content: center; font-size: 12px; border-radius: 8px; cursor: pointer; transition: all 0.2s; color: #64748b; }
-        .mini-day:hover:not(.empty) { background: #f1f5f9; color: #1e293b; font-weight: bold; }
-        .mini-day.selected { background: #2563eb; color: white; font-weight: bold; box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.3); }
-        .mini-day.today { border: 1px solid #2563eb; color: #2563eb; font-weight: bold; }
-        .mini-day.empty { cursor: default; }
-        .mini-header { font-size: 10px; font-weight: 900; text-transform: uppercase; color: #94a3b8; padding-bottom: 4px; }
     </style>
 </head>
 <body class="bg-slate-50 min-h-screen font-sans text-slate-900">
@@ -133,7 +124,7 @@
                 </div>
 
                 <div class="lg:col-span-4 space-y-6">
-                    <!-- BOTÓN ADMIN DASHBOARD (VISIBLE PARA TODOS POR AHORA) -->
+                    <!-- BOTÓN ADMIN DASHBOARD -->
                     <button id="btn-open-admin" class="w-full bg-slate-900 text-white p-8 rounded-[3rem] text-left hover:scale-[1.02] transition-all relative overflow-hidden group">
                         <div class="relative z-10">
                             <div class="text-xs font-black text-white/40 uppercase mb-2">Administración</div>
@@ -169,8 +160,15 @@
 
             <!-- TAB USUARIOS -->
             <div id="content-users" class="space-y-6">
-                <div class="flex justify-end">
-                    <button id="btn-add-user" class="bg-blue-600 text-white px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-blue-700 shadow-lg shadow-blue-200 flex items-center gap-2"><span>+</span> Nuevo Usuario</button>
+                <div class="flex justify-between items-center">
+                    <h3 class="font-bold text-slate-700">Listado de Personal</h3>
+                    <div class="flex gap-2">
+                        <!-- NUEVO BOTÓN CARGAR -->
+                        <button onclick="manualLoadUsers()" class="bg-white border border-slate-200 text-slate-600 px-4 py-3 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-slate-50 transition-all shadow-sm flex items-center gap-2">
+                            🔄 Cargar Usuarios
+                        </button>
+                        <button id="btn-add-user" class="bg-blue-600 text-white px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-blue-700 shadow-lg shadow-blue-200 flex items-center gap-2"><span>+</span> Nuevo Usuario</button>
+                    </div>
                 </div>
                 <div class="bg-white rounded-[3rem] shadow-xl border border-slate-100 overflow-hidden">
                     <div class="overflow-x-auto"><table class="w-full text-left min-w-[800px]"><thead><tr class="text-slate-400 text-[10px] uppercase font-black border-b border-slate-50"><th class="px-8 py-6">Usuario</th><th class="px-8 py-6">Materias y Áreas</th><th class="px-8 py-6">Cursos</th><th class="px-8 py-6">Rol</th><th class="px-8 py-6 text-right">Acciones</th></tr></thead><tbody id="users-table-body" class="divide-y divide-slate-50"></tbody></table></div>
@@ -224,7 +222,7 @@
                 <input type="hidden" id="form-user-id">
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
                     <div><label class="block text-xs font-black text-slate-400 mb-2 uppercase">Correo</label><input type="email" id="form-email" required class="w-full p-4 rounded-2xl bg-slate-50 border-none outline-none focus:ring-2 focus:ring-blue-500/20"></div>
-                    <div><label class="block text-xs font-black text-slate-400 mb-2 uppercase">Contraseña</label><input type="text" id="form-pass" disabled placeholder="Gestionado por Auth" class="w-full p-4 rounded-2xl bg-slate-100 border-none outline-none text-slate-400 cursor-not-allowed"></div>
+                    <div><label class="block text-xs font-black text-slate-400 mb-2 uppercase">Contraseña</label><input type="text" id="form-pass" placeholder="Ingresar para modificar" class="w-full p-4 rounded-2xl bg-slate-100 border-none outline-none focus:ring-2 focus:ring-blue-500/20"></div>
                 </div>
                 <!-- CAMPO UID PARA VINCULACIÓN DIRECTA -->
                 <div class="mb-4 bg-yellow-50 p-4 rounded-2xl border border-yellow-100">
@@ -347,7 +345,7 @@
             calendarDate: new Date()
         };
 
-        // --- AUTHENTICATION & PERMISSION LOGIC ---
+        // --- AUTHENTICATION ---
         onAuthStateChanged(auth, async (user) => {
             if (user) {
                 const userDoc = await getDoc(getDocRef("users", user.uid));
@@ -381,7 +379,7 @@
             document.getElementById('user-role-display').textContent = userData.rol || "Usuario";
             document.getElementById('avatar-circle').textContent = userData.email[0].toUpperCase();
             
-            // --- MODO ABIERTO: Todos ven botones de Admin ---
+            // --- MODO ABIERTO ---
             document.getElementById('btn-open-admin').classList.remove('hidden');
             document.getElementById('btn-open-admin-header').classList.remove('hidden');
 
@@ -390,7 +388,7 @@
             
             try {
                 await loadCatalogs();
-                subscribeToUsers(); // Carga de usuarios para todos
+                subscribeToUsers(); // Cargar usuarios siempre
                 await updateDashboardDate();
                 renderMonthCalendar();
             } catch(e) { console.warn("Error carga inicial", e); }
@@ -466,18 +464,14 @@
         window.openCatalogManager = (key) => { 
             state.currentCatalog = key; 
             document.getElementById('catalog-title').textContent = key.toUpperCase(); 
-            
-            // Mostrar selector de área si estamos editando materias
             const areaSelectDiv = document.getElementById('catalog-extra-input');
             const areaSelect = document.getElementById('catalog-area-select');
-            
             if (key === 'materias') {
                 areaSelectDiv.classList.remove('hidden');
                 areaSelect.innerHTML = state.catalogs.areas.map(a => `<option value="${a}">${a}</option>`).join('');
             } else {
                 areaSelectDiv.classList.add('hidden');
             }
-
             renderCatalogList(); 
             openModal('modal-catalog'); 
         };
@@ -499,7 +493,6 @@
                 } else {
                     state.catalogs[state.currentCatalog].push(val); 
                 }
-                
                 document.getElementById('catalog-input').value=''; 
                 renderCatalogList(); 
                 await saveCatalog(); 
@@ -518,6 +511,22 @@
                 renderUserTable();
             });
         }
+        
+        // Función de carga manual
+        window.manualLoadUsers = async () => {
+            try {
+                const querySnapshot = await getDocs(getCollectionRef("users"));
+                state.users = [];
+                querySnapshot.forEach((doc) => {
+                    state.users.push({ id: doc.id, ...doc.data() });
+                });
+                renderUserTable();
+                alert(`Carga completa: ${state.users.length} usuarios encontrados.`);
+            } catch (e) {
+                console.error(e);
+                alert("Error cargando usuarios: " + e.message);
+            }
+        };
 
         window.deleteUser = async (id) => {
             if(confirm("¿Eliminar usuario de DB?")) {
@@ -529,8 +538,8 @@
             e.preventDefault();
             const id = document.getElementById('form-user-id').value;
             const email = document.getElementById('form-email').value;
-            const pass = document.getElementById('form-pass').value; // Nueva contraseña si se ingresó
-            const uidInput = document.getElementById('form-uid').value.trim(); // NUEVO: UID para vincular
+            const pass = document.getElementById('form-pass').value; 
+            const uidInput = document.getElementById('form-uid').value.trim();
             
             const userData = {
                 email: email,
@@ -548,15 +557,13 @@
 
             try {
                 if (id) {
-                    // Actualizar existente
                     await updateDoc(getDocRef("users", id), userData);
                 } else {
-                    // Crear nuevo
-                    // Si se dio un UID, usarlo. Si no, usar email como ID.
                     const docId = uidInput ? uidInput : email;
                     await setDoc(getDocRef("users", docId), userData); 
                 }
                 closeModal('modal-user');
+                alert("Usuario guardado.");
             } catch (e) { alert("Error: " + e.message); }
         };
 
@@ -603,7 +610,7 @@
             }
         }
 
-        // --- DASHBOARD (ACTUALIZADO: LÓGICA DE BÚSQUEDA REAL) ---
+        // --- DASHBOARD ---
         window.updateDashboardDate = async () => {
             const options = { year: 'numeric', month: 'long', day: 'numeric' };
             document.getElementById('day-current-display').textContent = state.viewDate.toLocaleDateString('es-ES', options);
@@ -649,7 +656,6 @@
                                 
                                 if (subject) {
                                     // Check subject match
-                                    // Handle subject as string or object {name, area}
                                     const teacherMaterias = (teacher.materias || []).map(m => (typeof m === 'object') ? m.name : m);
                                     const subjectName = (typeof subject === 'object') ? subject.name : subject;
 
@@ -703,7 +709,10 @@
             ['users', 'catalogs', 'schedules'].forEach(t => document.getElementById(`content-${t}`).classList.add('hidden')); 
             document.getElementById(`content-${tab}`).classList.remove('hidden'); 
             
-            if (tab === 'users') renderUserTable(); // RE-RENDERIZAR SIEMPRE AL CAMBIAR
+            if (tab === 'users') {
+                 // Recargar manual si es necesario
+                 // manualLoadUsers(); // Descomentar si se desea recarga automática al cambiar tab
+            }
         };
         window.openModal = (id) => document.getElementById(id).classList.replace('hidden', 'flex');
         window.closeModal = (id) => document.getElementById(id).classList.replace('flex', 'hidden');
@@ -730,7 +739,7 @@
             document.getElementById('form-pass').value = u.password || "";
             document.getElementById('sel-seccion').value = u.seccion;
             document.getElementById('sel-rol').value = u.rol;
-            document.getElementById('form-uid').value = ""; // Clear UID input for edit, ID is fixed
+            document.getElementById('form-uid').value = ""; 
             
             setCheckedValues('chk-area', u.areas || []);
             const materiaNames = (u.materias || []).map(m => (typeof m === 'object') ? m.name : m);
