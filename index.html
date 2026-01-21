@@ -52,7 +52,7 @@
             </div>
             
             <h1 class="text-3xl font-black mb-2 text-slate-800">Leccionario Virtual</h1>
-            <p class="text-slate-400 text-sm mb-4">Ingresa tus credenciales institucionales</p>
+            <p id="auth-subtitle" class="text-slate-400 text-sm mb-4">Ingresa tus credenciales institucionales</p>
             
             <div id="firebase-status" class="mb-6 py-2 px-4 rounded-xl bg-slate-50 border border-slate-200 text-xs font-mono text-slate-400 flex items-center justify-center gap-2">
                 <span class="w-2 h-2 rounded-full bg-slate-300"></span>
@@ -62,10 +62,18 @@
             <form id="auth-form" class="space-y-5 text-left">
                 <input type="text" id="email" required placeholder="Correo o Usuario" class="w-full px-5 py-4 rounded-2xl border border-slate-200 outline-none focus:ring-4 focus:ring-blue-50 bg-slate-50">
                 <input type="password" id="password" required placeholder="Contraseña" class="w-full px-5 py-4 rounded-2xl border border-slate-200 outline-none focus:ring-4 focus:ring-blue-50 bg-slate-50">
-                <button type="submit" class="w-full bg-blue-600 text-white py-4 rounded-2xl font-black uppercase tracking-widest hover:bg-blue-700 transition-all">Ingresar</button>
+                <button id="auth-submit-btn" type="submit" class="w-full bg-blue-600 text-white py-4 rounded-2xl font-black uppercase tracking-widest hover:bg-blue-700 transition-all">Ingresar</button>
             </form>
+            
             <div id="login-error" class="bg-red-50 text-red-500 text-xs p-3 rounded-xl mt-4 font-bold hidden border border-red-100 text-left"></div>
-            <p class="text-[10px] text-slate-300 mt-6 font-bold uppercase tracking-widest">Modo Prueba: admin / admin</p>
+            
+            <!-- TOGGLE LOGIN/REGISTER -->
+            <div class="mt-6 pt-6 border-t border-slate-100">
+                <button id="toggle-auth-mode" class="text-xs text-blue-500 font-bold uppercase tracking-wide hover:underline">
+                    ¿Primera vez? Activa tu cuenta aquí
+                </button>
+                <p class="text-[9px] text-slate-300 mt-2 font-bold uppercase tracking-widest">Modo Prueba: admin / admin</p>
+            </div>
         </div>
     </div>
 
@@ -231,13 +239,12 @@
                 <input type="hidden" id="form-user-id">
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
                     <div><label class="block text-xs font-black text-slate-400 mb-2 uppercase">Correo</label><input type="email" id="form-email" required class="w-full p-4 rounded-2xl bg-slate-50 border-none outline-none focus:ring-2 focus:ring-blue-500/20"></div>
-                    <div><label class="block text-xs font-black text-slate-400 mb-2 uppercase">Contraseña</label><input type="text" id="form-pass" placeholder="Ingresar para modificar" class="w-full p-4 rounded-2xl bg-slate-100 border-none outline-none focus:ring-2 focus:ring-blue-500/20"></div>
+                    <div><label class="block text-xs font-black text-slate-400 mb-2 uppercase">Contraseña</label><input type="text" id="form-pass" placeholder="Crear contraseña inicial" class="w-full p-4 rounded-2xl bg-slate-100 border-none outline-none text-slate-600 focus:ring-2 focus:ring-blue-500/20"></div>
                 </div>
                 <!-- CAMPO UID PARA VINCULACIÓN DIRECTA -->
                 <div class="mb-4 bg-yellow-50 p-4 rounded-2xl border border-yellow-100">
-                    <label class="block text-[10px] font-black text-yellow-600 mb-1 uppercase tracking-widest">ID de Vinculación (UID) - Opcional</label>
-                    <input type="text" id="form-uid" placeholder="Pegar UID de Firebase Auth aquí para vincular..." class="w-full p-2 bg-transparent text-sm font-mono outline-none text-yellow-700 placeholder-yellow-300">
-                    <p class="text-[9px] text-yellow-500 mt-1">Si dejas esto vacío, se usará el correo como ID temporal hasta el primer login.</p>
+                    <p class="text-[10px] text-yellow-600 font-bold uppercase tracking-widest mb-1">Nota del Sistema</p>
+                    <p class="text-xs text-yellow-700">La contraseña ingresada aquí es informativa. El usuario debe <strong>Registrarse</strong> con este mismo correo y contraseña para activar su cuenta.</p>
                 </div>
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-6 border-t border-slate-100 pt-6">
@@ -307,7 +314,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-analytics.js";
-        import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, getDoc, setDoc, collection, getDocs, updateDoc, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // --- CONFIGURACIÓN FIREBASE (TUS DATOS) ---
@@ -366,24 +373,30 @@
             currentSchedule: null,
             currentCatalog: null,
             viewDate: new Date(),
-            calendarDate: new Date()
+            calendarDate: new Date(),
+            isRegisterMode: false
         };
 
         // --- AUTHENTICATION & ADMIN PERMISSION LOGIC ---
         onAuthStateChanged(auth, async (user) => {
             if (user) {
-                const userDoc = await getDoc(getDocRef("users", user.uid));
+                // Check if user exists in Firestore by UID
+                let userDoc = await getDoc(getDocRef("users", user.uid));
                 let userData = null;
 
                 if (userDoc.exists()) {
                     userData = userDoc.data();
                 } else {
+                    // Try linking by email if created by admin
                     const userByEmail = await getDoc(getDocRef("users", user.email));
                     if (userByEmail.exists()) {
                         userData = userByEmail.data();
+                        // Migrate data to UID doc
                         await setDoc(getDocRef("users", user.uid), userData);
-                        try { await deleteDoc(getDocRef("users", user.email)); } catch(e) {}
+                        // Optional: delete old email-keyed doc if you want to clean up
+                        // try { await deleteDoc(getDocRef("users", user.email)); } catch(e) {}
                     } else {
+                        // Default profile for self-registered user
                         userData = { email: user.email, rol: "Docente", materias: [], areas: [] };
                         await setDoc(getDocRef("users", user.uid), userData);
                     }
@@ -403,7 +416,6 @@
             document.getElementById('user-role-display').textContent = userData.rol || "Usuario";
             document.getElementById('avatar-circle').textContent = userData.email[0].toUpperCase();
             
-            // --- MODO ABIERTO ---
             document.getElementById('btn-open-admin').classList.remove('hidden');
             document.getElementById('btn-open-admin-header').classList.remove('hidden');
 
@@ -412,11 +424,29 @@
             
             try {
                 await loadCatalogs();
-                subscribeToUsers(); // Cargar usuarios siempre
+                subscribeToUsers(); 
                 await updateDashboardDate();
                 renderMonthCalendar();
             } catch(e) { console.warn("Error carga inicial", e); }
         }
+
+        // TOGGLE LOGIN / REGISTER
+        document.getElementById('toggle-auth-mode').onclick = () => {
+            state.isRegisterMode = !state.isRegisterMode;
+            const btn = document.getElementById('auth-submit-btn');
+            const toggle = document.getElementById('toggle-auth-mode');
+            const subtitle = document.getElementById('auth-subtitle');
+            
+            if (state.isRegisterMode) {
+                btn.textContent = "Registrarme";
+                toggle.textContent = "Ya tengo cuenta, Iniciar Sesión";
+                subtitle.textContent = "Crea tu cuenta para acceder";
+            } else {
+                btn.textContent = "Ingresar";
+                toggle.textContent = "¿Primera vez? Activa tu cuenta aquí";
+                subtitle.textContent = "Ingresa tus credenciales institucionales";
+            }
+        };
 
         document.getElementById('auth-form').onsubmit = async (e) => {
             e.preventDefault();
@@ -434,10 +464,18 @@
             }
 
             try {
-                await signInWithEmailAndPassword(auth, email, pass);
+                if (state.isRegisterMode) {
+                    await createUserWithEmailAndPassword(auth, email, pass);
+                    // onAuthStateChanged handles the rest
+                } else {
+                    await signInWithEmailAndPassword(auth, email, pass);
+                }
             } catch (error) {
                 console.error(error);
-                errDiv.textContent = "Error: " + error.code;
+                let msg = "Error: " + error.code;
+                if (error.code === 'auth/invalid-credential') msg = "Credenciales incorrectas o usuario no registrado.";
+                if (error.code === 'auth/email-already-in-use') msg = "El correo ya está registrado.";
+                errDiv.textContent = msg;
                 errDiv.classList.remove('hidden');
             }
         };
@@ -538,7 +576,6 @@
             });
         }
         
-        // Define manualLoadUsers on window object so it can be called from HTML onclick
         window.manualLoadUsers = async () => {
             try {
                 const querySnapshot = await getDocs(getCollectionRef("users"));
@@ -565,7 +602,6 @@
             const id = document.getElementById('form-user-id').value;
             const email = document.getElementById('form-email').value;
             const pass = document.getElementById('form-pass').value; 
-            const uidInput = document.getElementById('form-uid').value.trim();
             
             const userData = {
                 email: email,
@@ -576,7 +612,8 @@
                 seccion: document.getElementById('sel-seccion').value,
                 rol: document.getElementById('sel-rol').value
             };
-
+            
+            // Password es referencia
             if (pass) userData.password = pass; 
 
             if (state.currentUser.uid === "local_admin") { alert("Simulado."); return; }
@@ -585,11 +622,11 @@
                 if (id) {
                     await updateDoc(getDocRef("users", id), userData);
                 } else {
-                    const docId = uidInput ? uidInput : email;
-                    await setDoc(getDocRef("users", docId), userData); 
+                    // Save by email as key for pre-provisioning
+                    await setDoc(getDocRef("users", email), userData); 
                 }
                 closeModal('modal-user');
-                alert("Usuario guardado.");
+                alert("Perfil de usuario guardado. El usuario debe registrarse.");
             } catch (e) { alert("Error: " + e.message); }
         };
 
@@ -765,7 +802,6 @@
             document.getElementById('form-pass').value = u.password || "";
             document.getElementById('sel-seccion').value = u.seccion;
             document.getElementById('sel-rol').value = u.rol;
-            document.getElementById('form-uid').value = ""; 
             
             setCheckedValues('chk-area', u.areas || []);
             const materiaNames = (u.materias || []).map(m => (typeof m === 'object') ? m.name : m);
