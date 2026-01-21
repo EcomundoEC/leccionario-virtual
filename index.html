@@ -23,9 +23,9 @@
         .schedule-cell.filled { background: #eff6ff; color: #1e40af; font-weight: 700; border-color: #dbeafe; }
         .time-col { background: #f1f5f9; color: #64748b; font-weight: 800; font-size: 10px; width: 80px; text-align: center; }
         
-        /* Estilos Calendario Dashboard */
-        .mini-calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; justify-items: center; }
-        .mini-day { width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; font-size: 12px; border-radius: 99px; cursor: pointer; transition: all 0.2s; color: #64748b; }
+        /* Estilos Calendario Dashboard (Ajustado) */
+        .mini-calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; justify-items: center; max-width: 350px; margin: 0 auto; }
+        .mini-day { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; font-size: 12px; border-radius: 99px; cursor: pointer; transition: all 0.2s; color: #64748b; }
         .mini-day:hover:not(.empty) { background: #f1f5f9; color: #1e293b; font-weight: bold; }
         .mini-day.selected { background: #2563eb; color: white; font-weight: bold; box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.3); }
         .mini-day.today { border: 2px solid #2563eb; color: #2563eb; font-weight: bold; }
@@ -57,7 +57,7 @@
             </div>
             
             <h1 class="text-3xl font-black mb-2 text-slate-800">Leccionario Virtual</h1>
-            <p class="text-slate-400 text-sm mb-4">Ingresa tus credenciales institucionales</p>
+            <p id="auth-subtitle" class="text-slate-400 text-sm mb-4">Ingresa tus credenciales institucionales</p>
             
             <div id="firebase-status" class="mb-6 py-2 px-4 rounded-xl bg-slate-50 border border-slate-200 text-xs font-mono text-slate-400 flex items-center justify-center gap-2">
                 <span class="w-2 h-2 rounded-full bg-slate-300"></span>
@@ -67,10 +67,18 @@
             <form id="auth-form" class="space-y-5 text-left">
                 <input type="text" id="email" required placeholder="Correo o Usuario" class="w-full px-5 py-4 rounded-2xl border border-slate-200 outline-none focus:ring-4 focus:ring-blue-50 bg-slate-50">
                 <input type="password" id="password" required placeholder="Contraseña" class="w-full px-5 py-4 rounded-2xl border border-slate-200 outline-none focus:ring-4 focus:ring-blue-50 bg-slate-50">
-                <button type="submit" class="w-full bg-blue-600 text-white py-4 rounded-2xl font-black uppercase tracking-widest hover:bg-blue-700 transition-all">Ingresar</button>
+                <button id="auth-submit-btn" type="submit" class="w-full bg-blue-600 text-white py-4 rounded-2xl font-black uppercase tracking-widest hover:bg-blue-700 transition-all">Ingresar</button>
             </form>
+            
             <div id="login-error" class="bg-red-50 text-red-500 text-xs p-3 rounded-xl mt-4 font-bold hidden border border-red-100 text-left"></div>
-            <p class="text-[10px] text-slate-300 mt-6 font-bold uppercase tracking-widest">Modo Prueba: admin / admin</p>
+            
+             <!-- TOGGLE LOGIN/REGISTER -->
+             <div class="mt-6 pt-6 border-t border-slate-100">
+                <button id="toggle-auth-mode" class="text-xs text-blue-500 font-bold uppercase tracking-wide hover:underline">
+                    ¿Primera vez? Activa tu cuenta aquí
+                </button>
+                <p class="text-[9px] text-slate-300 mt-2 font-bold uppercase tracking-widest">Modo Prueba: admin / admin</p>
+            </div>
         </div>
     </div>
 
@@ -361,7 +369,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-analytics.js";
-        import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, getDoc, setDoc, collection, getDocs, updateDoc, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // --- CONFIGURACIÓN FIREBASE (TUS DATOS) ---
@@ -381,6 +389,21 @@
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'leccionario-v1';
         const getCollectionRef = (name) => collection(db, 'artifacts', appId, 'public', 'data', name);
         const getDocRef = (col, id) => doc(db, 'artifacts', appId, 'public', 'data', col, id);
+
+        // Define DOM object globally
+        const dom = {
+            loader: document.getElementById('loader'),
+            auth: document.getElementById('auth-container'),
+            dashboard: document.getElementById('user-logged-in'),
+            userTable: document.getElementById('users-table-body'),
+            userEmail: document.getElementById('user-email-display'),
+            userRole: document.getElementById('user-role-display'),
+            avatar: document.getElementById('avatar-circle'),
+            catalogGrid: document.getElementById('content-catalogs'),
+            catalogList: document.getElementById('catalog-list'),
+            scheduleContainer: document.getElementById('schedule-container'),
+            dailyList: document.getElementById('daily-classes-list')
+        };
 
         try {
             app = initializeApp(firebaseConfig);
@@ -405,7 +428,8 @@
             currentSchedule: null,
             currentCatalog: null,
             viewDate: new Date(),
-            calendarDate: new Date()
+            calendarDate: new Date(),
+            isRegisterMode: false
         };
 
         // --- AUTHENTICATION & ADMIN PERMISSION LOGIC ---
@@ -457,6 +481,24 @@
             } catch(e) { console.warn("Error carga inicial", e); }
         }
 
+        // TOGGLE LOGIN / REGISTER
+        document.getElementById('toggle-auth-mode').onclick = () => {
+            state.isRegisterMode = !state.isRegisterMode;
+            const btn = document.getElementById('auth-submit-btn');
+            const toggle = document.getElementById('toggle-auth-mode');
+            const subtitle = document.getElementById('auth-subtitle');
+            
+            if (state.isRegisterMode) {
+                btn.textContent = "Registrarme";
+                toggle.textContent = "Ya tengo cuenta, Iniciar Sesión";
+                subtitle.textContent = "Crea tu cuenta para acceder";
+            } else {
+                btn.textContent = "Ingresar";
+                toggle.textContent = "¿Primera vez? Activa tu cuenta aquí";
+                subtitle.textContent = "Ingresa tus credenciales institucionales";
+            }
+        };
+
         document.getElementById('auth-form').onsubmit = async (e) => {
             e.preventDefault();
             const email = document.getElementById('email').value.trim();
@@ -473,10 +515,17 @@
             }
 
             try {
-                await signInWithEmailAndPassword(auth, email, pass);
+                if (state.isRegisterMode) {
+                    await createUserWithEmailAndPassword(auth, email, pass);
+                } else {
+                    await signInWithEmailAndPassword(auth, email, pass);
+                }
             } catch (error) {
                 console.error(error);
-                errDiv.textContent = "Error: " + error.code;
+                let msg = "Error: " + error.code;
+                if (error.code === 'auth/invalid-credential') msg = "Credenciales incorrectas o usuario no registrado.";
+                if (error.code === 'auth/email-already-in-use') msg = "El correo ya está registrado.";
+                errDiv.textContent = msg;
                 errDiv.classList.remove('hidden');
             }
         };
@@ -514,14 +563,16 @@
 
         function renderCatalogs() {
             const grid = document.getElementById('catalog-grid-inner');
-            grid.innerHTML = Object.keys(state.catalogs).map(key => {
-                const count = state.catalogs[key].length;
-                return `
-                <div onclick="openCatalogManager('${key}')" class="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm hover:shadow-md transition cursor-pointer group">
-                    <div class="flex justify-between items-center mb-4"><h4 class="font-black text-slate-800 uppercase tracking-widest text-xs">${key}</h4><span class="bg-slate-100 text-slate-500 text-[10px] font-bold px-2 py-1 rounded-lg">${count}</span></div>
-                    <div class="text-xs text-slate-400">Clic para editar...</div>
-                </div>`;
-            }).join('');
+            if (grid) {
+                grid.innerHTML = Object.keys(state.catalogs).map(key => {
+                    const count = (state.catalogs[key] || []).length;
+                    return `
+                    <div onclick="openCatalogManager('${key}')" class="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm hover:shadow-md transition cursor-pointer group">
+                        <div class="flex justify-between items-center mb-4"><h4 class="font-black text-slate-800 uppercase tracking-widest text-xs">${key}</h4><span class="bg-slate-100 text-slate-500 text-[10px] font-bold px-2 py-1 rounded-lg">${count}</span></div>
+                        <div class="text-xs text-slate-400">Clic para editar...</div>
+                    </div>`;
+                }).join('');
+            }
         }
 
         window.openCatalogManager = (key) => { 
@@ -531,7 +582,7 @@
             const areaSelect = document.getElementById('catalog-area-select');
             if (key === 'materias') {
                 areaSelectDiv.classList.remove('hidden');
-                areaSelect.innerHTML = state.catalogs.areas.map(a => `<option value="${a}">${a}</option>`).join('');
+                areaSelect.innerHTML = (state.catalogs.areas || []).map(a => `<option value="${a}">${a}</option>`).join('');
             } else {
                 areaSelectDiv.classList.add('hidden');
             }
@@ -575,6 +626,7 @@
             });
         }
         
+        // Manual Load (Robust)
         window.manualLoadUsers = async () => {
             try {
                 const querySnapshot = await getDocs(getCollectionRef("users"));
