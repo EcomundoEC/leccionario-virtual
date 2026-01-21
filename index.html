@@ -22,6 +22,15 @@
         .schedule-cell:hover { background: #f8fafc; }
         .schedule-cell.filled { background: #eff6ff; color: #1e40af; font-weight: 700; border-color: #dbeafe; }
         .time-col { background: #f1f5f9; color: #64748b; font-weight: 800; font-size: 10px; width: 80px; text-align: center; }
+        
+        /* Estilos Calendario Dashboard (CORREGIDO) */
+        .mini-calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; justify-items: center; }
+        .mini-day { width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; font-size: 12px; border-radius: 99px; cursor: pointer; transition: all 0.2s; color: #64748b; }
+        .mini-day:hover:not(.empty) { background: #f1f5f9; color: #1e293b; font-weight: bold; }
+        .mini-day.selected { background: #2563eb; color: white; font-weight: bold; box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.3); }
+        .mini-day.today { border: 2px solid #2563eb; color: #2563eb; font-weight: bold; }
+        .mini-day.empty { cursor: default; }
+        .mini-header { font-size: 10px; font-weight: 900; text-transform: uppercase; color: #94a3b8; padding-bottom: 8px; text-align: center; }
     </style>
 </head>
 <body class="bg-slate-50 min-h-screen font-sans text-slate-900">
@@ -114,8 +123,8 @@
                                 <button onclick="changeCalendarMonth(1)" class="bg-slate-100 px-3 py-1 rounded-lg hover:bg-slate-200">Siguiente</button>
                             </div>
                         </div>
-                        <div class="mini-calendar-grid mb-2">
-                            <div class="mini-header">Dom</div><div class="mini-header">Lun</div><div class="mini-header">Mar</div><div class="mini-header">Mié</div><div class="mini-header">Jue</div><div class="mini-header">Vie</div><div class="mini-header">Sáb</div>
+                        <div class="mini-calendar-grid mb-4">
+                            <div class="mini-header">Do</div><div class="mini-header">Lu</div><div class="mini-header">Ma</div><div class="mini-header">Mi</div><div class="mini-header">Ju</div><div class="mini-header">Vi</div><div class="mini-header">Sa</div>
                         </div>
                         <div id="mini-calendar-days" class="mini-calendar-grid">
                             <!-- JS Generado -->
@@ -163,7 +172,7 @@
                 <div class="flex justify-between items-center">
                     <h3 class="font-bold text-slate-700">Listado de Personal</h3>
                     <div class="flex gap-2">
-                        <!-- NUEVO BOTÓN CARGAR -->
+                        <!-- BOTÓN CARGAR USUARIOS -->
                         <button onclick="manualLoadUsers()" class="bg-white border border-slate-200 text-slate-600 px-4 py-3 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-slate-50 transition-all shadow-sm flex items-center gap-2">
                             🔄 Cargar Usuarios
                         </button>
@@ -319,6 +328,21 @@
         const getCollectionRef = (name) => collection(db, 'artifacts', appId, 'public', 'data', name);
         const getDocRef = (col, id) => doc(db, 'artifacts', appId, 'public', 'data', col, id);
 
+        // Define DOM object at the top level of the module
+        const dom = {
+            loader: document.getElementById('loader'),
+            auth: document.getElementById('auth-container'),
+            dashboard: document.getElementById('user-logged-in'),
+            userTable: document.getElementById('users-table-body'),
+            userEmail: document.getElementById('user-email-display'),
+            userRole: document.getElementById('user-role-display'),
+            avatar: document.getElementById('avatar-circle'),
+            catalogGrid: document.getElementById('content-catalogs'),
+            catalogList: document.getElementById('catalog-list'),
+            scheduleContainer: document.getElementById('schedule-container'),
+            dailyList: document.getElementById('daily-classes-list')
+        };
+
         try {
             app = initializeApp(firebaseConfig);
             analytics = getAnalytics(app);
@@ -345,7 +369,7 @@
             calendarDate: new Date()
         };
 
-        // --- AUTHENTICATION ---
+        // --- AUTHENTICATION & ADMIN PERMISSION LOGIC ---
         onAuthStateChanged(auth, async (user) => {
             if (user) {
                 const userDoc = await getDoc(getDocRef("users", user.uid));
@@ -451,14 +475,16 @@
 
         function renderCatalogs() {
             const grid = document.getElementById('catalog-grid-inner');
-            grid.innerHTML = Object.keys(state.catalogs).map(key => {
-                const count = state.catalogs[key].length;
-                return `
-                <div onclick="openCatalogManager('${key}')" class="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm hover:shadow-md transition cursor-pointer group">
-                    <div class="flex justify-between items-center mb-4"><h4 class="font-black text-slate-800 uppercase tracking-widest text-xs">${key}</h4><span class="bg-slate-100 text-slate-500 text-[10px] font-bold px-2 py-1 rounded-lg">${count}</span></div>
-                    <div class="text-xs text-slate-400">Clic para editar...</div>
-                </div>`;
-            }).join('');
+            if (grid) {
+                grid.innerHTML = Object.keys(state.catalogs).map(key => {
+                    const count = (state.catalogs[key] || []).length;
+                    return `
+                    <div onclick="openCatalogManager('${key}')" class="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm hover:shadow-md transition cursor-pointer group">
+                        <div class="flex justify-between items-center mb-4"><h4 class="font-black text-slate-800 uppercase tracking-widest text-xs">${key}</h4><span class="bg-slate-100 text-slate-500 text-[10px] font-bold px-2 py-1 rounded-lg">${count}</span></div>
+                        <div class="text-xs text-slate-400">Clic para editar...</div>
+                    </div>`;
+                }).join('');
+            }
         }
 
         window.openCatalogManager = (key) => { 
@@ -468,7 +494,7 @@
             const areaSelect = document.getElementById('catalog-area-select');
             if (key === 'materias') {
                 areaSelectDiv.classList.remove('hidden');
-                areaSelect.innerHTML = state.catalogs.areas.map(a => `<option value="${a}">${a}</option>`).join('');
+                areaSelect.innerHTML = (state.catalogs.areas || []).map(a => `<option value="${a}">${a}</option>`).join('');
             } else {
                 areaSelectDiv.classList.add('hidden');
             }
@@ -477,7 +503,7 @@
         };
 
         function renderCatalogList() { 
-            const list = state.catalogs[state.currentCatalog];
+            const list = state.catalogs[state.currentCatalog] || [];
             document.getElementById('catalog-list').innerHTML = list.map((item, index) => {
                 const text = (typeof item === 'object') ? `${item.name} <span class="text-[9px] bg-blue-50 text-blue-600 px-1 rounded ml-1">${item.area}</span>` : item;
                 return `<div class="flex justify-between items-center bg-slate-50 p-3 rounded-xl border border-slate-100"><span class="text-sm font-bold text-slate-600">${text}</span><button onclick="removeCatalogItem(${index})" class="text-red-400 font-black text-xs">✕</button></div>`;
@@ -512,7 +538,7 @@
             });
         }
         
-        // Función de carga manual
+        // Define manualLoadUsers on window object so it can be called from HTML onclick
         window.manualLoadUsers = async () => {
             try {
                 const querySnapshot = await getDocs(getCollectionRef("users"));
