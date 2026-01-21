@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Leccionario Virtual - Gestión Total</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Librería para PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
         /* Estilos UI */
         .role-badge { padding: 0.25rem 0.5rem; border-radius: 0.5rem; font-size: 9px; font-weight: 900; text-transform: uppercase; background: #f1f5f9; color: #64748b; display: inline-block; margin-right: 4px; margin-bottom: 2px; }
@@ -23,8 +25,8 @@
         .schedule-cell.filled { background: #eff6ff; color: #1e40af; font-weight: 700; border-color: #dbeafe; }
         .time-col { background: #f1f5f9; color: #64748b; font-weight: 800; font-size: 10px; width: 80px; text-align: center; }
         
-        /* Estilos Calendario Dashboard (Ajustado) */
-        .mini-calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; justify-items: center; max-width: 350px; margin: 0 auto; }
+        /* Estilos Calendario Dashboard */
+        .mini-calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; justify-items: center; max-width: 350px; margin: 0 auto; }
         .mini-day { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; font-size: 12px; border-radius: 99px; cursor: pointer; transition: all 0.2s; color: #64748b; }
         .mini-day:hover:not(.empty) { background: #f1f5f9; color: #1e293b; font-weight: bold; }
         .mini-day.selected { background: #2563eb; color: white; font-weight: bold; box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.3); }
@@ -36,6 +38,7 @@
         .report-table th { background: #f8fafc; color: #64748b; font-size: 11px; text-transform: uppercase; font-weight: 800; padding: 12px; text-align: left; }
         .report-table td { border-bottom: 1px solid #f1f5f9; padding: 12px; font-size: 13px; color: #334155; }
         .status-missing { background: #fef2f2; color: #ef4444; padding: 4px 8px; border-radius: 6px; font-size: 10px; font-weight: 800; text-transform: uppercase; }
+        .status-done { background: #f0fdf4; color: #16a34a; padding: 4px 8px; border-radius: 6px; font-size: 10px; font-weight: 800; text-transform: uppercase; }
     </style>
 </head>
 <body class="bg-slate-50 min-h-screen font-sans text-slate-900">
@@ -97,7 +100,7 @@
                         <span id="user-role-display" class="text-[10px] text-slate-400 uppercase font-black tracking-widest"></span>
                     </div>
                     <!-- BOTÓN ADMIN HEADER -->
-                    <button id="btn-open-admin-header" class="ml-2 p-2 bg-slate-100 rounded-xl hover:bg-blue-100 text-slate-600 hover:text-blue-600 transition" title="Configuración Global">
+                    <button id="btn-open-admin-header" class="hidden ml-2 p-2 bg-slate-100 rounded-xl hover:bg-blue-100 text-slate-600 hover:text-blue-600 transition" title="Configuración Global">
                         <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 15a3 3 0 100-6 3 3 0 000 6z"/><path fill-rule="evenodd" d="M1.323 11.447C2.811 6.976 7.028 3.75 12.001 3.75c4.97 0 9.185 3.223 10.675 7.69.12.362.12.752 0 1.113-1.487 4.471-5.705 7.697-10.677 7.697-4.97 0-9.186-3.223-10.675-7.69a1.762 1.762 0 010-1.113zM17.25 12a5.25 5.25 0 11-10.5 0 5.25 5.25 0 0110.5 0z" clip-rule="evenodd"/></svg> ⚙️
                     </button>
                     <button id="logout-btn" class="ml-4 text-slate-400 hover:text-red-500 font-bold text-sm">Salir</button>
@@ -237,16 +240,24 @@
 
             <!-- TAB INFORMES -->
             <div id="content-reports" class="hidden space-y-6">
-                <div class="bg-white p-6 rounded-[2.5rem] shadow-sm border border-slate-100 flex flex-wrap gap-4 items-end">
-                    <div>
-                        <label class="block text-xs font-black text-slate-400 mb-2 uppercase">Fecha</label>
-                        <input type="date" id="report-date" class="p-3 bg-slate-50 rounded-xl text-sm border-none outline-none font-bold text-slate-700">
+                <div class="bg-white p-6 rounded-[2.5rem] shadow-sm border border-slate-100 flex flex-wrap gap-4 items-end justify-between">
+                    <div class="flex gap-4 items-end">
+                        <div>
+                            <label class="block text-xs font-black text-slate-400 mb-2 uppercase">Fecha</label>
+                            <input type="date" id="report-date" class="p-3 bg-slate-50 rounded-xl text-sm border-none outline-none font-bold text-slate-700">
+                        </div>
+                        <button onclick="generateReport()" class="bg-slate-900 text-white px-6 py-3 rounded-xl font-black text-xs uppercase hover:bg-black transition-all h-[44px]">Generar Informe de Pendientes</button>
                     </div>
-                    <button onclick="generateReport()" class="bg-slate-900 text-white px-6 py-3 rounded-xl font-black text-xs uppercase hover:bg-black transition-all h-[44px]">Generar Informe de Pendientes</button>
+                    <!-- BOTÓN PDF -->
+                    <button onclick="downloadReportPDF()" class="bg-red-600 text-white px-6 py-3 rounded-xl font-black text-xs uppercase hover:bg-red-700 transition-all h-[44px] shadow-lg shadow-red-100 flex items-center gap-2">
+                        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                        Descargar PDF
+                    </button>
                 </div>
-                <div class="bg-white rounded-[3rem] shadow-xl border border-slate-100 overflow-hidden">
+                <div class="bg-white rounded-[3rem] shadow-xl border border-slate-100 overflow-hidden" id="report-container">
                     <div class="p-8 border-b border-slate-100">
                         <h3 class="text-lg font-black text-slate-800">Clases Sin Información Registrada</h3>
+                        <p class="text-xs text-slate-400" id="report-subtitle"></p>
                     </div>
                     <div class="overflow-x-auto">
                         <table class="w-full text-left min-w-[800px] report-table">
@@ -270,6 +281,32 @@
     </div>
 
     <!-- MODALES -->
+    
+    <!-- MODAL CLASS LOG (LECCIONARIO) -->
+    <div id="modal-class-log" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[160] hidden items-center justify-center p-4">
+        <div class="bg-white w-full max-w-lg rounded-[2.5rem] p-10 modal-animate">
+            <div class="flex justify-between mb-6">
+                <div>
+                    <h3 class="text-2xl font-black text-slate-800">Registro de Leccionario</h3>
+                    <p id="log-class-info" class="text-xs font-bold text-blue-600 mt-1"></p>
+                </div>
+                <button onclick="closeModal('modal-class-log')" class="text-slate-400 hover:text-red-500 text-xl font-bold">✕</button>
+            </div>
+            <form id="log-form" class="space-y-4">
+                <input type="hidden" id="log-id">
+                <div>
+                    <label class="block text-xs font-black text-slate-400 mb-2 uppercase">Tema / Título</label>
+                    <input type="text" id="log-topic" required class="w-full p-4 rounded-xl bg-slate-50 border-none outline-none focus:ring-2 focus:ring-blue-500/20">
+                </div>
+                <div>
+                    <label class="block text-xs font-black text-slate-400 mb-2 uppercase">Actividades / Detalle</label>
+                    <textarea id="log-content" required class="w-full p-4 rounded-xl bg-slate-50 border-none outline-none focus:ring-2 focus:ring-blue-500/20 h-32 resize-none"></textarea>
+                </div>
+                <button type="submit" class="w-full bg-blue-600 text-white py-4 rounded-xl font-black uppercase tracking-widest hover:bg-blue-700 transition-all shadow-lg">Guardar Registro</button>
+            </form>
+        </div>
+    </div>
+
     <!-- MODAL USUARIO -->
     <div id="modal-user" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[110] hidden items-center justify-center p-4">
         <div class="bg-white w-full max-w-3xl rounded-[3rem] p-10 modal-animate max-h-[95vh] overflow-y-auto">
@@ -432,7 +469,7 @@
             isRegisterMode: false
         };
 
-        // --- AUTHENTICATION & ADMIN PERMISSION LOGIC ---
+        // --- AUTHENTICATION ---
         onAuthStateChanged(auth, async (user) => {
             if (user) {
                 const userDoc = await getDoc(getDocRef("users", user.uid));
@@ -466,7 +503,6 @@
             document.getElementById('user-role-display').textContent = userData.rol || "Usuario";
             document.getElementById('avatar-circle').textContent = userData.email[0].toUpperCase();
             
-            // --- MODO ABIERTO ---
             document.getElementById('btn-open-admin').classList.remove('hidden');
             document.getElementById('btn-open-admin-header').classList.remove('hidden');
 
@@ -626,7 +662,6 @@
             });
         }
         
-        // Manual Load (Robust)
         window.manualLoadUsers = async () => {
             try {
                 const querySnapshot = await getDocs(getCollectionRef("users"));
@@ -737,7 +772,6 @@
                 dom.dailyList.innerHTML = `<div class="p-8 text-center text-slate-400 animate-pulse">Buscando clases...</div>`;
                 
                 try {
-                    // Fetch all schedules
                     const schedulesSnap = await getDocs(getCollectionRef("schedules"));
                     const allSchedules = [];
                     schedulesSnap.forEach(d => allSchedules.push({ id: d.id, ...d.data() }));
@@ -755,7 +789,6 @@
                     allSchedules.forEach(sched => {
                         const [sec, cur, par] = sched.id.split('_');
                         
-                        // Check context match (Admin sees all)
                         const isAdmin = (teacher.rol || "").toLowerCase().includes("admin");
                         const matchesContext = isAdmin || (
                             (teacher.seccion === sec) &&
@@ -769,16 +802,22 @@
                                 const subject = sched.grid[cellKey];
                                 
                                 if (subject) {
-                                    // Check subject match
                                     const teacherMaterias = (teacher.materias || []).map(m => (typeof m === 'object') ? m.name : m);
                                     const subjectName = (typeof subject === 'object') ? subject.name : subject;
 
                                     if (isAdmin || teacherMaterias.includes(subjectName)) {
+                                        // Buscar si hay log
+                                        // (Simplificación: en un sistema real, haríamos fetch en lote o por ID)
+                                        const dateKey = state.viewDate.toISOString().split('T')[0];
+                                        const logId = `${dateKey}_${sched.id}_${slot.id}`;
+
                                         myClasses.push({
                                             time: `${slot.start} - ${slot.end}`,
                                             subject: subjectName,
                                             course: `${cur} "${par}"`,
-                                            section: sec
+                                            section: sec,
+                                            logId: logId,
+                                            sortTime: slot.start
                                         });
                                     }
                                 }
@@ -791,16 +830,27 @@
                     if (myClasses.length === 0) {
                         dom.dailyList.innerHTML = `<div class="p-8 text-center text-slate-400">No hay clases asignadas para hoy.</div>`;
                     } else {
-                         dom.dailyList.innerHTML = myClasses.map(cls => `
-                            <div class="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex justify-between items-center">
-                                <div>
-                                    <span class="text-xs font-black text-blue-500 bg-blue-50 px-2 py-1 rounded-md">${cls.time}</span>
-                                    <h4 class="font-bold text-slate-800 text-lg">${cls.subject}</h4>
-                                    <p class="text-xs text-slate-500">${cls.course} (${cls.section})</p>
+                         // Check logs
+                         const listContent = [];
+                         for(const cls of myClasses) {
+                             const logRef = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'class_logs', cls.logId));
+                             const logData = logRef.exists() ? logRef.data() : null;
+                             const hasLog = !!logData;
+                             const btnClass = hasLog ? "bg-green-100 text-green-600" : "bg-slate-100 text-slate-400";
+                             const icon = hasLog ? "✓" : "📝";
+                             
+                             listContent.push(`
+                                <div class="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex justify-between items-center">
+                                    <div>
+                                        <span class="text-xs font-black text-blue-500 bg-blue-50 px-2 py-1 rounded-md">${cls.time}</span>
+                                        <h4 class="font-bold text-slate-800 text-lg">${cls.subject}</h4>
+                                        <p class="text-xs text-slate-500">${cls.course} (${cls.section})</p>
+                                    </div>
+                                    <button onclick="openClassLog('${cls.logId}', '${cls.subject}', '${cls.time}', '${logData ? (logData.topic || '') : ''}', '${logData ? (logData.content || '') : ''}')" class="${btnClass} p-3 rounded-xl hover:bg-blue-600 hover:text-white transition font-bold">${icon}</button>
                                 </div>
-                                <button class="bg-slate-100 text-slate-400 p-2 rounded-xl hover:bg-blue-600 hover:text-white transition">📝</button>
-                            </div>
-                         `).join('');
+                             `);
+                         }
+                         dom.dailyList.innerHTML = listContent.join('');
                     }
                 } catch (e) {
                     console.error(e);
@@ -814,6 +864,35 @@
             state.calendarDate = new Date(state.viewDate);
             updateDashboardDate(); 
             renderMonthCalendar();
+        };
+        
+        // --- CLASS LOG LOGIC ---
+        window.openClassLog = (id, subject, time, topic, content) => {
+            document.getElementById('log-id').value = id;
+            document.getElementById('log-class-info').textContent = `${subject} (${time})`;
+            document.getElementById('log-topic').value = topic || '';
+            document.getElementById('log-content').value = content || '';
+            openModal('modal-class-log');
+        };
+
+        document.getElementById('log-form').onsubmit = async (e) => {
+            e.preventDefault();
+            const id = document.getElementById('log-id').value;
+            const topic = document.getElementById('log-topic').value;
+            const content = document.getElementById('log-content').value;
+            
+            if (state.currentUser.uid === "local_admin") { alert("Simulado."); closeModal('modal-class-log'); return; }
+
+            try {
+                await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'class_logs', id), {
+                    topic, content,
+                    timestamp: new Date(),
+                    user: state.currentUser.email
+                });
+                alert("Registro guardado.");
+                closeModal('modal-class-log');
+                updateDashboardDate(); // Refresh icons
+            } catch(e) { console.error(e); alert("Error al guardar."); }
         };
 
         // --- NEW FEATURES: COPY SCHEDULE & REPORTS ---
@@ -857,7 +936,7 @@
             }
         };
 
-        // 2. LOGIC FOR REPORTS
+        // 2. LOGIC FOR REPORTS & PDF
         window.generateReport = async () => {
              const dateInput = document.getElementById('report-date').value;
              if (!dateInput) { alert("Selecciona una fecha."); return; }
@@ -886,7 +965,7 @@
                 const allUsers = [];
                 usersSnap.forEach(d => allUsers.push(d.data()));
 
-                const missingEntries = [];
+                const entries = [];
 
                 for (const sched of allSchedules) {
                      const [sec, cur, par] = sched.id.split('_');
@@ -900,34 +979,37 @@
                                  // Check if log exists
                                  const logId = `${dateKey}_${sched.id}_${slot.id}`;
                                  const logSnap = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'class_logs', logId));
+                                 const isDone = logSnap.exists();
                                  
-                                 if (!logSnap.exists()) {
-                                     // Find teacher
-                                     const subjectName = (typeof subject === 'object') ? subject.name : subject;
-                                     const teacher = allUsers.find(u => 
-                                        u.seccion === sec && 
-                                        (u.cursos||[]).includes(cur) && 
-                                        (u.paralelos||[]).includes(par) &&
-                                        ((u.materias||[]).map(m => (typeof m === 'object') ? m.name : m).includes(subjectName))
-                                     );
-                                     
-                                     missingEntries.push({
-                                         date: dateInput,
-                                         course: `${cur} "${par}"`,
-                                         time: `${slot.start}`,
-                                         subject: subjectName,
-                                         teacher: teacher ? teacher.email : "Sin asignar"
-                                     });
-                                 }
+                                 // Find teacher
+                                 const subjectName = (typeof subject === 'object') ? subject.name : subject;
+                                 const teacher = allUsers.find(u => 
+                                    u.seccion === sec && 
+                                    (u.cursos||[]).includes(cur) && 
+                                    (u.paralelos||[]).includes(par) &&
+                                    ((u.materias||[]).map(m => (typeof m === 'object') ? m.name : m).includes(subjectName))
+                                 );
+                                 
+                                 entries.push({
+                                     date: dateInput,
+                                     course: `${cur} "${par}"`,
+                                     time: `${slot.start}`,
+                                     subject: subjectName,
+                                     teacher: teacher ? teacher.email : "Sin asignar",
+                                     status: isDone ? "done" : "missing"
+                                 });
                              }
                          }
                      }
                 }
                 
-                if (missingEntries.length === 0) {
-                    tbody.innerHTML = `<tr><td colspan="5" class="text-center p-8 text-green-500 font-bold">¡Todo completo! No hay pendientes.</td></tr>`;
+                // Sort by time/status
+                entries.sort((a,b) => (a.status === b.status) ? 0 : a.status === 'missing' ? -1 : 1);
+
+                if (entries.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="5" class="text-center p-8 text-slate-400">No hay clases programadas.</td></tr>`;
                 } else {
-                    tbody.innerHTML = missingEntries.map(e => `
+                    tbody.innerHTML = entries.map(e => `
                         <tr>
                             <td>${e.date}</td>
                             <td>${e.course}</td>
@@ -936,7 +1018,7 @@
                                 <span class="font-bold text-slate-700">${e.subject}</span><br>
                                 <span class="text-[10px] text-slate-400">${e.teacher}</span>
                             </td>
-                            <td><span class="status-missing">Pendiente</span></td>
+                            <td><span class="${e.status === 'missing' ? 'status-missing' : 'status-done'}">${e.status === 'missing' ? 'Pendiente' : 'Completo'}</span></td>
                         </tr>
                     `).join('');
                 }
@@ -945,6 +1027,18 @@
                  console.error(e);
                  tbody.innerHTML = `<tr><td colspan="5" class="text-center p-8 text-red-400">Error al generar reporte.</td></tr>`;
              }
+        };
+
+        window.downloadReportPDF = () => {
+             const element = document.getElementById('report-container');
+             const opt = {
+               margin: 10,
+               filename: 'reporte-leccionario.pdf',
+               image: { type: 'jpeg', quality: 0.98 },
+               html2canvas: { scale: 2 },
+               jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+             };
+             html2pdf().set(opt).from(element).save();
         };
 
         // --- HELPERS UI ---
@@ -972,7 +1066,10 @@
                     }).join('')}</td>
                     <td class="px-8 py-4 align-top">${(u.cursos||[]).map(c => `<span class="text-xs font-bold text-slate-700 block">${c}</span>`).join('')}</td>
                     <td class="px-8 py-4 align-top"><span class="role-badge role-${u.rol}">${u.rol}</span></td>
-                    <td class="px-8 py-4 align-top text-right"><button onclick="editUser('${u.id}')" class="text-blue-600 font-black text-[10px] uppercase">Editar</button></td>
+                    <td class="px-8 py-4 align-top text-right">
+                        <button onclick="editUser('${u.id}')" class="text-blue-600 font-black text-[10px] uppercase hover:underline">Editar</button>
+                        <button onclick="deleteUser('${u.id}')" class="text-red-400 font-black text-[10px] uppercase ml-4 hover:text-red-600">Eliminar</button>
+                    </td>
                 </tr>`).join('');
         }
         
