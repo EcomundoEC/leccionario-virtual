@@ -103,7 +103,7 @@
                         <span id="user-role-display" class="text-[10px] text-slate-400 uppercase font-black tracking-widest"></span>
                     </div>
                     <!-- BOTÓN ADMIN HEADER -->
-                    <button id="btn-open-admin-header" onclick="showAdminPanel()" class="ml-2 p-2 bg-slate-100 rounded-xl hover:bg-blue-100 text-slate-600 hover:text-blue-600 transition ring-2 ring-transparent hover:ring-blue-200" title="Configuración Global">
+                    <button id="btn-open-admin-header" onclick="showAdminPanel()" class="hidden ml-2 p-2 bg-slate-100 rounded-xl hover:bg-blue-100 text-slate-600 hover:text-blue-600 transition ring-2 ring-transparent hover:ring-blue-200" title="Configuración Global">
                         <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 15a3 3 0 100-6 3 3 0 000 6z"/><path fill-rule="evenodd" d="M1.323 11.447C2.811 6.976 7.028 3.75 12.001 3.75c4.97 0 9.185 3.223 10.675 7.69.12.362.12.752 0 1.113-1.487 4.471-5.705 7.697-10.677 7.697-4.97 0-9.186-3.223-10.675-7.69a1.762 1.762 0 010-1.113zM17.25 12a5.25 5.25 0 11-10.5 0 5.25 5.25 0 0110.5 0z" clip-rule="evenodd"/></svg> ⚙️
                     </button>
                     <button id="logout-btn" class="ml-4 text-slate-400 hover:text-red-500 font-bold text-sm">Salir</button>
@@ -153,7 +153,7 @@
 
                 <div class="lg:col-span-4 space-y-6">
                     <!-- BOTÓN ADMIN DASHBOARD -->
-                    <button id="btn-open-admin" onclick="showAdminPanel()" class="w-full bg-slate-900 text-white p-8 rounded-[3rem] text-left hover:scale-[1.02] transition-all relative overflow-hidden group cursor-pointer border-2 border-transparent hover:border-blue-500">
+                    <button id="btn-open-admin" onclick="showAdminPanel()" class="hidden w-full bg-slate-900 text-white p-8 rounded-[3rem] text-left hover:scale-[1.02] transition-all relative overflow-hidden group cursor-pointer border-2 border-transparent hover:border-blue-500">
                         <div class="relative z-10">
                             <div class="text-xs font-black text-white/40 uppercase mb-2">Administración</div>
                             <div class="text-xl font-bold">Configuración Global</div>
@@ -468,14 +468,15 @@
             document.getElementById('avatar-circle').textContent = (userData.nombre || userData.email)[0].toUpperCase();
             
             // --- SECURITY: HIDE ADMIN FOR TEACHERS ---
-            // "Inicialmente todos pueden ver" -> isAdmin = true by default.
-            let isAdmin = true; 
-            
-            // But if we want to respect the new field:
-            if (userData.isSuperAdmin === false) isAdmin = false;
-            
-            // Or if we want strict mode later:
-            // if (!userData.isSuperAdmin && !userData.rol.toLowerCase().includes('admin')) isAdmin = false;
+            let isAdmin = false;
+            // CHECK 1: isSuperAdmin explicit toggle
+            if (userData.isSuperAdmin === true) isAdmin = true;
+            // CHECK 2: Role string
+            else if (userData.rol && typeof userData.rol === 'string' && userData.rol.toLowerCase().includes('admin')) isAdmin = true;
+            // CHECK 3: Roles array
+            else if (userData.roles && Array.isArray(userData.roles) && userData.roles.some(r => r.toLowerCase().includes('admin'))) isAdmin = true;
+            // CHECK 4: Backdoor for testing
+            else if ((userData.email || "").includes("admin") || userData.email === "gasencio@ecomundo.edu.ec") isAdmin = true;
 
             const adminBtn = document.getElementById('btn-open-admin');
             const adminBtnHeader = document.getElementById('btn-open-admin-header');
@@ -495,7 +496,7 @@
             e.preventDefault(); const email = document.getElementById('email').value.trim(); const pass = document.getElementById('password').value;
             if (email === "admin" && pass === "admin") {
                 loginSuccess({ uid: "local_admin", email: "admin_local@test.com", rol: "Admin", materias: ["General"], areas: ["Dirección"], cursos: [], paralelos: [], seccion: "Matutina", isSuperAdmin: true });
-                state.catalogs = { areas: ["Ciencias Exactas"], materias: [{name: "Matemáticas", area: "Ciencias Exactas"}], cursos: [{name: "1ero Bach", section: "Matutina"}], paralelos: ["A"], secciones: ["Matutina"], roles: ["Admin", "Docente"] };
+                state.catalogs = { areas: ["Ciencias Exactas", "Lenguaje"], materias: [{name: "Matemáticas", area: "Ciencias Exactas"}], cursos: [{name: "1ero Bach", section: "Matutina"}], paralelos: ["A"], secciones: ["Matutina"], roles: ["Admin", "Docente"] };
                 renderCatalogs(); populateScheduleSelectors(); return;
             }
             try { if (state.isRegisterMode) await createUserWithEmailAndPassword(auth, email, pass); else await signInWithEmailAndPassword(auth, email, pass); } 
@@ -588,7 +589,7 @@
             const uidInput = document.getElementById('form-uid').value.trim();
             const name = document.getElementById('form-name').value.trim();
             const signatureFile = document.getElementById('form-signature').files[0];
-            const isSuperAdmin = document.getElementById('form-is-super-admin').checked; // NUEVO
+            const isSuperAdmin = document.getElementById('form-is-super-admin').checked; 
             
             let signatureBase64 = "";
             if(signatureFile) try { signatureBase64 = await toBase64(signatureFile); } catch(err) {}
@@ -772,6 +773,14 @@
         window.saveCatalog = async () => { if (state.currentUser.uid !== "local_admin") await setDoc(getDocRef("config", "catalogs"), state.catalogs); };
         window.removeCatalogItem = async (idx) => { state.catalogs[state.currentCatalog].splice(idx, 1); renderCatalogList(); await saveCatalog(); renderCatalogs(); populateScheduleSelectors(); populateReportFilters(); };
         // ... (renderCatalogList, addCatalogItem, etc.)
+
+        // Make functions globally accessible
+        window.showAdminPanel = function() {
+            document.getElementById('main-dashboard-view').classList.add('hidden');
+            document.getElementById('admin-view').classList.remove('hidden');
+            switchTab('users');
+            renderUserTable();
+        };
 
     </script>
 </body>
