@@ -35,8 +35,8 @@
         .mini-header { font-size: 10px; font-weight: 900; text-transform: uppercase; color: #94a3b8; padding-bottom: 8px; text-align: center; }
         
         /* Estilos Tabla Reportes */
-        .report-table th { background: #f8fafc; color: #64748b; font-size: 11px; text-transform: uppercase; font-weight: 800; padding: 8px; text-align: left; border-bottom: 2px solid #e2e8f0; }
-        .report-table td { border-bottom: 1px solid #f1f5f9; padding: 8px; font-size: 11px; color: #334155; vertical-align: middle; }
+        .report-table th { background: #f8fafc; color: #64748b; font-size: 11px; text-transform: uppercase; font-weight: 800; padding: 12px; text-align: left; border-bottom: 2px solid #e2e8f0; }
+        .report-table td { border-bottom: 1px solid #f1f5f9; padding: 10px 12px; font-size: 12px; color: #334155; }
         .status-missing { background: #fef2f2; color: #ef4444; padding: 4px 8px; border-radius: 6px; font-size: 10px; font-weight: 800; text-transform: uppercase; display: inline-block; }
         .status-done { background: #f0fdf4; color: #16a34a; padding: 4px 8px; border-radius: 6px; font-size: 10px; font-weight: 800; text-transform: uppercase; display: inline-block; }
         
@@ -57,22 +57,32 @@
     <!-- VISTA DE LOGIN -->
     <div id="auth-container" class="min-h-screen flex items-center justify-center p-4">
         <div class="bg-white p-10 rounded-[2.5rem] shadow-2xl border border-slate-200 w-full max-w-md text-center">
+            <!-- LOGO INSTITUCIONAL -->
             <div class="mx-auto mb-8 w-40 h-40 flex items-center justify-center">
                 <img src="logo.png" alt="Logo Institucional" class="object-contain max-w-full max-h-full drop-shadow-md" onerror="this.src='https://placehold.co/150x150?text=LOGO'; this.onerror=null;">
             </div>
+            
             <h1 class="text-3xl font-black mb-2 text-slate-800">Leccionario Virtual</h1>
             <p id="auth-subtitle" class="text-slate-400 text-sm mb-4">Ingresa tus credenciales institucionales</p>
+            
             <div id="firebase-status" class="mb-6 py-2 px-4 rounded-xl bg-slate-50 border border-slate-200 text-xs font-mono text-slate-400 flex items-center justify-center gap-2">
-                <span class="w-2 h-2 rounded-full bg-slate-300"></span> Iniciando conexión...
+                <span class="w-2 h-2 rounded-full bg-slate-300"></span>
+                Iniciando conexión...
             </div>
+
             <form id="auth-form" class="space-y-5 text-left">
                 <input type="text" id="email" required placeholder="Correo o Usuario" class="w-full px-5 py-4 rounded-2xl border border-slate-200 outline-none focus:ring-4 focus:ring-blue-50 bg-slate-50">
                 <input type="password" id="password" required placeholder="Contraseña" class="w-full px-5 py-4 rounded-2xl border border-slate-200 outline-none focus:ring-4 focus:ring-blue-50 bg-slate-50">
                 <button id="auth-submit-btn" type="submit" class="w-full bg-blue-600 text-white py-4 rounded-2xl font-black uppercase tracking-widest hover:bg-blue-700 transition-all">Ingresar</button>
             </form>
+            
             <div id="login-error" class="bg-red-50 text-red-500 text-xs p-3 rounded-xl mt-4 font-bold hidden border border-red-100 text-left"></div>
+            
+             <!-- TOGGLE LOGIN/REGISTER -->
              <div class="mt-6 pt-6 border-t border-slate-100">
-                <button id="toggle-auth-mode" class="text-xs text-blue-500 font-bold uppercase tracking-wide hover:underline">¿Primera vez? Activa tu cuenta aquí</button>
+                <button id="toggle-auth-mode" class="text-xs text-blue-500 font-bold uppercase tracking-wide hover:underline">
+                    ¿Primera vez? Activa tu cuenta aquí
+                </button>
                 <p class="text-[9px] text-slate-300 mt-2 font-bold uppercase tracking-widest">Modo Prueba: admin / admin</p>
             </div>
         </div>
@@ -92,18 +102,24 @@
                         <span id="user-email-display" class="text-slate-800 text-sm font-bold block"></span>
                         <span id="user-role-display" class="text-[10px] text-slate-400 uppercase font-black tracking-widest"></span>
                     </div>
-                    <button id="btn-open-admin-header" class="hidden ml-2 p-2 bg-slate-100 rounded-xl hover:bg-blue-100 text-slate-600 hover:text-blue-600 transition" title="Configuración Global">⚙️</button>
+                    <!-- BOTÓN ADMIN HEADER -->
+                    <button id="btn-open-admin-header" class="hidden ml-2 p-2 bg-slate-100 rounded-xl hover:bg-blue-100 text-slate-600 hover:text-blue-600 transition" title="Configuración Global">
+                        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 15a3 3 0 100-6 3 3 0 000 6z"/><path fill-rule="evenodd" d="M1.323 11.447C2.811 6.976 7.028 3.75 12.001 3.75c4.97 0 9.185 3.223 10.675 7.69.12.362.12.752 0 1.113-1.487 4.471-5.705 7.697-10.677 7.697-4.97 0-9.186-3.223-10.675-7.69a1.762 1.762 0 010-1.113zM17.25 12a5.25 5.25 0 11-10.5 0 5.25 5.25 0 0110.5 0z" clip-rule="evenodd"/></svg> ⚙️
+                    </button>
                     <button id="logout-btn" class="ml-4 text-slate-400 hover:text-red-500 font-bold text-sm">Salir</button>
                 </div>
             </header>
 
             <div class="grid grid-cols-1 lg:grid-cols-12 gap-10">
                 <div class="lg:col-span-8 space-y-8">
+                    <!-- Clases del Día -->
                     <div class="bg-white p-10 rounded-[3rem] shadow-sm border border-slate-200">
                         <div class="flex items-center justify-between mb-8">
                             <div>
                                 <h2 class="text-2xl font-black text-slate-800">Clases del Día</h2>
-                                <p class="text-slate-400 text-xs font-bold uppercase tracking-widest mt-1"><span id="day-of-week-label"></span> • <span id="day-current-display"></span></p>
+                                <p class="text-slate-400 text-xs font-bold uppercase tracking-widest mt-1">
+                                    <span id="day-of-week-label"></span> • <span id="day-current-display"></span>
+                                </p>
                             </div>
                             <div class="flex gap-2">
                                 <button onclick="changeDay(-1)" class="w-10 h-10 rounded-xl bg-slate-100 hover:bg-slate-200 flex items-center justify-center font-bold text-slate-600"><</button>
@@ -111,28 +127,40 @@
                                 <button onclick="changeDay(1)" class="w-10 h-10 rounded-xl bg-slate-100 hover:bg-slate-200 flex items-center justify-center font-bold text-slate-600">></button>
                             </div>
                         </div>
-                        <div id="daily-classes-list" class="space-y-6"></div>
+                        <div id="daily-classes-list" class="space-y-6">
+                            <!-- Inyectado por JS -->
+                        </div>
                     </div>
+
+                    <!-- Calendario Mensual -->
                     <div class="bg-white p-8 rounded-[3rem] shadow-sm border border-slate-200">
                         <div class="flex justify-between items-center mb-6">
                             <h3 class="font-black text-lg text-slate-800" id="calendar-month-year">Calendario</h3>
                             <div class="flex gap-2 text-xs">
                                 <button onclick="changeCalendarMonth(-1)" class="bg-slate-100 px-3 py-1 rounded-lg hover:bg-slate-200">Anterior</button>
+                                <button onclick="goToToday()" class="bg-blue-100 px-3 py-1 rounded-lg hover:bg-blue-200 text-blue-700 font-bold">Hoy</button>
                                 <button onclick="changeCalendarMonth(1)" class="bg-slate-100 px-3 py-1 rounded-lg hover:bg-slate-200">Siguiente</button>
                             </div>
                         </div>
                         <div class="mini-calendar-grid mb-4">
                             <div class="mini-header">Do</div><div class="mini-header">Lu</div><div class="mini-header">Ma</div><div class="mini-header">Mi</div><div class="mini-header">Ju</div><div class="mini-header">Vi</div><div class="mini-header">Sa</div>
                         </div>
-                        <div id="mini-calendar-days" class="mini-calendar-grid"></div>
+                        <div id="mini-calendar-days" class="mini-calendar-grid">
+                            <!-- JS Generado -->
+                        </div>
                     </div>
                 </div>
+
                 <div class="lg:col-span-4 space-y-6">
+                    <!-- BOTÓN ADMIN DASHBOARD -->
                     <button id="btn-open-admin" class="w-full bg-slate-900 text-white p-8 rounded-[3rem] text-left hover:scale-[1.02] transition-all relative overflow-hidden group">
                         <div class="relative z-10">
                             <div class="text-xs font-black text-white/40 uppercase mb-2">Administración</div>
                             <div class="text-xl font-bold">Configuración Global</div>
                             <p class="text-white/60 text-xs mt-2">Usuarios, Materias, Horarios...</p>
+                        </div>
+                        <div class="absolute right-[-20px] bottom-[-20px] opacity-10 group-hover:scale-110 transition-transform">
+                            <svg width="120" height="120" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17h-2v-2h2v2zm2.07-7.75l-.9.92C13.45 12.9 13 13.5 13 15h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H8c0-2.21 1.79-4 4-4s4 1.79 4 4c0 .88-.36 1.68-.93 2.25z"/></svg>
                         </div>
                     </button>
                     <div class="bg-blue-600 text-white p-8 rounded-[3rem] shadow-xl shadow-blue-200/50 relative overflow-hidden">
@@ -165,7 +193,10 @@
                 <div class="flex justify-between items-center">
                     <h3 class="font-bold text-slate-700">Listado de Personal</h3>
                     <div class="flex gap-2">
-                        <button onclick="manualLoadUsers()" class="bg-white border border-slate-200 text-slate-600 px-4 py-3 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-slate-50 transition-all shadow-sm flex items-center gap-2">🔄 Cargar Usuarios</button>
+                        <!-- BOTÓN CARGAR USUARIOS -->
+                        <button onclick="manualLoadUsers()" class="bg-white border border-slate-200 text-slate-600 px-4 py-3 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-slate-50 transition-all shadow-sm flex items-center gap-2">
+                            🔄 Cargar Usuarios
+                        </button>
                         <button id="btn-add-user" class="bg-blue-600 text-white px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-blue-700 shadow-lg shadow-blue-200 flex items-center gap-2"><span>+</span> Nuevo Usuario</button>
                     </div>
                 </div>
@@ -181,9 +212,14 @@
                         <div class="p-2 bg-blue-50 text-blue-600 rounded-lg">
                             <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/></svg>
                         </div>
-                        <div><h3 class="font-black text-slate-800 text-lg">Catálogos del Sistema</h3><p class="text-xs text-slate-400 font-bold uppercase tracking-widest">Listas Desplegables</p></div>
+                        <div>
+                            <h3 class="font-black text-slate-800 text-lg">Catálogos del Sistema</h3>
+                            <p class="text-xs text-slate-400 font-bold uppercase tracking-widest">Listas Desplegables</p>
+                        </div>
                     </div>
-                    <button onclick="manualSaveCatalogs()" class="bg-slate-900 text-white px-6 py-3 rounded-xl font-black text-xs uppercase tracking-widest hover:bg-black transition-all shadow-lg shadow-slate-200 flex items-center gap-2">Guardar Todo</button>
+                    <button onclick="manualSaveCatalogs()" class="bg-slate-900 text-white px-6 py-3 rounded-xl font-black text-xs uppercase tracking-widest hover:bg-black transition-all shadow-lg shadow-slate-200 flex items-center gap-2">
+                        Guardar Todo
+                    </button>
                 </div>
                 <div id="catalog-grid-inner" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
             </div>
@@ -239,7 +275,7 @@
                         </div>
                     </div>
                     <table class="w-full text-left border-collapse report-table">
-                        <thead><tr><th class="w-20">Hora</th><th class="w-40">Materia</th><th>Tema</th><th>Observación</th><th class="w-24 text-center">Firma</th></tr></thead>
+                        <thead><tr><th class="w-20">Hora</th><th class="w-40">Materia</th><th>Nombre Profesor</th><th>Observación / Tema</th><th class="w-24 text-center">Firma</th></tr></thead>
                         <tbody id="leccionario-body"><tr><td colspan="5" class="text-center p-10 text-slate-300 italic">No hay datos para mostrar.</td></tr></tbody>
                     </table>
                     <div class="mt-12 pt-8 border-t border-slate-200 flex justify-between text-xs text-slate-400 font-bold uppercase">
@@ -251,6 +287,7 @@
 
             <!-- TAB INFORMES -->
             <div id="content-reports" class="hidden space-y-6">
+                <!-- PANEL DE CONFIGURACIÓN DEL REPORTE -->
                 <div class="bg-white p-6 rounded-[2.5rem] shadow-sm border border-slate-100 flex flex-col gap-6">
                     <div class="flex flex-wrap gap-4 items-end justify-between">
                         <div class="flex flex-wrap gap-4 items-end">
@@ -265,6 +302,11 @@
                             <button onclick="downloadReportPDF()" class="bg-red-600 text-white px-6 py-3 rounded-xl font-black text-xs uppercase hover:bg-red-700 transition-all h-[44px] shadow-lg shadow-red-100 flex items-center gap-2">PDF</button>
                         </div>
                     </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 border-t border-slate-50 pt-4">
+                        <div><label class="block text-xs font-black text-slate-400 mb-2 uppercase">Título del Reporte</label><input type="text" id="report-title-input" value="Reporte de Clases Pendientes" class="w-full p-3 bg-slate-50 rounded-xl text-sm border-none outline-none font-bold text-slate-700"></div>
+                        <div><label class="block text-xs font-black text-slate-400 mb-2 uppercase">Notas al pie</label><input type="text" id="report-notes-input" placeholder="Ej: Revisado por Inspectoría..." class="w-full p-3 bg-slate-50 rounded-xl text-sm border-none outline-none font-bold text-slate-700"></div>
+                    </div>
                 </div>
                 <div class="bg-white rounded-[3rem] shadow-xl border border-slate-100 overflow-hidden p-8" id="report-container">
                     <div class="mb-6 border-b border-slate-100 pb-4">
@@ -272,6 +314,7 @@
                         <p class="text-sm text-slate-500 text-center mt-1" id="report-subtitle">Selecciona una fecha</p>
                     </div>
                     <div class="overflow-x-auto"><table class="w-full text-left min-w-[600px] report-table"><thead><tr><th>Fecha</th><th>Curso / Paralelo</th><th>Hora</th><th>Materia / Docente</th><th>Estado</th></tr></thead><tbody id="report-table-body"><tr><td colspan="5" class="text-center p-8 text-slate-400 italic">...</td></tr></tbody></table></div>
+                    <div class="mt-8 pt-4 border-t border-slate-100 text-xs text-slate-400 text-center italic" id="report-display-notes"></div>
                 </div>
             </div>
         </div>
@@ -330,7 +373,7 @@
         </div>
     </div>
 
-    <!-- MODAL TIME SLOTS, ASSIGN, COPY (Sin cambios mayores, solo estructura) -->
+    <!-- MODAL TIME SLOTS -->
     <div id="modal-time-slots" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[130] hidden items-center justify-center p-4">
         <div class="bg-white w-full max-w-lg rounded-[2.5rem] p-8 modal-animate"><div class="flex justify-between items-center mb-6"><h3 class="text-2xl font-black text-slate-800">Franjas Horarias</h3><button onclick="closeModal('modal-time-slots')" class="text-slate-400 hover:text-red-500 font-bold">✕</button></div><div class="flex gap-2 mb-4 bg-slate-50 p-4 rounded-2xl"><input type="time" id="ts-start" class="p-2 rounded-lg border border-slate-200 text-sm"><span class="self-center text-slate-400">-</span><input type="time" id="ts-end" class="p-2 rounded-lg border border-slate-200 text-sm"><button onclick="addTimeSlot()" class="flex-1 bg-slate-800 text-white rounded-lg font-bold text-xs uppercase">Agregar</button></div><div id="slots-list" class="space-y-2 max-h-64 overflow-y-auto"></div></div>
     </div>
@@ -365,6 +408,21 @@
         const getCollectionRef = (name) => collection(db, 'artifacts', appId, 'public', 'data', name);
         const getDocRef = (col, id) => doc(db, 'artifacts', appId, 'public', 'data', col, id);
 
+        // Define DOM object globally
+        const dom = {
+            loader: document.getElementById('loader'),
+            auth: document.getElementById('auth-container'),
+            dashboard: document.getElementById('user-logged-in'),
+            userTable: document.getElementById('users-table-body'),
+            userEmail: document.getElementById('user-email-display'),
+            userRole: document.getElementById('user-role-display'),
+            avatar: document.getElementById('avatar-circle'),
+            catalogGrid: document.getElementById('content-catalogs'),
+            catalogList: document.getElementById('catalog-list'),
+            scheduleContainer: document.getElementById('schedule-container'),
+            dailyList: document.getElementById('daily-classes-list')
+        };
+
         try { app = initializeApp(firebaseConfig); analytics = getAnalytics(app); auth = getAuth(app); db = getFirestore(app); 
              const statusEl = document.getElementById('firebase-status'); if(statusEl) { statusEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-green-500"></span> Conexión Firebase OK`; statusEl.className = "mb-6 py-2 px-4 rounded-xl bg-green-50 border border-green-200 text-xs font-bold text-green-700 flex items-center justify-center gap-2"; }
         } catch(e) { console.error("Error iniciando Firebase", e); }
@@ -396,6 +454,7 @@
             document.getElementById('user-role-display').textContent = userData.rol || "Usuario";
             document.getElementById('avatar-circle').textContent = (userData.nombre || userData.email)[0].toUpperCase();
             
+            // --- SECURITY ---
             let isAdmin = false;
             if (userData.rol && typeof userData.rol === 'string' && userData.rol.toLowerCase().includes('admin')) isAdmin = true;
             if (userData.roles && Array.isArray(userData.roles) && userData.roles.some(r => r.toLowerCase().includes('admin'))) isAdmin = true;
@@ -651,7 +710,7 @@
                     }
                 }
                 entries.sort((a,b) => a.start.localeCompare(b.start));
-                tbody.innerHTML = entries.map(e => `<tr><td class="border p-2 text-xs font-bold">${e.time}</td><td class="border p-2 text-xs">${e.subject}</td><td class="border p-2 text-xs text-slate-600">${e.topic}</td><td class="border p-2 text-xs">${e.obs}</td><td class="border p-2 text-center align-middle">${e.signature}</td></tr>`).join('');
+                tbody.innerHTML = entries.map(e => `<tr><td class="border p-2 text-xs font-bold">${e.time}</td><td class="border p-2 text-xs">${e.subject}</td><td class="border p-2 text-xs font-bold text-slate-700">${e.teacher}</td><td class="border p-2 text-xs"><span class="block font-bold">${e.topic}</span>${e.obs}</td><td class="border p-2 text-center align-middle">${e.signature}</td></tr>`).join('');
             } catch (e) { console.error(e); }
         };
 
