@@ -35,10 +35,10 @@
         .mini-header { font-size: 10px; font-weight: 900; text-transform: uppercase; color: #94a3b8; padding-bottom: 8px; text-align: center; }
         
         /* Estilos Tabla Reportes */
-        .report-table th { background: #f8fafc; color: #64748b; font-size: 11px; text-transform: uppercase; font-weight: 800; padding: 12px; text-align: left; }
-        .report-table td { border-bottom: 1px solid #f1f5f9; padding: 12px; font-size: 13px; color: #334155; }
-        .status-missing { background: #fef2f2; color: #ef4444; padding: 4px 8px; border-radius: 6px; font-size: 10px; font-weight: 800; text-transform: uppercase; }
-        .status-done { background: #f0fdf4; color: #16a34a; padding: 4px 8px; border-radius: 6px; font-size: 10px; font-weight: 800; text-transform: uppercase; }
+        .report-table th { background: #f8fafc; color: #64748b; font-size: 11px; text-transform: uppercase; font-weight: 800; padding: 12px; text-align: left; border-bottom: 2px solid #e2e8f0; }
+        .report-table td { border-bottom: 1px solid #f1f5f9; padding: 10px 12px; font-size: 12px; color: #334155; }
+        .status-missing { background: #fef2f2; color: #ef4444; padding: 4px 8px; border-radius: 6px; font-size: 10px; font-weight: 800; text-transform: uppercase; display: inline-block; }
+        .status-done { background: #f0fdf4; color: #16a34a; padding: 4px 8px; border-radius: 6px; font-size: 10px; font-weight: 800; text-transform: uppercase; display: inline-block; }
     </style>
 </head>
 <body class="bg-slate-50 min-h-screen font-sans text-slate-900">
@@ -99,7 +99,7 @@
                         <span id="user-email-display" class="text-slate-800 text-sm font-bold block"></span>
                         <span id="user-role-display" class="text-[10px] text-slate-400 uppercase font-black tracking-widest"></span>
                     </div>
-                    <!-- BOTÓN ADMIN HEADER -->
+                    <!-- BOTÓN ADMIN HEADER (SOLO ADMINS) -->
                     <button id="btn-open-admin-header" class="hidden ml-2 p-2 bg-slate-100 rounded-xl hover:bg-blue-100 text-slate-600 hover:text-blue-600 transition" title="Configuración Global">
                         <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 15a3 3 0 100-6 3 3 0 000 6z"/><path fill-rule="evenodd" d="M1.323 11.447C2.811 6.976 7.028 3.75 12.001 3.75c4.97 0 9.185 3.223 10.675 7.69.12.362.12.752 0 1.113-1.487 4.471-5.705 7.697-10.677 7.697-4.97 0-9.186-3.223-10.675-7.69a1.762 1.762 0 010-1.113zM17.25 12a5.25 5.25 0 11-10.5 0 5.25 5.25 0 0110.5 0z" clip-rule="evenodd"/></svg> ⚙️
                     </button>
@@ -149,8 +149,8 @@
                 </div>
 
                 <div class="lg:col-span-4 space-y-6">
-                    <!-- BOTÓN ADMIN DASHBOARD -->
-                    <button id="btn-open-admin" class="w-full bg-slate-900 text-white p-8 rounded-[3rem] text-left hover:scale-[1.02] transition-all relative overflow-hidden group">
+                    <!-- BOTÓN ADMIN DASHBOARD (SOLO ADMINS) -->
+                    <button id="btn-open-admin" class="hidden w-full bg-slate-900 text-white p-8 rounded-[3rem] text-left hover:scale-[1.02] transition-all relative overflow-hidden group">
                         <div class="relative z-10">
                             <div class="text-xs font-black text-white/40 uppercase mb-2">Administración</div>
                             <div class="text-xl font-bold">Configuración Global</div>
@@ -240,41 +240,90 @@
 
             <!-- TAB INFORMES -->
             <div id="content-reports" class="hidden space-y-6">
-                <div class="bg-white p-6 rounded-[2.5rem] shadow-sm border border-slate-100 flex flex-wrap gap-4 items-end justify-between">
-                    <div class="flex gap-4 items-end">
-                        <div>
-                            <label class="block text-xs font-black text-slate-400 mb-2 uppercase">Fecha</label>
-                            <input type="date" id="report-date" class="p-3 bg-slate-50 rounded-xl text-sm border-none outline-none font-bold text-slate-700">
+                <!-- PANEL DE CONFIGURACIÓN DEL REPORTE -->
+                <div class="bg-white p-6 rounded-[2.5rem] shadow-sm border border-slate-100 flex flex-col gap-6">
+                    <div class="flex flex-wrap gap-4 items-end justify-between">
+                        <div class="flex flex-wrap gap-4 items-end">
+                            <div>
+                                <label class="block text-xs font-black text-slate-400 mb-2 uppercase">Fecha</label>
+                                <input type="date" id="report-date" class="p-3 bg-slate-50 rounded-xl text-sm border-none outline-none font-bold text-slate-700">
+                            </div>
+                            
+                            <!-- NUEVOS FILTROS -->
+                            <div>
+                                <label class="block text-xs font-black text-slate-400 mb-2 uppercase">Filtrar Docente</label>
+                                <select id="report-filter-teacher" class="p-3 bg-slate-50 rounded-xl text-sm border-none outline-none font-bold text-slate-700 min-w-[150px]">
+                                    <option value="all">Todos</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-black text-slate-400 mb-2 uppercase">Filtrar Curso</label>
+                                <select id="report-filter-course" class="p-3 bg-slate-50 rounded-xl text-sm border-none outline-none font-bold text-slate-700 min-w-[150px]">
+                                    <option value="all">Todos</option>
+                                </select>
+                            </div>
+                             <div>
+                                <label class="block text-xs font-black text-slate-400 mb-2 uppercase">Filtrar Materia</label>
+                                <select id="report-filter-subject" class="p-3 bg-slate-50 rounded-xl text-sm border-none outline-none font-bold text-slate-700 min-w-[150px]">
+                                    <option value="all">Todas</option>
+                                </select>
+                            </div>
+
+                            <button onclick="generateReport()" class="bg-slate-900 text-white px-6 py-3 rounded-xl font-black text-xs uppercase hover:bg-black transition-all h-[44px]">Generar</button>
                         </div>
-                        <button onclick="generateReport()" class="bg-slate-900 text-white px-6 py-3 rounded-xl font-black text-xs uppercase hover:bg-black transition-all h-[44px]">Generar Informe de Pendientes</button>
+                        
+                        <div class="flex gap-2 items-end">
+                             <div>
+                                <label class="block text-xs font-black text-slate-400 mb-2 uppercase">Orientación</label>
+                                <select id="report-orientation" class="p-3 bg-slate-50 rounded-xl text-sm border-none outline-none font-bold text-slate-700">
+                                    <option value="portrait">Vertical</option>
+                                    <option value="landscape">Horizontal</option>
+                                </select>
+                            </div>
+                            <button onclick="downloadReportPDF()" class="bg-red-600 text-white px-6 py-3 rounded-xl font-black text-xs uppercase hover:bg-red-700 transition-all h-[44px] shadow-lg shadow-red-100 flex items-center gap-2">
+                                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                                PDF
+                            </button>
+                        </div>
                     </div>
-                    <!-- BOTÓN PDF -->
-                    <button onclick="downloadReportPDF()" class="bg-red-600 text-white px-6 py-3 rounded-xl font-black text-xs uppercase hover:bg-red-700 transition-all h-[44px] shadow-lg shadow-red-100 flex items-center gap-2">
-                        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
-                        Descargar PDF
-                    </button>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 border-t border-slate-50 pt-4">
+                        <div>
+                             <label class="block text-xs font-black text-slate-400 mb-2 uppercase">Título del Reporte</label>
+                             <input type="text" id="report-title-input" value="Reporte de Clases Pendientes" class="w-full p-3 bg-slate-50 rounded-xl text-sm border-none outline-none font-bold text-slate-700">
+                        </div>
+                        <div>
+                             <label class="block text-xs font-black text-slate-400 mb-2 uppercase">Notas al pie</label>
+                             <input type="text" id="report-notes-input" placeholder="Ej: Revisado por Inspectoría..." class="w-full p-3 bg-slate-50 rounded-xl text-sm border-none outline-none font-bold text-slate-700">
+                        </div>
+                    </div>
                 </div>
-                <div class="bg-white rounded-[3rem] shadow-xl border border-slate-100 overflow-hidden" id="report-container">
-                    <div class="p-8 border-b border-slate-100">
-                        <h3 class="text-lg font-black text-slate-800">Clases Sin Información Registrada</h3>
-                        <p class="text-xs text-slate-400" id="report-subtitle"></p>
+
+                <!-- CONTENEDOR DEL REPORTE (LO QUE SE IMPRIME) -->
+                <div class="bg-white rounded-[3rem] shadow-xl border border-slate-100 overflow-hidden p-8" id="report-container">
+                    <div class="mb-6 border-b border-slate-100 pb-4">
+                        <h2 class="text-2xl font-black text-slate-800 text-center" id="report-display-title">Reporte de Clases Pendientes</h2>
+                        <p class="text-sm text-slate-500 text-center mt-1" id="report-subtitle">Selecciona una fecha</p>
                     </div>
+                    
                     <div class="overflow-x-auto">
-                        <table class="w-full text-left min-w-[800px] report-table">
+                        <table class="w-full text-left min-w-[600px] report-table">
                             <thead>
                                 <tr>
                                     <th>Fecha</th>
                                     <th>Curso / Paralelo</th>
                                     <th>Hora</th>
-                                    <th>Materia / Docente (Probable)</th>
+                                    <th>Materia / Docente</th>
                                     <th>Estado</th>
                                 </tr>
                             </thead>
                             <tbody id="report-table-body">
-                                <tr><td colspan="5" class="text-center p-8 text-slate-400 italic">Selecciona una fecha para ver el reporte.</td></tr>
+                                <tr><td colspan="5" class="text-center p-8 text-slate-400 italic">...</td></tr>
                             </tbody>
                         </table>
                     </div>
+
+                    <div class="mt-8 pt-4 border-t border-slate-100 text-xs text-slate-400 text-center italic" id="report-display-notes"></div>
                 </div>
             </div>
         </div>
@@ -469,7 +518,7 @@
             isRegisterMode: false
         };
 
-        // --- AUTHENTICATION ---
+        // --- AUTHENTICATION & ADMIN PERMISSION LOGIC ---
         onAuthStateChanged(auth, async (user) => {
             if (user) {
                 const userDoc = await getDoc(getDocRef("users", user.uid));
@@ -503,17 +552,32 @@
             document.getElementById('user-role-display').textContent = userData.rol || "Usuario";
             document.getElementById('avatar-circle').textContent = userData.email[0].toUpperCase();
             
-            document.getElementById('btn-open-admin').classList.remove('hidden');
-            document.getElementById('btn-open-admin-header').classList.remove('hidden');
+            // --- SECURITY: HIDE ADMIN FOR TEACHERS ---
+            let isAdmin = false;
+            if (userData.rol && typeof userData.rol === 'string' && userData.rol.toLowerCase().includes('admin')) isAdmin = true;
+            if (userData.roles && Array.isArray(userData.roles) && userData.roles.some(r => r.toLowerCase().includes('admin'))) isAdmin = true;
+            if ((userData.email || "").includes("admin")) isAdmin = true;
+
+            const adminBtn = document.getElementById('btn-open-admin');
+            const adminBtnHeader = document.getElementById('btn-open-admin-header');
+            
+            if (isAdmin) {
+                adminBtn.classList.remove('hidden');
+                adminBtnHeader.classList.remove('hidden');
+            } else {
+                adminBtn.classList.add('hidden');
+                adminBtnHeader.classList.add('hidden');
+            }
 
             document.getElementById('auth-container').classList.add('hidden');
             document.getElementById('user-logged-in').classList.remove('hidden');
             
             try {
                 await loadCatalogs();
-                subscribeToUsers(); 
+                subscribeToUsers(); // Load users for filtering reports
                 await updateDashboardDate();
                 renderMonthCalendar();
+                populateReportFilters(); // NEW: Load filters
             } catch(e) { console.warn("Error carga inicial", e); }
         }
 
@@ -547,6 +611,7 @@
                 state.catalogs = { areas: ["Ciencias Exactas", "Lenguaje"], materias: [{name: "Matemáticas", area: "Ciencias Exactas"}], cursos: ["1ero Bach"], paralelos: ["A"], secciones: ["Matutina"], roles: ["Admin", "Docente"] };
                 renderCatalogs();
                 populateScheduleSelectors();
+                populateReportFilters();
                 return;
             }
 
@@ -648,10 +713,18 @@
                 await saveCatalog(); 
                 renderCatalogs(); 
                 populateScheduleSelectors(); 
+                populateReportFilters();
             } 
         };
         
-        window.removeCatalogItem = async (idx) => { state.catalogs[state.currentCatalog].splice(idx, 1); renderCatalogList(); await saveCatalog(); renderCatalogs(); populateScheduleSelectors(); };
+        window.removeCatalogItem = async (idx) => { 
+            state.catalogs[state.currentCatalog].splice(idx, 1); 
+            renderCatalogList(); 
+            await saveCatalog(); 
+            renderCatalogs(); 
+            populateScheduleSelectors(); 
+            populateReportFilters();
+        };
 
         // --- USERS ---
         function subscribeToUsers() {
@@ -659,6 +732,7 @@
                 state.users = [];
                 snapshot.forEach(doc => state.users.push({ id: doc.id, ...doc.data() }));
                 renderUserTable();
+                populateReportFilters(); // Update filters when users change
             });
         }
         
@@ -802,12 +876,12 @@
                                 const subject = sched.grid[cellKey];
                                 
                                 if (subject) {
+                                    // Check subject match
                                     const teacherMaterias = (teacher.materias || []).map(m => (typeof m === 'object') ? m.name : m);
                                     const subjectName = (typeof subject === 'object') ? subject.name : subject;
 
                                     if (isAdmin || teacherMaterias.includes(subjectName)) {
                                         // Buscar si hay log
-                                        // (Simplificación: en un sistema real, haríamos fetch en lote o por ID)
                                         const dateKey = state.viewDate.toISOString().split('T')[0];
                                         const logId = `${dateKey}_${sched.id}_${slot.id}`;
 
@@ -937,9 +1011,38 @@
         };
 
         // 2. LOGIC FOR REPORTS & PDF
+        window.populateReportFilters = () => {
+             // Populate Teachers (Unique list from Users)
+             const teachers = state.users.filter(u => (u.rol||"").toLowerCase().includes("docente"));
+             const teacherSelect = document.getElementById('report-filter-teacher');
+             teacherSelect.innerHTML = `<option value="all">Todos</option>` + teachers.map(t => `<option value="${t.email}">${t.email}</option>`).join('');
+
+             // Populate Courses
+             const courseSelect = document.getElementById('report-filter-course');
+             courseSelect.innerHTML = `<option value="all">Todos</option>` + (state.catalogs.cursos||[]).map(c => `<option value="${c}">${c}</option>`).join('');
+
+             // Populate Subjects
+             const subjectSelect = document.getElementById('report-filter-subject');
+             const matOpts = (state.catalogs.materias || []).map(m => (typeof m === 'object') ? m.name : m);
+             subjectSelect.innerHTML = `<option value="all">Todas</option>` + matOpts.map(m => `<option value="${m}">${m}</option>`).join('');
+        };
+
         window.generateReport = async () => {
              const dateInput = document.getElementById('report-date').value;
              if (!dateInput) { alert("Selecciona una fecha."); return; }
+             
+             // Get Filters
+             const filterTeacher = document.getElementById('report-filter-teacher').value;
+             const filterCourse = document.getElementById('report-filter-course').value;
+             const filterSubject = document.getElementById('report-filter-subject').value;
+             
+             // Get texts from inputs
+             const reportTitle = document.getElementById('report-title-input').value;
+             const reportNotes = document.getElementById('report-notes-input').value;
+
+             document.getElementById('report-display-title').textContent = reportTitle;
+             document.getElementById('report-subtitle').textContent = `Fecha: ${dateInput}`;
+             document.getElementById('report-display-notes').textContent = reportNotes;
              
              const selectedDate = new Date(dateInput + "T00:00:00"); // Local time fix
              const dayIndex = selectedDate.getDay() - 1; // 0=Monday
@@ -960,15 +1063,13 @@
                 const allSchedules = [];
                 schedulesSnap.forEach(d => allSchedules.push({id: d.id, ...d.data()}));
 
-                // Get all users to map subjects
-                const usersSnap = await getDocs(getCollectionRef("users"));
-                const allUsers = [];
-                usersSnap.forEach(d => allUsers.push(d.data()));
-
                 const entries = [];
 
                 for (const sched of allSchedules) {
                      const [sec, cur, par] = sched.id.split('_');
+                     
+                     // Filter by Course if applied
+                     if (filterCourse !== "all" && cur !== filterCourse) continue;
                      
                      if (sched.slots) {
                          for (const slot of sched.slots) {
@@ -976,26 +1077,35 @@
                              const subject = sched.grid[cellKey];
                              
                              if (subject) {
-                                 // Check if log exists
-                                 const logId = `${dateKey}_${sched.id}_${slot.id}`;
-                                 const logSnap = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'class_logs', logId));
-                                 const isDone = logSnap.exists();
-                                 
-                                 // Find teacher
                                  const subjectName = (typeof subject === 'object') ? subject.name : subject;
-                                 const teacher = allUsers.find(u => 
+                                 
+                                 // Filter by Subject if applied
+                                 if (filterSubject !== "all" && subjectName !== filterSubject) continue;
+
+                                 // Find teacher (Local lookup for speed)
+                                 const teacher = state.users.find(u => 
                                     u.seccion === sec && 
                                     (u.cursos||[]).includes(cur) && 
                                     (u.paralelos||[]).includes(par) &&
                                     ((u.materias||[]).map(m => (typeof m === 'object') ? m.name : m).includes(subjectName))
                                  );
                                  
+                                 const teacherEmail = teacher ? teacher.email : "Sin asignar";
+                                 
+                                 // Filter by Teacher if applied
+                                 if (filterTeacher !== "all" && teacherEmail !== filterTeacher) continue;
+
+                                 // Check log
+                                 const logId = `${dateKey}_${sched.id}_${slot.id}`;
+                                 const logSnap = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'class_logs', logId));
+                                 const isDone = logSnap.exists();
+                                 
                                  entries.push({
                                      date: dateInput,
                                      course: `${cur} "${par}"`,
                                      time: `${slot.start}`,
                                      subject: subjectName,
-                                     teacher: teacher ? teacher.email : "Sin asignar",
+                                     teacher: teacherEmail,
                                      status: isDone ? "done" : "missing"
                                  });
                              }
@@ -1007,7 +1117,7 @@
                 entries.sort((a,b) => (a.status === b.status) ? 0 : a.status === 'missing' ? -1 : 1);
 
                 if (entries.length === 0) {
-                    tbody.innerHTML = `<tr><td colspan="5" class="text-center p-8 text-slate-400">No hay clases programadas.</td></tr>`;
+                    tbody.innerHTML = `<tr><td colspan="5" class="text-center p-8 text-slate-400">No se encontraron registros con estos filtros.</td></tr>`;
                 } else {
                     tbody.innerHTML = entries.map(e => `
                         <tr>
@@ -1030,13 +1140,14 @@
         };
 
         window.downloadReportPDF = () => {
+             const orientation = document.getElementById('report-orientation').value;
              const element = document.getElementById('report-container');
              const opt = {
                margin: 10,
                filename: 'reporte-leccionario.pdf',
                image: { type: 'jpeg', quality: 0.98 },
                html2canvas: { scale: 2 },
-               jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+               jsPDF: { unit: 'mm', format: 'a4', orientation: orientation }
              };
              html2pdf().set(opt).from(element).save();
         };
@@ -1050,7 +1161,9 @@
             
             if (tab === 'users') {
                  // Recargar manual si es necesario
-                 // manualLoadUsers(); // Descomentar si se desea recarga automática al cambiar tab
+            }
+            if (tab === 'reports') {
+                populateReportFilters();
             }
         };
         window.openModal = (id) => document.getElementById(id).classList.replace('hidden', 'flex');
@@ -1066,10 +1179,7 @@
                     }).join('')}</td>
                     <td class="px-8 py-4 align-top">${(u.cursos||[]).map(c => `<span class="text-xs font-bold text-slate-700 block">${c}</span>`).join('')}</td>
                     <td class="px-8 py-4 align-top"><span class="role-badge role-${u.rol}">${u.rol}</span></td>
-                    <td class="px-8 py-4 align-top text-right">
-                        <button onclick="editUser('${u.id}')" class="text-blue-600 font-black text-[10px] uppercase hover:underline">Editar</button>
-                        <button onclick="deleteUser('${u.id}')" class="text-red-400 font-black text-[10px] uppercase ml-4 hover:text-red-600">Eliminar</button>
-                    </td>
+                    <td class="px-8 py-4 align-top text-right"><button onclick="editUser('${u.id}')" class="text-blue-600 font-black text-[10px] uppercase">Editar</button></td>
                 </tr>`).join('');
         }
         
