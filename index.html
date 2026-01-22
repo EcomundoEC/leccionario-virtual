@@ -99,7 +99,7 @@
                         <span id="user-email-display" class="text-slate-800 text-sm font-bold block"></span>
                         <span id="user-role-display" class="text-[10px] text-slate-400 uppercase font-black tracking-widest"></span>
                     </div>
-                    <!-- BOTÓN ADMIN HEADER (SOLO ADMINS) -->
+                    <!-- BOTÓN ADMIN HEADER -->
                     <button id="btn-open-admin-header" class="hidden ml-2 p-2 bg-slate-100 rounded-xl hover:bg-blue-100 text-slate-600 hover:text-blue-600 transition" title="Configuración Global">
                         <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 15a3 3 0 100-6 3 3 0 000 6z"/><path fill-rule="evenodd" d="M1.323 11.447C2.811 6.976 7.028 3.75 12.001 3.75c4.97 0 9.185 3.223 10.675 7.69.12.362.12.752 0 1.113-1.487 4.471-5.705 7.697-10.677 7.697-4.97 0-9.186-3.223-10.675-7.69a1.762 1.762 0 010-1.113zM17.25 12a5.25 5.25 0 11-10.5 0 5.25 5.25 0 0110.5 0z" clip-rule="evenodd"/></svg> ⚙️
                     </button>
@@ -149,8 +149,8 @@
                 </div>
 
                 <div class="lg:col-span-4 space-y-6">
-                    <!-- BOTÓN ADMIN DASHBOARD (SOLO ADMINS) -->
-                    <button id="btn-open-admin" class="hidden w-full bg-slate-900 text-white p-8 rounded-[3rem] text-left hover:scale-[1.02] transition-all relative overflow-hidden group">
+                    <!-- BOTÓN ADMIN DASHBOARD -->
+                    <button id="btn-open-admin" class="w-full bg-slate-900 text-white p-8 rounded-[3rem] text-left hover:scale-[1.02] transition-all relative overflow-hidden group">
                         <div class="relative z-10">
                             <div class="text-xs font-black text-white/40 uppercase mb-2">Administración</div>
                             <div class="text-xl font-bold">Configuración Global</div>
@@ -180,6 +180,7 @@
                     <button onclick="switchTab('users')" id="tab-users" class="tab-btn active px-4 py-2 text-sm uppercase tracking-widest">Usuarios</button>
                     <button onclick="switchTab('catalogs')" id="tab-catalogs" class="tab-btn px-4 py-2 text-sm uppercase tracking-widest">Académico</button>
                     <button onclick="switchTab('schedules')" id="tab-schedules" class="tab-btn px-4 py-2 text-sm uppercase tracking-widest">Horarios</button>
+                    <button onclick="switchTab('leccionario')" id="tab-leccionario" class="tab-btn px-4 py-2 text-sm uppercase tracking-widest text-blue-600">Leccionario</button>
                     <button onclick="switchTab('reports')" id="tab-reports" class="tab-btn px-4 py-2 text-sm uppercase tracking-widest text-red-500">Informes</button>
                 </div>
             </div>
@@ -189,7 +190,6 @@
                 <div class="flex justify-between items-center">
                     <h3 class="font-bold text-slate-700">Listado de Personal</h3>
                     <div class="flex gap-2">
-                        <!-- BOTÓN CARGAR USUARIOS -->
                         <button onclick="manualLoadUsers()" class="bg-white border border-slate-200 text-slate-600 px-4 py-3 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-slate-50 transition-all shadow-sm flex items-center gap-2">
                             🔄 Cargar Usuarios
                         </button>
@@ -236,6 +236,60 @@
                     </div>
                 </div>
                 <div id="schedule-container" class="bg-white rounded-[3rem] shadow-xl border border-slate-100 p-8 overflow-x-auto"><div class="text-center py-10 text-slate-400 font-bold italic">Selecciona los parámetros y carga el horario.</div></div>
+            </div>
+
+            <!-- TAB LECCIONARIO (IMPRESIÓN) -->
+            <div id="content-leccionario" class="hidden space-y-6">
+                <div class="bg-white p-6 rounded-[2.5rem] shadow-sm border border-slate-100 flex flex-wrap gap-4 items-end justify-between">
+                     <div class="flex gap-4 flex-wrap">
+                        <div><label class="block text-xs font-black text-slate-400 mb-2 uppercase">Sección</label><select id="lec-seccion" class="p-3 bg-slate-50 rounded-xl text-sm border-none outline-none font-bold text-slate-700 min-w-[150px]"></select></div>
+                        <div><label class="block text-xs font-black text-slate-400 mb-2 uppercase">Curso</label><select id="lec-curso" class="p-3 bg-slate-50 rounded-xl text-sm border-none outline-none font-bold text-slate-700 min-w-[150px]"></select></div>
+                        <div><label class="block text-xs font-black text-slate-400 mb-2 uppercase">Paralelo</label><select id="lec-paralelo" class="p-3 bg-slate-50 rounded-xl text-sm border-none outline-none font-bold text-slate-700 min-w-[100px]"></select></div>
+                        <div>
+                             <label class="block text-xs font-black text-slate-400 mb-2 uppercase">Fecha</label>
+                             <input type="date" id="lec-date" class="p-3 bg-slate-50 rounded-xl text-sm border-none outline-none font-bold text-slate-700">
+                        </div>
+                        <button onclick="generateLeccionario()" class="bg-slate-900 text-white px-6 py-3 rounded-xl font-black text-xs uppercase hover:bg-black transition-all h-[44px] self-end">Generar Leccionario</button>
+                    </div>
+                    <button onclick="printLeccionarioPDF()" class="bg-blue-600 text-white px-6 py-3 rounded-xl font-black text-xs uppercase hover:bg-blue-700 transition-all h-[44px] flex items-center gap-2">
+                        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg> Imprimir PDF
+                    </button>
+                </div>
+                
+                <!-- DOCUMENTO LECCIONARIO -->
+                <div id="leccionario-print-area" class="bg-white p-10 rounded-[2rem] shadow-xl border border-slate-100 min-h-[600px]">
+                    <div class="flex justify-between items-start border-b-2 border-slate-800 pb-6 mb-6">
+                        <div class="w-32 h-32 flex items-center justify-center">
+                             <img src="logo.png" alt="Logo" class="object-contain max-h-full" onerror="this.src='https://placehold.co/150x150?text=LOGO'">
+                        </div>
+                        <div class="text-right">
+                            <h2 class="text-3xl font-black text-slate-900 uppercase">Leccionario de Clases</h2>
+                            <p class="text-slate-500 font-bold" id="lec-header-info">Seleccione los parámetros...</p>
+                            <p class="text-sm text-slate-400" id="lec-header-date"></p>
+                        </div>
+                    </div>
+                    
+                    <table class="w-full text-left border-collapse report-table">
+                        <thead>
+                            <tr>
+                                <th class="w-24">Hora</th>
+                                <th class="w-48">Materia</th>
+                                <th class="w-1/4">Tema</th>
+                                <th class="w-1/3">Observación</th>
+                                <th class="w-24 text-center">Estado</th>
+                            </tr>
+                        </thead>
+                        <tbody id="leccionario-body">
+                            <tr><td colspan="5" class="text-center p-10 text-slate-300 italic">No hay datos para mostrar.</td></tr>
+                        </tbody>
+                    </table>
+                    
+                    <div class="mt-12 pt-8 border-t border-slate-200 flex justify-between text-xs text-slate-400 font-bold uppercase">
+                        <div>Firma del Tutor</div>
+                        <div>Firma de Inspección</div>
+                        <div>Generado por Sistema Leccionario Virtual</div>
+                    </div>
+                </div>
             </div>
 
             <!-- TAB INFORMES -->
@@ -969,7 +1023,7 @@
             } catch(e) { console.error(e); alert("Error al guardar."); }
         };
 
-        // --- NEW FEATURES: COPY SCHEDULE & REPORTS ---
+        // --- NEW FEATURES: COPY SCHEDULE & REPORTS & LECCIONARIO ---
 
         // 1. UI FOR COPY
         window.openCopySchedule = () => {
@@ -1152,15 +1206,122 @@
              html2pdf().set(opt).from(element).save();
         };
 
+        // 3. GENERATE LECCIONARIO FUNCTION
+        window.generateLeccionario = async () => {
+            const sec = document.getElementById('lec-seccion').value;
+            const cur = document.getElementById('lec-curso').value;
+            const par = document.getElementById('lec-paralelo').value;
+            const dateInput = document.getElementById('lec-date').value;
+
+            if (!dateInput) { alert("Seleccione una fecha."); return; }
+            
+            const selectedDate = new Date(dateInput + "T00:00:00");
+            const dayIndex = selectedDate.getDay() - 1; // 0=Monday
+
+            if (dayIndex < 0 || dayIndex > 4) {
+                 document.getElementById('leccionario-body').innerHTML = `<tr><td colspan="5" class="text-center p-8 text-slate-400">Fin de semana.</td></tr>`;
+                 return;
+            }
+
+            document.getElementById('lec-header-info').textContent = `${sec} - ${cur} "${par}"`;
+            document.getElementById('lec-header-date').textContent = `Fecha: ${dateInput}`;
+            
+            const tbody = document.getElementById('leccionario-body');
+            tbody.innerHTML = `<tr><td colspan="5" class="text-center p-8 text-slate-400 animate-pulse">Generando...</td></tr>`;
+
+            try {
+                const scheduleId = `${sec}_${cur}_${par}`;
+                const docSnap = await getDoc(getDocRef("schedules", scheduleId));
+                
+                if (!docSnap.exists()) {
+                     tbody.innerHTML = `<tr><td colspan="5" class="text-center p-8 text-red-400">No existe horario configurado para este curso.</td></tr>`;
+                     return;
+                }
+
+                const sched = docSnap.data();
+                const entries = [];
+
+                if (sched.slots) {
+                    for (const slot of sched.slots) {
+                        const cellKey = `${slot.id}_${dayIndex}`;
+                        const subject = sched.grid[cellKey];
+                        
+                        if (subject) {
+                            const subjectName = (typeof subject === 'object') ? subject.name : subject;
+                            const logId = `${dateInput}_${scheduleId}_${slot.id}`;
+                            const logSnap = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'class_logs', logId));
+                            
+                            let topic = "NO REGISTRADO";
+                            let obs = "NO REGISTRADO";
+                            let status = "PENDIENTE";
+                            let statusClass = "text-red-500 font-bold";
+
+                            if (logSnap.exists()) {
+                                const data = logSnap.data();
+                                topic = data.topic || "Sin tema";
+                                obs = data.content || "Sin observación";
+                                status = "REALIZADO";
+                                statusClass = "text-green-600 font-bold";
+                            }
+
+                            entries.push({
+                                time: `${slot.start} - ${slot.end}`,
+                                subject: subjectName,
+                                topic,
+                                obs,
+                                status,
+                                statusClass,
+                                start: slot.start
+                            });
+                        }
+                    }
+                }
+
+                entries.sort((a,b) => a.start.localeCompare(b.start));
+
+                if (entries.length === 0) {
+                     tbody.innerHTML = `<tr><td colspan="5" class="text-center p-8 text-slate-400">No hay clases programadas para este día.</td></tr>`;
+                } else {
+                     tbody.innerHTML = entries.map(e => `
+                        <tr>
+                            <td class="border p-2 text-xs font-bold">${e.time}</td>
+                            <td class="border p-2 text-xs">${e.subject}</td>
+                            <td class="border p-2 text-xs italic">${e.topic}</td>
+                            <td class="border p-2 text-xs">${e.obs}</td>
+                            <td class="border p-2 text-xs text-center ${e.statusClass}">${e.status}</td>
+                        </tr>
+                     `).join('');
+                }
+
+            } catch (e) {
+                console.error(e);
+                tbody.innerHTML = `<tr><td colspan="5" class="text-center p-8 text-red-400">Error al generar.</td></tr>`;
+            }
+        };
+
+        window.printLeccionarioPDF = () => {
+             const element = document.getElementById('leccionario-print-area');
+             const opt = {
+               margin: 10,
+               filename: 'leccionario-curso.pdf',
+               image: { type: 'jpeg', quality: 0.98 },
+               html2canvas: { scale: 2 },
+               jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+             };
+             html2pdf().set(opt).from(element).save();
+        };
+
         // --- HELPERS UI ---
         window.switchTab = (tab) => { 
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active')); 
             document.getElementById(`tab-${tab}`).classList.add('active'); 
-            ['users', 'catalogs', 'schedules', 'reports'].forEach(t => document.getElementById(`content-${t}`).classList.add('hidden')); 
+            ['users', 'catalogs', 'schedules', 'reports', 'leccionario'].forEach(t => document.getElementById(`content-${t}`).classList.add('hidden')); 
             document.getElementById(`content-${tab}`).classList.remove('hidden'); 
             
-            if (tab === 'users') {
-                 // Recargar manual si es necesario
+            if (tab === 'leccionario') {
+                populateSelect('lec-seccion', state.catalogs.secciones); 
+                populateSelect('lec-curso', state.catalogs.cursos); 
+                populateSelect('lec-paralelo', state.catalogs.paralelos); 
             }
             if (tab === 'reports') {
                 populateReportFilters();
