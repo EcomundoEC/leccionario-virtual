@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Leccionario Virtual - Gestión Total</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Librería para PDF (Versión Estable) -->
+    <!-- Librería para PDF (Versión Estable y Completa) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
         /* Estilos UI */
@@ -24,6 +24,7 @@
         .schedule-cell:hover { background: #f8fafc; }
         .schedule-cell.filled { background: #eff6ff; color: #1e40af; font-weight: 700; border-color: #dbeafe; }
         .time-col { background: #f1f5f9; color: #64748b; font-weight: 800; font-size: 10px; width: 80px; text-align: center; }
+        .signature-img { max-height: 40px; max-width: 100px; object-fit: contain; display: block; margin: 0 auto; }
         
         /* Estilos Calendario Dashboard */
         .mini-calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; justify-items: center; max-width: 350px; margin: 0 auto; }
@@ -34,14 +35,11 @@
         .mini-day.empty { cursor: default; }
         .mini-header { font-size: 10px; font-weight: 900; text-transform: uppercase; color: #94a3b8; padding-bottom: 8px; text-align: center; }
         
-        /* Estilos Tabla Reportes y Leccionario */
+        /* Estilos Tabla Reportes */
         .report-table th { background: #f8fafc; color: #64748b; font-size: 11px; text-transform: uppercase; font-weight: 800; padding: 12px; text-align: left; border-bottom: 2px solid #e2e8f0; }
         .report-table td { border-bottom: 1px solid #f1f5f9; padding: 10px 12px; font-size: 12px; color: #334155; }
         .status-missing { background: #fef2f2; color: #ef4444; padding: 4px 8px; border-radius: 6px; font-size: 10px; font-weight: 800; text-transform: uppercase; display: inline-block; }
         .status-done { background: #f0fdf4; color: #16a34a; padding: 4px 8px; border-radius: 6px; font-size: 10px; font-weight: 800; text-transform: uppercase; display: inline-block; }
-        
-        /* Firma Imagen */
-        .signature-img { max-height: 40px; max-width: 120px; object-fit: contain; display: block; margin: 0 auto; }
     </style>
 </head>
 <body class="bg-slate-50 min-h-screen font-sans text-slate-900">
@@ -58,15 +56,14 @@
     <div id="auth-container" class="min-h-screen flex items-center justify-center p-4">
         <div class="bg-white p-10 rounded-[2.5rem] shadow-2xl border border-slate-200 w-full max-w-md text-center">
             <div class="mx-auto mb-8 w-40 h-40 flex items-center justify-center">
-                <img src="logo.png" alt="Logo Institucional" class="object-contain max-w-full max-h-full drop-shadow-md" onerror="this.src='https://placehold.co/150x150?text=LOGO'; this.onerror=null;">
+                <img src="logo.png" alt="Logo Institucional" class="object-contain max-w-full max-h-full drop-shadow-md" onerror="this.src='https://placehold.co/150x150?text=LOGO';">
             </div>
             
             <h1 class="text-3xl font-black mb-2 text-slate-800">Leccionario Virtual</h1>
             <p id="auth-subtitle" class="text-slate-400 text-sm mb-4">Ingresa tus credenciales institucionales</p>
             
             <div id="firebase-status" class="mb-6 py-2 px-4 rounded-xl bg-slate-50 border border-slate-200 text-xs font-mono text-slate-400 flex items-center justify-center gap-2">
-                <span class="w-2 h-2 rounded-full bg-slate-300"></span>
-                Iniciando conexión...
+                <span class="w-2 h-2 rounded-full bg-slate-300"></span> Conectando...
             </div>
 
             <form id="auth-form" class="space-y-5 text-left">
@@ -110,6 +107,7 @@
 
             <div class="grid grid-cols-1 lg:grid-cols-12 gap-10">
                 <div class="lg:col-span-8 space-y-8">
+                    <!-- Clases del Día -->
                     <div class="bg-white p-10 rounded-[3rem] shadow-sm border border-slate-200">
                         <div class="flex items-center justify-between mb-8">
                             <div>
@@ -119,9 +117,9 @@
                                 </p>
                             </div>
                             <div class="flex gap-2">
-                                <button onclick="changeDay(-1)" class="w-10 h-10 rounded-xl bg-slate-100 hover:bg-slate-200 flex items-center justify-center font-bold text-slate-600"><</button>
-                                <button onclick="goToToday()" class="px-4 h-10 rounded-xl bg-blue-100 hover:bg-blue-200 flex items-center justify-center font-bold text-blue-600 text-xs uppercase">Hoy</button>
-                                <button onclick="changeDay(1)" class="w-10 h-10 rounded-xl bg-slate-100 hover:bg-slate-200 flex items-center justify-center font-bold text-slate-600">></button>
+                                <button onclick="window.changeDay(-1)" class="w-10 h-10 rounded-xl bg-slate-100 hover:bg-slate-200 flex items-center justify-center font-bold text-slate-600"><</button>
+                                <button onclick="window.goToToday()" class="px-4 h-10 rounded-xl bg-blue-100 hover:bg-blue-200 flex items-center justify-center font-bold text-blue-600 text-xs uppercase">Hoy</button>
+                                <button onclick="window.changeDay(1)" class="w-10 h-10 rounded-xl bg-slate-100 hover:bg-slate-200 flex items-center justify-center font-bold text-slate-600">></button>
                             </div>
                         </div>
                         <div id="daily-classes-list" class="space-y-6">
@@ -129,13 +127,14 @@
                         </div>
                     </div>
 
+                    <!-- Calendario Mensual -->
                     <div class="bg-white p-8 rounded-[3rem] shadow-sm border border-slate-200">
                         <div class="flex justify-between items-center mb-6">
                             <h3 class="font-black text-lg text-slate-800" id="calendar-month-year">Calendario</h3>
                             <div class="flex gap-2 text-xs">
-                                <button onclick="changeCalendarMonth(-1)" class="bg-slate-100 px-3 py-1 rounded-lg hover:bg-slate-200">Anterior</button>
-                                <button onclick="goToToday()" class="bg-blue-100 px-3 py-1 rounded-lg hover:bg-blue-200 text-blue-700 font-bold">Hoy</button>
-                                <button onclick="changeCalendarMonth(1)" class="bg-slate-100 px-3 py-1 rounded-lg hover:bg-slate-200">Siguiente</button>
+                                <button onclick="window.changeCalendarMonth(-1)" class="bg-slate-100 px-3 py-1 rounded-lg hover:bg-slate-200">Anterior</button>
+                                <button onclick="window.goToToday()" class="bg-blue-100 px-3 py-1 rounded-lg hover:bg-blue-200 text-blue-700 font-bold">Hoy</button>
+                                <button onclick="window.changeCalendarMonth(1)" class="bg-slate-100 px-3 py-1 rounded-lg hover:bg-slate-200">Siguiente</button>
                             </div>
                         </div>
                         <div class="mini-calendar-grid mb-4">
@@ -148,6 +147,7 @@
                 </div>
 
                 <div class="lg:col-span-4 space-y-6">
+                    <!-- BOTÓN ADMIN DASHBOARD -->
                     <button id="btn-open-admin" onclick="window.showAdminPanel()" class="hidden w-full bg-slate-900 text-white p-8 rounded-[3rem] text-left hover:scale-[1.02] transition-all relative overflow-hidden group cursor-pointer border-2 border-transparent hover:border-blue-500">
                         <div class="relative z-10">
                             <div class="text-xs font-black text-white/40 uppercase mb-2">Administración</div>
@@ -175,21 +175,22 @@
                     <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg> Volver
                 </button>
                 <div class="flex space-x-4 border-b border-slate-200 w-full sm:w-auto overflow-x-auto">
-                    <button onclick="switchTab('users')" id="tab-users" class="tab-btn active px-4 py-2 text-sm uppercase tracking-widest">Usuarios</button>
-                    <button onclick="switchTab('catalogs')" id="tab-catalogs" class="tab-btn px-4 py-2 text-sm uppercase tracking-widest">Académico</button>
-                    <button onclick="switchTab('schedules')" id="tab-schedules" class="tab-btn px-4 py-2 text-sm uppercase tracking-widest">Horarios</button>
-                    <button onclick="switchTab('leccionario')" id="tab-leccionario" class="tab-btn px-4 py-2 text-sm uppercase tracking-widest text-blue-600">Leccionario</button>
-                    <button onclick="switchTab('reports')" id="tab-reports" class="tab-btn px-4 py-2 text-sm uppercase tracking-widest text-red-500">Informes</button>
+                    <button onclick="window.switchTab('users')" id="tab-users" class="tab-btn active px-4 py-2 text-sm uppercase tracking-widest">Usuarios</button>
+                    <button onclick="window.switchTab('catalogs')" id="tab-catalogs" class="tab-btn px-4 py-2 text-sm uppercase tracking-widest">Académico</button>
+                    <button onclick="window.switchTab('schedules')" id="tab-schedules" class="tab-btn px-4 py-2 text-sm uppercase tracking-widest">Horarios</button>
+                    <button onclick="window.switchTab('leccionario')" id="tab-leccionario" class="tab-btn px-4 py-2 text-sm uppercase tracking-widest text-blue-600">Leccionario</button>
+                    <button onclick="window.switchTab('reports')" id="tab-reports" class="tab-btn px-4 py-2 text-sm uppercase tracking-widest text-red-500">Informes</button>
                 </div>
             </div>
 
-            <!-- TAB USUARIOS -->
+            <!-- TAB USUARIOS REESTRUCTURADO -->
             <div id="content-users" class="space-y-6">
                 <div class="flex justify-between items-center">
                     <h3 class="font-bold text-slate-700">Listado de Personal</h3>
                     <div class="flex gap-2">
+                        <!-- BOTÓN CARGAR USUARIOS -->
                         <button onclick="window.manualLoadUsers()" class="bg-white border border-slate-200 text-slate-600 px-4 py-3 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-slate-50 transition-all shadow-sm flex items-center gap-2">
-                            🔄 Cargar Usuarios
+                            🔄 Recargar Tabla
                         </button>
                         <button id="btn-add-user" class="bg-blue-600 text-white px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-blue-700 shadow-lg shadow-blue-200 flex items-center gap-2"><span>+</span> Nuevo Usuario</button>
                     </div>
@@ -218,14 +219,14 @@
                 <div id="catalog-grid-inner" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
             </div>
 
-            <!-- TAB HORARIOS -->
+            <!-- TAB HORARIOS (RENOVADO) -->
             <div id="content-schedules" class="hidden space-y-6">
                 <div class="bg-white p-6 rounded-[2.5rem] shadow-sm border border-slate-100 flex flex-wrap gap-4 items-end justify-between">
                     <div class="flex gap-4 flex-wrap">
                         <div><label class="block text-xs font-black text-slate-400 mb-2 uppercase">Sección</label><select id="sch-seccion" class="p-3 bg-slate-50 rounded-xl text-sm border-none outline-none font-bold text-slate-700 min-w-[150px]"></select></div>
                         <div><label class="block text-xs font-black text-slate-400 mb-2 uppercase">Curso</label><select id="sch-curso" class="p-3 bg-slate-50 rounded-xl text-sm border-none outline-none font-bold text-slate-700 min-w-[150px]"></select></div>
                         <div><label class="block text-xs font-black text-slate-400 mb-2 uppercase">Paralelo</label><select id="sch-paralelo" class="p-3 bg-slate-50 rounded-xl text-sm border-none outline-none font-bold text-slate-700 min-w-[100px]"></select></div>
-                        <button onclick="window.loadSchedule()" class="bg-slate-800 text-white px-6 py-3 rounded-xl font-black text-xs uppercase hover:bg-black transition-all h-[44px] self-end">Cargar</button>
+                        <button onclick="window.loadSchedule()" class="bg-slate-800 text-white px-6 py-3 rounded-xl font-black text-xs uppercase hover:bg-black transition-all h-[44px] self-end">Generar/Cargar</button>
                     </div>
                     <div class="flex gap-2">
                         <button onclick="window.openCopySchedule()" class="bg-slate-100 text-slate-600 px-6 py-3 rounded-xl font-black text-xs uppercase hover:bg-slate-200 transition-all border border-slate-200 h-[44px]">Copiar a...</button>
@@ -269,8 +270,8 @@
                         </div>
                     </div>
                     <table class="w-full text-left border-collapse report-table">
-                        <thead><tr><th class="w-20">Hora</th><th class="w-40">Materia</th><th>Nombre Profesor</th><th>Observación / Tema</th><th class="w-24 text-center">Firma</th></tr></thead>
-                        <tbody id="leccionario-body"><tr><td colspan="5" class="text-center p-10 text-slate-300 italic">No hay datos para mostrar.</td></tr></tbody>
+                        <thead><tr><th class="w-20">Hora</th><th class="w-32">Materia</th><th>Tema Clases</th><th>Nombre Profesor</th><th>Actividad</th><th class="w-24 text-center">Firma</th></tr></thead>
+                        <tbody id="leccionario-body"><tr><td colspan="6" class="text-center p-10 text-slate-300 italic">No hay datos para mostrar.</td></tr></tbody>
                     </table>
                     <div class="mt-12 pt-8 border-t border-slate-200 flex justify-between text-xs text-slate-400 font-bold uppercase">
                         <div class="w-48 border-t border-slate-400 pt-2 text-center">Tutor de Curso</div>
@@ -281,6 +282,7 @@
 
             <!-- TAB INFORMES -->
             <div id="content-reports" class="hidden space-y-6">
+                <!-- PANEL DE CONFIGURACIÓN DEL REPORTE -->
                 <div class="bg-white p-6 rounded-[2.5rem] shadow-sm border border-slate-100 flex flex-col gap-6">
                     <div class="flex flex-wrap gap-4 items-end justify-between">
                         <div class="flex flex-wrap gap-4 items-end">
@@ -319,14 +321,14 @@
             <div class="flex justify-between mb-6"><div><h3 class="text-2xl font-black text-slate-800">Registro de Leccionario</h3><p id="log-class-info" class="text-xs font-bold text-blue-600 mt-1"></p></div><button onclick="window.closeModal('modal-class-log')" class="text-slate-400 hover:text-red-500 text-xl font-bold">✕</button></div>
             <form id="log-form" class="space-y-4">
                 <input type="hidden" id="log-id">
-                <div><label class="block text-xs font-black text-slate-400 mb-2 uppercase">Tema</label><input type="text" id="log-topic" required class="w-full p-4 rounded-xl bg-slate-50 border-none outline-none focus:ring-2 focus:ring-blue-500/20"></div>
-                <div><label class="block text-xs font-black text-slate-400 mb-2 uppercase">Observación</label><textarea id="log-content" required class="w-full p-4 rounded-xl bg-slate-50 border-none outline-none focus:ring-2 focus:ring-blue-500/20 h-32 resize-none"></textarea></div>
+                <div><label class="block text-xs font-black text-slate-400 mb-2 uppercase">Tema / Título</label><input type="text" id="log-topic" required class="w-full p-4 rounded-xl bg-slate-50 border-none outline-none focus:ring-2 focus:ring-blue-500/20"></div>
+                <div><label class="block text-xs font-black text-slate-400 mb-2 uppercase">Actividades / Detalle</label><textarea id="log-content" required class="w-full p-4 rounded-xl bg-slate-50 border-none outline-none focus:ring-2 focus:ring-blue-500/20 h-32 resize-none"></textarea></div>
                 <button type="submit" class="w-full bg-blue-600 text-white py-4 rounded-xl font-black uppercase tracking-widest hover:bg-blue-700 transition-all shadow-lg">Guardar Registro</button>
             </form>
         </div>
     </div>
 
-    <!-- MODAL USUARIO -->
+    <!-- MODAL USUARIO (REESTRUCTURADO) -->
     <div id="modal-user" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[110] hidden items-center justify-center p-4">
         <div class="bg-white w-full max-w-3xl rounded-[3rem] p-10 modal-animate max-h-[95vh] overflow-y-auto">
             <div class="flex justify-between mb-8"><h3 id="modal-title" class="text-3xl font-black text-slate-800 tracking-tighter text-blue-600">Usuario</h3><button onclick="window.closeModal('modal-user')" class="text-slate-400 hover:text-red-500 text-2xl">✕</button></div>
@@ -377,31 +379,7 @@
     <div id="modal-copy-schedule" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[150] hidden items-center justify-center p-4"><div class="bg-white w-full max-w-md rounded-[2.5rem] p-8 modal-animate"><h3 class="text-xl font-black text-slate-800 mb-4">Copiar Horario</h3><div class="space-y-3 mb-6"><div><label class="block text-[10px] font-black uppercase text-slate-400 mb-1">Sección</label><select id="copy-seccion" class="w-full p-3 bg-slate-50 rounded-xl text-sm outline-none"></select></div><div><label class="block text-[10px] font-black uppercase text-slate-400 mb-1">Curso</label><select id="copy-curso" class="w-full p-3 bg-slate-50 rounded-xl text-sm outline-none"></select></div><div><label class="block text-[10px] font-black uppercase text-slate-400 mb-1">Paralelo</label><select id="copy-paralelo" class="w-full p-3 bg-slate-50 rounded-xl text-sm outline-none"></select></div></div><button onclick="window.confirmCopySchedule()" class="w-full bg-blue-600 text-white py-3 rounded-xl font-bold text-sm hover:bg-blue-700">Copiar</button><button onclick="window.closeModal('modal-copy-schedule')" class="mt-3 w-full text-slate-400 font-bold uppercase text-xs hover:text-slate-600">Cancelar</button></div></div>
 
     <script>
-        function resolveLoader() { const loader = document.getElementById('loader'); if (loader && loader.style.display !== 'none') { loader.style.opacity = '0'; setTimeout(() => loader.style.display = 'none', 500); } }
-        window.addEventListener('load', () => setTimeout(resolveLoader, 2000)); setTimeout(resolveLoader, 5000);
-    </script>
-
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-analytics.js";
-        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, getDoc, setDoc, collection, getDocs, updateDoc, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
-        const firebaseConfig = {
-            apiKey: "AIzaSyB1eXkCiF5VZcTin0W5hBQv2X2PEE2bAJc",
-            authDomain: "leccionario-virtual.firebaseapp.com",
-            projectId: "leccionario-virtual",
-            storageBucket: "leccionario-virtual.firebasestorage.app",
-            messagingSenderId: "731785058376",
-            appId: "1:731785058376:web:161550bdc3941e1a64207d",
-            measurementId: "G-ZR0SXQDNY9"
-        };
-
-        let app, auth, db, analytics;
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'leccionario-v1';
-        const getCollectionRef = (name) => collection(db, 'artifacts', appId, 'public', 'data', name);
-        const getDocRef = (col, id) => doc(db, 'artifacts', appId, 'public', 'data', col, id);
-
+        // DOM ELEMENTS DEFINITION AT STARTUP (Fix for "dom is not defined")
         const dom = {
             loader: document.getElementById('loader'),
             auth: document.getElementById('auth-container'),
@@ -415,6 +393,33 @@
             scheduleContainer: document.getElementById('schedule-container'),
             dailyList: document.getElementById('daily-classes-list')
         };
+        
+        function resolveLoader() { if (dom.loader && dom.loader.style.display !== 'none') { dom.loader.style.opacity = '0'; setTimeout(() => dom.loader.style.display = 'none', 500); } }
+        window.addEventListener('load', () => setTimeout(resolveLoader, 2000)); setTimeout(resolveLoader, 5000);
+    </script>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-analytics.js";
+        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, setDoc, collection, getDocs, updateDoc, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // --- CONFIGURACIÓN FIREBASE (TUS DATOS) ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyB1eXkCiF5VZcTin0W5hBQv2X2PEE2bAJc",
+            authDomain: "leccionario-virtual.firebaseapp.com",
+            projectId: "leccionario-virtual",
+            storageBucket: "leccionario-virtual.firebasestorage.app",
+            messagingSenderId: "731785058376",
+            appId: "1:731785058376:web:161550bdc3941e1a64207d",
+            measurementId: "G-ZR0SXQDNY9"
+        };
+
+        let app, auth, db, analytics;
+        // HELPER PATHS
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'leccionario-v1';
+        const getCollectionRef = (name) => collection(db, 'artifacts', appId, 'public', 'data', name);
+        const getDocRef = (col, id) => doc(db, 'artifacts', appId, 'public', 'data', col, id);
 
         try { app = initializeApp(firebaseConfig); analytics = getAnalytics(app); auth = getAuth(app); db = getFirestore(app); 
              const statusEl = document.getElementById('firebase-status'); if(statusEl) { statusEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-green-500"></span> Conexión Firebase OK`; statusEl.className = "mb-6 py-2 px-4 rounded-xl bg-green-50 border border-green-200 text-xs font-bold text-green-700 flex items-center justify-center gap-2"; }
@@ -422,6 +427,7 @@
 
         let state = { catalogs: { areas: [], materias: [], cursos: [], paralelos: [], secciones: [], roles: [] }, users: [], currentUser: null, currentSchedule: null, currentCatalog: null, viewDate: new Date(), calendarDate: new Date(), isRegisterMode: false };
 
+        // --- AUTH ---
         onAuthStateChanged(auth, async (user) => {
             if (user) {
                 const userDoc = await getDoc(getDocRef("users", user.uid));
@@ -455,7 +461,10 @@
             const adminBtn = document.getElementById('btn-open-admin');
             const adminBtnHeader = document.getElementById('btn-open-admin-header');
             
-            if (isAdmin) { adminBtn.classList.remove('hidden'); adminBtnHeader.classList.remove('hidden'); }
+            if (isAdmin) { 
+                adminBtn.classList.remove('hidden'); 
+                adminBtnHeader.classList.remove('hidden'); 
+            }
             else { adminBtn.classList.add('hidden'); adminBtnHeader.classList.add('hidden'); }
 
             document.getElementById('auth-container').classList.add('hidden');
@@ -519,7 +528,7 @@
             const val = document.getElementById('catalog-input').value.trim(); 
             if(val){ 
                 if (state.currentCatalog === 'materias') {
-                    const area = document.getElementById('catalog-extra-select').value;
+                    const area = document.getElementById('catalog-area-select').value;
                     state.catalogs.materias.push({ name: val, area: area });
                 } else if (state.currentCatalog === 'cursos') {
                     const section = document.getElementById('catalog-extra-select').value;
@@ -544,8 +553,19 @@
         }
 
         function subscribeToUsers() { onSnapshot(getCollectionRef("users"), (snapshot) => { state.users = []; snapshot.forEach(doc => state.users.push({ id: doc.id, ...doc.data() })); renderUserTable(); populateReportFilters(); }); }
-        window.manualLoadUsers = async () => { try { const q = await getDocs(getCollectionRef("users")); state.users = []; q.forEach(d => state.users.push({ id: d.id, ...d.data() })); renderUserTable(); alert("Carga completa."); } catch(e) { alert("Error cargando."); } };
-        window.deleteUser = async (id) => { if(confirm("¿Eliminar usuario?")) { try { await deleteDoc(getDocRef("users", id)); } catch(e) { alert("Error."); } } };
+        
+        window.manualLoadUsers = async () => { 
+            if (!dom || !dom.userTable) return;
+            dom.userTable.innerHTML = `<tr><td colspan="5" class="text-center p-8 text-blue-500 font-bold animate-pulse">Cargando usuarios...</td></tr>`;
+            try { 
+                const q = await getDocs(getCollectionRef("users")); 
+                state.users = []; 
+                q.forEach(d => state.users.push({ id: d.id, ...d.data() })); 
+                renderUserTable(); 
+            } catch(e) { alert("Error cargando."); } 
+        };
+        
+        window.deleteUser = async (id) => { if(confirm("¿Eliminar usuario de DB?")) { try { await deleteDoc(getDocRef("users", id)); } catch(e) { alert("Error."); } } };
 
         const toBase64 = file => new Promise((resolve, reject) => { const reader = new FileReader(); reader.readAsDataURL(file); reader.onload = () => resolve(reader.result); reader.onerror = error => reject(error); });
 
@@ -769,14 +789,16 @@
             document.getElementById('lec-header-date').textContent = `${dateInput}`;
             
             const tbody = document.getElementById('leccionario-body');
-            tbody.innerHTML = `<tr><td colspan="5" class="text-center p-8 text-slate-400 animate-pulse">Generando...</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="6" class="text-center p-8 text-slate-400 animate-pulse">Generando...</td></tr>`;
 
             try {
+                // Get users for signatures
                 const usersSnap = await getDocs(getCollectionRef("users"));
                 const allUsers = []; usersSnap.forEach(d => allUsers.push(d.data()));
+
                 const scheduleId = `${sec}_${cur}_${par}`;
                 const docSnap = await getDoc(getDocRef("schedules", scheduleId));
-                if (!docSnap.exists()) { tbody.innerHTML = `<tr><td colspan="5" class="text-center p-8 text-red-400">Sin horario.</td></tr>`; return; }
+                if (!docSnap.exists()) { tbody.innerHTML = `<tr><td colspan="6" class="text-center p-8 text-red-400">Sin horario.</td></tr>`; return; }
 
                 const sched = docSnap.data();
                 const entries = [];
@@ -788,14 +810,23 @@
                             const subjectName = (typeof subject === 'object') ? subject.name : subject;
                             const logId = `${dateInput}_${scheduleId}_${slot.id}`;
                             const logSnap = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'class_logs', logId));
-                            let topic = "NO REGISTRADO", obs = "NO REGISTRADO", signatureHtml = `<span class="text-xs text-red-400 font-bold">PENDIENTE</span>`, teacherName = "Sin Asignar";
+                            
+                            let topic = "NO REGISTRADO";
+                            let obs = "NO REGISTRADO";
+                            let signatureHtml = `<span class="text-xs text-red-400 font-bold">PENDIENTE</span>`;
+                            let teacherName = "Sin Asignar";
+
+                            // Find Teacher logic
                             const teacher = allUsers.find(u => u.seccion === sec && (u.cursos||[]).includes(cur) && (u.paralelos||[]).includes(par) && ((u.materias||[]).map(m => (typeof m === 'object') ? m.name : m).includes(subjectName)));
                             if(teacher) teacherName = teacher.nombre || teacher.email;
+
                             if (logSnap.exists()) {
                                 const data = logSnap.data();
                                 topic = data.topic || "Sin tema";
                                 obs = data.content || "Sin observación";
-                                const signer = allUsers.find(u => u.email === (data.teacherEmail || (teacher ? teacher.email : "")));
+                                // Get signature from user who signed (or assigned teacher if matches)
+                                const signerEmail = data.teacherEmail || (teacher ? teacher.email : "");
+                                const signer = allUsers.find(u => u.email === signerEmail);
                                 if(signer && signer.firma) signatureHtml = `<img src="${signer.firma}" class="signature-img mx-auto">`;
                                 else signatureHtml = `<span class="text-xs text-green-600 font-bold">FIRMADO</span>`;
                             }
@@ -804,7 +835,7 @@
                     }
                 }
                 entries.sort((a,b) => a.start.localeCompare(b.start));
-                tbody.innerHTML = entries.map(e => `<tr><td class="border p-2 text-xs font-bold">${e.time}</td><td class="border p-2 text-xs">${e.subject}</td><td class="border p-2 text-xs font-bold text-slate-700">${e.teacher}</td><td class="border p-2 text-xs"><span class="block font-bold">${e.topic}</span>${e.obs}</td><td class="border p-2 text-center align-middle">${e.signature}</td></tr>`).join('');
+                tbody.innerHTML = entries.map(e => `<tr><td class="border p-2 text-xs font-bold">${e.time}</td><td class="border p-2 text-xs">${e.subject}</td><td class="border p-2 text-xs font-bold text-slate-700">${e.topic}</td><td class="border p-2 text-xs font-bold text-slate-700">${e.teacher}</td><td class="border p-2 text-xs">${e.obs}</td><td class="border p-2 text-center align-middle">${e.signature}</td></tr>`).join('');
             } catch (e) { console.error(e); }
         };
 
@@ -824,7 +855,7 @@
             if (tab === 'reports') populateReportFilters();
         };
 
-        // Listeners Cascade
+        // Cascade listeners
         document.getElementById('lec-seccion').onchange = () => updateCourseOptions('lec-seccion', 'lec-curso');
         document.getElementById('sch-seccion').onchange = () => updateCourseOptions('sch-seccion', 'sch-curso');
 
