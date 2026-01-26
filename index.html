@@ -116,12 +116,13 @@
         <div id="admin-view" class="hidden space-y-8">
             <div class="flex flex-col sm:flex-row justify-between items-end gap-4">
                 <button id="btn-back-dashboard" class="font-black text-xs text-slate-400 uppercase tracking-widest hover:text-blue-600 flex items-center gap-2">Volver</button>
-                <div class="flex space-x-4 border-b border-slate-200 w-full sm:w-auto overflow-x-auto">
-                    <button onclick="window.switchTab('users')" id="tab-users" class="tab-btn active px-4 py-2 text-sm uppercase tracking-widest">Usuarios</button>
-                    <button onclick="window.switchTab('catalogs')" id="tab-catalogs" class="tab-btn px-4 py-2 text-sm uppercase tracking-widest">Académico</button>
-                    <button onclick="window.switchTab('schedules')" id="tab-schedules" class="tab-btn px-4 py-2 text-sm uppercase tracking-widest">Horarios</button>
-                    <button onclick="window.switchTab('leccionario')" id="tab-leccionario" class="tab-btn px-4 py-2 text-sm uppercase tracking-widest text-blue-600">Leccionario</button>
-                    <button onclick="window.switchTab('reports')" id="tab-reports" class="tab-btn px-4 py-2 text-sm uppercase tracking-widest text-red-500">Informes</button>
+                <div class="flex space-x-2 border-b border-slate-200 w-full sm:w-auto overflow-x-auto text-xs font-bold uppercase tracking-wide">
+                    <button onclick="window.switchTab('users')" id="tab-users" class="tab-btn active px-4 py-3">Usuarios</button>
+                    <button onclick="window.switchTab('catalogs')" id="tab-catalogs" class="tab-btn px-4 py-3">Académico</button>
+                    <button onclick="window.switchTab('courses')" id="tab-courses" class="tab-btn px-4 py-3 text-blue-600">Cursos</button>
+                    <button onclick="window.switchTab('schedules')" id="tab-schedules" class="tab-btn px-4 py-3">Horarios</button>
+                    <button onclick="window.switchTab('leccionario')" id="tab-leccionario" class="tab-btn px-4 py-3 text-blue-600">Leccionario</button>
+                    <button onclick="window.switchTab('reports')" id="tab-reports" class="tab-btn px-4 py-3 text-red-500">Informes</button>
                 </div>
             </div>
             
@@ -136,12 +137,44 @@
                 <div class="bg-white rounded-[3rem] shadow-xl border border-slate-100 overflow-hidden"><div class="overflow-x-auto"><table class="w-full text-left min-w-[800px]"><thead><tr class="text-slate-400 text-[10px] uppercase font-black border-b border-slate-50"><th class="px-8 py-6">Usuario</th><th class="px-8 py-6">Datos</th><th class="px-8 py-6">Cursos</th><th class="px-8 py-6">Rol</th><th class="px-8 py-6 text-right">Acciones</th></tr></thead><tbody id="users-table-body" class="divide-y divide-slate-50"></tbody></table></div></div>
             </div>
 
+            <!-- TAB CATÁLOGOS (Limpiada de cursos) -->
             <div id="content-catalogs" class="hidden space-y-6">
                 <div class="flex justify-between items-center bg-white p-4 rounded-[2rem] border border-slate-100 shadow-sm">
-                    <div class="flex items-center gap-3 px-2"><h3 class="font-black text-slate-800 text-lg">Catálogos</h3></div>
+                    <div class="flex items-center gap-3 px-2"><h3 class="font-black text-slate-800 text-lg">Catálogos Básicos</h3></div>
                     <button onclick="window.manualSaveCatalogs()" class="bg-slate-900 text-white px-6 py-3 rounded-xl font-black text-xs uppercase tracking-widest hover:bg-black transition-all">Guardar Todo</button>
                 </div>
                 <div id="catalog-grid-inner" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+            </div>
+
+            <!-- TAB CURSOS (NUEVA PESTAÑA PRINCIPAL) -->
+            <div id="content-courses" class="hidden space-y-6">
+                <div class="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100">
+                    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                        <!-- Panel Izquierdo: Crear -->
+                        <div class="lg:col-span-4 space-y-6 border-r border-slate-50 pr-8">
+                            <h3 class="text-xl font-black text-slate-800">Nuevo Curso</h3>
+                            <div>
+                                <label class="block text-xs font-black uppercase mb-2 text-slate-400">1. Seleccionar Sección</label>
+                                <select id="cm-seccion" class="w-full p-4 bg-slate-50 rounded-xl outline-none text-sm font-bold border border-slate-100"></select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-black uppercase mb-2 text-slate-400">2. Nombre del Curso</label>
+                                <input type="text" id="cm-new-name" placeholder="Ej: 1ero Bachillerato" class="w-full p-4 bg-slate-50 rounded-xl outline-none text-sm font-bold border border-slate-100">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-black uppercase mb-2 text-slate-400">3. Paralelos Habilitados</label>
+                                <div id="cm-parallels-checks" class="grid grid-cols-4 gap-2 bg-slate-50 p-4 rounded-xl border border-slate-100"></div>
+                            </div>
+                            <button onclick="window.addCourseWithParallels()" class="w-full bg-blue-600 text-white py-4 rounded-xl font-bold text-sm uppercase hover:bg-blue-700 transition shadow-lg shadow-blue-200">Crear Curso</button>
+                        </div>
+                        
+                        <!-- Panel Derecho: Lista -->
+                        <div class="lg:col-span-8">
+                            <h3 class="text-xl font-black text-slate-800 mb-6">Cursos Existentes</h3>
+                            <div id="cm-courses-list" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+                        </div>
+                    </div>
+                </div>
             </div>
             
             <div id="content-schedules" class="hidden space-y-6"><div class="bg-white p-6 rounded-[2.5rem] shadow-sm border border-slate-100 flex flex-wrap gap-4 items-end justify-between"><div class="flex gap-4 flex-wrap"><div><label class="block text-xs font-black text-slate-400 mb-2 uppercase">Sección</label><select id="sch-seccion" class="p-3 bg-slate-50 rounded-xl text-sm border-none outline-none font-bold text-slate-700 min-w-[150px]"></select></div><div><label class="block text-xs font-black text-slate-400 mb-2 uppercase">Curso</label><select id="sch-curso" class="p-3 bg-slate-50 rounded-xl text-sm border-none outline-none font-bold text-slate-700 min-w-[150px]"></select></div><div><label class="block text-xs font-black text-slate-400 mb-2 uppercase">Paralelo</label><select id="sch-paralelo" class="p-3 bg-slate-50 rounded-xl text-sm border-none outline-none font-bold text-slate-700 min-w-[100px]"></select></div><button onclick="window.loadSchedule()" class="bg-slate-800 text-white px-6 py-3 rounded-xl font-black text-xs uppercase hover:bg-black transition-all h-[44px] self-end">Cargar</button></div><div class="flex gap-2"><button onclick="window.openCopySchedule()" class="bg-slate-100 text-slate-600 px-6 py-3 rounded-xl font-black text-xs uppercase hover:bg-slate-200 transition-all border border-slate-200 h-[44px]">Copiar</button><button onclick="window.openTimeConfig()" class="bg-blue-50 text-blue-600 px-6 py-3 rounded-xl font-black text-xs uppercase hover:bg-blue-100 transition-all border border-blue-100 h-[44px]">Configurar</button><button onclick="window.saveCurrentSchedule()" class="bg-green-600 text-white px-6 py-3 rounded-xl font-black text-xs uppercase hover:bg-green-700 transition-all h-[44px] shadow-lg shadow-green-100">Guardar</button></div></div><div id="schedule-container" class="bg-white rounded-[3rem] shadow-xl border border-slate-100 p-8 overflow-x-auto"></div></div>
@@ -185,32 +218,6 @@
     </div>
     <!-- Other modals (Catalog, Time, Assign, Copy, Log) included similarly in logic -->
     <div id="modal-catalog" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[120] hidden items-center justify-center p-4"><div class="bg-white w-full max-w-md rounded-[2.5rem] p-8 modal-animate"><h3 id="catalog-title" class="text-2xl font-black mb-6">Administrar</h3><div id="catalog-extra-input" class="hidden mb-4"><label id="catalog-extra-label" class="block text-xs font-black mb-2 uppercase">Vinculación</label><select id="catalog-extra-select" class="w-full p-4 rounded-xl bg-slate-50 outline-none text-sm"></select></div><div class="flex gap-2 mb-6"><input type="text" id="catalog-input" class="flex-1 p-4 rounded-xl bg-slate-50 outline-none"><button onclick="window.addCatalogItem()" class="bg-blue-600 text-white px-6 rounded-xl font-bold">+</button></div><div id="catalog-list" class="max-h-60 overflow-y-auto space-y-2"></div><button onclick="window.closeModal('modal-catalog')" class="mt-6 w-full text-slate-400 font-bold uppercase text-xs">Cerrar</button></div></div>
-
-    <!-- MODAL COURSE MANAGER (NUEVO) -->
-    <div id="modal-course-manager" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[130] hidden items-center justify-center p-4">
-        <div class="bg-white w-full max-w-lg rounded-[2.5rem] p-8 modal-animate max-h-[85vh] overflow-y-auto">
-            <h3 class="text-2xl font-black mb-6">Configurar Cursos</h3>
-            <div class="space-y-4">
-                <div>
-                    <label class="block text-xs font-black uppercase mb-1 text-slate-400">Seleccionar Sección</label>
-                    <select id="cm-seccion" class="w-full p-3 bg-slate-50 rounded-xl outline-none text-sm font-bold"></select>
-                </div>
-                <div class="border-t border-slate-100 pt-4">
-                    <h4 class="font-bold text-slate-700 text-sm mb-3">Agregar Nuevo Curso</h4>
-                    <input type="text" id="cm-new-name" placeholder="Nombre (Ej: 1ero Bach)" class="w-full p-3 bg-slate-50 rounded-xl outline-none mb-3">
-                    <p class="text-[10px] uppercase font-black text-slate-400 mb-2">Paralelos para este curso</p>
-                    <div id="cm-parallels-checks" class="grid grid-cols-4 gap-2 mb-4"></div>
-                    <button onclick="window.addCourseWithParallels()" class="w-full bg-blue-600 text-white py-3 rounded-xl font-bold text-xs uppercase">Agregar Curso</button>
-                </div>
-                <div class="border-t border-slate-100 pt-4">
-                    <h4 class="font-bold text-slate-700 text-sm mb-2">Cursos Existentes en esta Sección</h4>
-                    <div id="cm-courses-list" class="space-y-2"></div>
-                </div>
-            </div>
-            <button onclick="window.closeModal('modal-course-manager')" class="mt-6 w-full text-slate-400 font-bold uppercase text-xs">Cerrar</button>
-        </div>
-    </div>
-
     <div id="modal-time-slots" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[130] hidden items-center justify-center p-4"><div class="bg-white w-full max-w-lg rounded-[2.5rem] p-8 modal-animate"><div class="flex justify-between items-center mb-6"><h3 class="text-2xl font-black">Horas</h3><button onclick="window.closeModal('modal-time-slots')">✕</button></div><div class="flex gap-2 mb-4"><input type="time" id="ts-start" class="p-2 rounded-lg border text-sm"><input type="time" id="ts-end" class="p-2 rounded-lg border text-sm"><button onclick="window.addTimeSlot()" class="bg-slate-800 text-white rounded-lg px-4 text-xs font-bold">Agregar</button></div><div id="slots-list" class="space-y-2"></div></div></div>
     <div id="modal-assign-subject" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[140] hidden items-center justify-center p-4"><div class="bg-white w-full max-w-sm rounded-[2.5rem] p-8 modal-animate"><h3 class="text-xl font-black mb-4">Asignar</h3><div id="subject-selector-list" class="grid grid-cols-2 gap-2 max-h-64 overflow-y-auto"></div><button onclick="window.closeModal('modal-assign-subject')" class="mt-6 w-full bg-slate-100 text-slate-500 py-3 rounded-xl font-bold text-xs">Cancelar</button></div></div>
     <div id="modal-copy-schedule" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[150] hidden items-center justify-center p-4"><div class="bg-white w-full max-w-md rounded-[2.5rem] p-8 modal-animate"><h3 class="text-xl font-black mb-4">Copiar</h3><div class="space-y-3 mb-6"><div><label class="block text-[10px] font-black uppercase text-slate-400">Sección</label><select id="copy-seccion" class="w-full p-3 bg-slate-50 rounded-xl text-sm outline-none"></select></div><div><label class="block text-[10px] font-black uppercase text-slate-400">Curso</label><select id="copy-curso" class="w-full p-3 bg-slate-50 rounded-xl text-sm outline-none"></select></div><div><label class="block text-[10px] font-black uppercase text-slate-400">Paralelo</label><select id="copy-paralelo" class="w-full p-3 bg-slate-50 rounded-xl text-sm outline-none"></select></div></div><button onclick="window.confirmCopySchedule()" class="w-full bg-blue-600 text-white py-3 rounded-xl font-bold text-sm">Copiar</button><button onclick="window.closeModal('modal-copy-schedule')" class="mt-3 w-full text-slate-400 font-bold uppercase text-xs">Cancelar</button></div></div>
@@ -302,8 +309,10 @@
             const snap = await getDoc(getDocRef("config", "catalogs"));
             if(snap.exists()) {
                 state.catalogs = snap.data();
+                // Ensure array types
                 for(let k in state.catalogs) if(!Array.isArray(state.catalogs[k])) state.catalogs[k]=[];
             } else {
+                 // Empty start
                  state.catalogs = { areas: [], materias: [], cursos: [], paralelos: [], secciones: [], roles: [] };
                  await setDoc(getDocRef("config", "catalogs"), state.catalogs);
             }
@@ -333,7 +342,7 @@
 
         // GLOBALS
         window.switchTab = (tab) => {
-            ['users','catalogs','schedules','leccionario','reports'].forEach(t => document.getElementById('content-'+t).classList.add('hidden'));
+            ['users','catalogs','schedules','leccionario','reports','courses'].forEach(t => document.getElementById('content-'+t).classList.add('hidden'));
             document.getElementById('content-'+tab).classList.remove('hidden');
             if(tab==='leccionario') populateScheduleSelectors();
             if(tab==='schedules') populateScheduleSelectors();
@@ -472,7 +481,7 @@
                          
                          let row = { time: `${slot.start} - ${slot.end}`, subject: subjName, teacher: "Sin Asignar", topic: "NO REGISTRADO", obs: "NO REGISTRADO", sign: `<span class="text-xs text-red-500 font-bold">PENDIENTE</span>` };
                          
-                         // Find Teacher
+                         // Find Teacher (Strict Check)
                          const t = users.find(u => 
                              u.seccion === sec && 
                              (u.cursos||[]).some(c => (typeof c === 'object' ? c.name : c) === cur) && 
@@ -518,7 +527,6 @@
              createCheckboxes('container-materias', matNames, 'chk-materia');
              populateSelect('sel-seccion', state.catalogs.secciones);
              populateSelect('sel-rol', state.catalogs.roles);
-             createCheckboxes('container-paralelos', state.catalogs.paralelos, 'chk-paralelo');
              updateUserCourses(); // Initial courses
         }
         document.getElementById('sel-seccion').onchange = updateUserCourses;
@@ -533,6 +541,10 @@
             // In User Profile we assign ALL parallels they teach.
             // Let's stick to global parallels for now but filter by section if needed.
             // Here we assume global parallels for simplicity in user assignment.
+            
+            // If parallels are linked to section (which they are now in Catalog Manager)
+            const parallels = (state.catalogs.paralelos||[]).filter(p => (typeof p === 'string') || (p.section === sec)).map(p => (typeof p === 'object') ? p.name : p);
+            createCheckboxes('container-paralelos', parallels, 'chk-paralelo');
         }
         function createCheckboxes(id, list, name) { document.getElementById(id).innerHTML = (list||[]).map(v => `<label class="check-item"><input type="checkbox" name="${name}" value="${v}"><span>${v}</span></label>`).join(''); }
         function populateSelect(id, list) { document.getElementById(id).innerHTML = (list||[]).map(v => `<option value="${v}">${v}</option>`).join(''); }
@@ -567,7 +579,7 @@
                 eIn.classList.remove('hidden');
                 document.getElementById('catalog-extra-label').textContent = "Vincular a Área";
                 eSel.innerHTML = (state.catalogs.areas || []).map(a => `<option value="${a}">${a}</option>`).join('');
-            } else if (k==='cursos') {
+            } else if (k==='cursos' || k==='paralelos') {
                 eIn.classList.remove('hidden');
                 document.getElementById('catalog-extra-label').textContent = "Vincular a Sección";
                 eSel.innerHTML = (state.catalogs.secciones || []).map(s => `<option value="${s}">${s}</option>`).join('');
@@ -594,6 +606,7 @@
                     // Initialize course with EMPTY parallels array by default
                     state.catalogs.cursos.push({name:v, section:ex, parallels: []});
                 }
+                else if(state.currentCatalog === 'paralelos') state.catalogs.paralelos.push({name:v, section:ex});
                 else state.catalogs[state.currentCatalog].push(v); 
                 await window.manualSaveCatalogs(); renderCatalogList(); renderCatalogs(); 
             } 
@@ -622,11 +635,10 @@
                 </div>
              `).join('');
              
-             // Render checkboxes for parallels based on GLOBAL parallels list
-             // User selects which parallels apply to the new course they are creating
-             // Note: Here we assume parallels are simple strings like "A", "B" in the catalog
-             // If parallels are objects, map to name
-             const allPars = (state.catalogs.paralelos||[]).map(p => typeof p === 'object' ? p.name : p);
+             // Render checkboxes for parallels based on GLOBAL parallels list (Filtered by section if applicable)
+             // If parallels have sections, filter. If strings, show all.
+             const allPars = (state.catalogs.paralelos||[]).filter(p => (typeof p === 'string') || (p.section === sec)).map(p => typeof p === 'object' ? p.name : p);
+             
              document.getElementById('cm-parallels-checks').innerHTML = allPars.map(p => `
                 <label class="flex items-center gap-1 text-xs">
                     <input type="checkbox" class="cm-par-check" value="${p}"> ${p}
@@ -700,6 +712,7 @@
                 curEl.innerHTML = coursesObj.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
                 // Trigger parallel update for first course
                 if(coursesObj.length > 0) updateParallelOptions(coursesObj[0].name, parId);
+                else if(parEl) parEl.innerHTML = ""; // Clear parallels if no courses
             }
             
             // Listener for Course Change to update Parallels
@@ -716,13 +729,16 @@
             // We search in the full catalog since names might repeat across sections, 
             // but here context is filtered by section in previous step.
             // Better to find by name AND section (from parent select)
-            // Simplified: Find first course with that name
+            // Simplified: Find first course with that name (Assuming names unique per section, or filtering correctly above)
+            // Correction: find by name AND section to be safe, but we don't have section easily accessible here inside the helper without passing it.
+            // Let's pass it implicitly via the parent select value if needed, but the list of coursesObj above was already filtered.
             const course = state.catalogs.cursos.find(c => c.name === courseName);
             
             if(course && course.parallels && course.parallels.length > 0) {
                  parEl.innerHTML = course.parallels.map(p => `<option value="${p}">${p}</option>`).join('');
             } else {
-                 // Fallback to all parallels if none defined specific
+                 // Fallback to all parallels if none defined specific (legacy support)
+                 // Or better: show empty to force configuration
                  parEl.innerHTML = (state.catalogs.paralelos||[]).map(p => `<option value="${typeof p==='object'?p.name:p}">${typeof p==='object'?p.name:p}</option>`).join('');
             }
         }
