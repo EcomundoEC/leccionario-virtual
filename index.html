@@ -5,10 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Leccionario Virtual - Gestión Total</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Librería para PDF (Versión Estable y Completa) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
+        /* Estilos UI */
         .role-badge { padding: 0.25rem 0.5rem; border-radius: 0.5rem; font-size: 9px; font-weight: 900; text-transform: uppercase; background: #f1f5f9; color: #64748b; display: inline-block; margin-right: 4px; margin-bottom: 2px; }
-        .data-badge { display: inline-block; padding: 2px 8px; background: #eef2ff; color: #4338ca; border-radius: 12px; font-size: 10px; font-weight: 700; margin-right: 4px; margin-bottom: 4px; border: 1px solid #c7d2fe; }
+        .role-Admin { background: #fee2e2; color: #ef4444; }
+        .role-Docente { background: #dcfce7; color: #16a34a; }
+        .data-badge { display: inline-block; padding: 2px 6px; background: #eef2ff; color: #4f46e5; border-radius: 4px; font-size: 10px; font-weight: 700; margin-right: 2px; margin-bottom: 2px; border: 1px solid #e0e7ff; }
         .modal-animate { animation: fadeIn 0.2s ease-out; }
         @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
         .tab-btn { border-bottom: 3px solid transparent; color: #94a3b8; transition: all 0.2s; cursor: pointer; }
@@ -20,17 +24,22 @@
         .schedule-cell:hover { background: #f8fafc; }
         .schedule-cell.filled { background: #eff6ff; color: #1e40af; font-weight: 700; border-color: #dbeafe; }
         .time-col { background: #f1f5f9; color: #64748b; font-weight: 800; font-size: 10px; width: 80px; text-align: center; }
+        .signature-img { max-height: 40px; max-width: 100px; object-fit: contain; display: block; margin: 0 auto; }
+        
+        /* Estilos Calendario Dashboard */
         .mini-calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; justify-items: center; max-width: 350px; margin: 0 auto; }
         .mini-day { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; font-size: 12px; border-radius: 99px; cursor: pointer; transition: all 0.2s; color: #64748b; }
         .mini-day:hover:not(.empty) { background: #f1f5f9; color: #1e293b; font-weight: bold; }
         .mini-day.selected { background: #2563eb; color: white; font-weight: bold; box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.3); }
         .mini-day.today { border: 2px solid #2563eb; color: #2563eb; font-weight: bold; }
         .mini-day.empty { cursor: default; }
+        .mini-header { font-size: 10px; font-weight: 900; text-transform: uppercase; color: #94a3b8; padding-bottom: 8px; text-align: center; }
+        
+        /* Estilos Tabla Reportes */
         .report-table th { background: #f8fafc; color: #64748b; font-size: 11px; text-transform: uppercase; font-weight: 800; padding: 12px; text-align: left; border-bottom: 2px solid #e2e8f0; }
         .report-table td { border-bottom: 1px solid #f1f5f9; padding: 10px 12px; font-size: 12px; color: #334155; }
         .status-missing { background: #fef2f2; color: #ef4444; padding: 4px 8px; border-radius: 6px; font-size: 10px; font-weight: 800; text-transform: uppercase; display: inline-block; }
         .status-done { background: #f0fdf4; color: #16a34a; padding: 4px 8px; border-radius: 6px; font-size: 10px; font-weight: 800; text-transform: uppercase; display: inline-block; }
-        .signature-img { max-height: 40px; max-width: 100px; object-fit: contain; display: block; margin: 0 auto; }
     </style>
 </head>
 <body class="bg-slate-50 min-h-screen font-sans text-slate-900">
@@ -156,7 +165,7 @@
                 </div>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
                     <div><label class="block text-xs font-black text-slate-400 mb-2 uppercase">Contraseña</label><input type="text" id="form-pass" class="w-full p-4 rounded-2xl bg-slate-100 border-none outline-none"></div>
-                    <div><label class="block text-xs font-black text-slate-400 mb-2 uppercase">Firma</label><input type="file" id="form-signature" accept="image/*" class="w-full p-3 rounded-2xl bg-slate-50"></div>
+                    <div><label class="block text-xs font-black text-slate-400 mb-2 uppercase">Firma</label><input type="file" id="form-signature" accept="image/*" class="w-full p-3 rounded-2xl bg-slate-50 border-none text-xs file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"></div>
                 </div>
                 <div class="mt-4 p-4 bg-slate-50 rounded-2xl border border-slate-100 flex items-center justify-between">
                     <label class="block text-xs font-black text-slate-800 uppercase">¿Es Super Admin?</label>
@@ -176,7 +185,7 @@
         </div>
     </div>
     <!-- Other modals (Catalog, Time, Assign, Copy, Log) included similarly in logic -->
-    <div id="modal-catalog" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[120] hidden items-center justify-center p-4"><div class="bg-white w-full max-w-md rounded-[2.5rem] p-8 modal-animate"><h3 id="catalog-title" class="text-2xl font-black mb-6">Administrar</h3><div class="grid gap-4"><div id="catalog-complex-form"></div></div><div id="catalog-list" class="max-h-60 overflow-y-auto space-y-2 mt-4"></div><button onclick="window.closeModal('modal-catalog')" class="mt-6 w-full text-slate-400 font-bold uppercase text-xs">Cerrar</button></div></div>
+    <div id="modal-catalog" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[120] hidden items-center justify-center p-4"><div class="bg-white w-full max-w-md rounded-[2.5rem] p-8 modal-animate"><h3 id="catalog-title" class="text-2xl font-black mb-6">Administrar</h3><div id="catalog-extra-input" class="hidden mb-4"><label id="catalog-extra-label" class="block text-xs font-black mb-2 uppercase">Vinculación</label><select id="catalog-extra-select" class="w-full p-4 rounded-xl bg-slate-50 outline-none text-sm"></select></div><div class="flex gap-2 mb-6"><input type="text" id="catalog-input" class="flex-1 p-4 rounded-xl bg-slate-50 outline-none"><button onclick="window.addCatalogItem()" class="bg-blue-600 text-white px-6 rounded-xl font-bold">+</button></div><div id="catalog-list" class="max-h-60 overflow-y-auto space-y-2"></div><button onclick="window.closeModal('modal-catalog')" class="mt-6 w-full text-slate-400 font-bold uppercase text-xs">Cerrar</button></div></div>
     <div id="modal-time-slots" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[130] hidden items-center justify-center p-4"><div class="bg-white w-full max-w-lg rounded-[2.5rem] p-8 modal-animate"><div class="flex justify-between items-center mb-6"><h3 class="text-2xl font-black">Horas</h3><button onclick="window.closeModal('modal-time-slots')">✕</button></div><div class="flex gap-2 mb-4"><input type="time" id="ts-start" class="p-2 rounded-lg border text-sm"><input type="time" id="ts-end" class="p-2 rounded-lg border text-sm"><button onclick="window.addTimeSlot()" class="bg-slate-800 text-white rounded-lg px-4 text-xs font-bold">Agregar</button></div><div id="slots-list" class="space-y-2"></div></div></div>
     <div id="modal-assign-subject" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[140] hidden items-center justify-center p-4"><div class="bg-white w-full max-w-sm rounded-[2.5rem] p-8 modal-animate"><h3 class="text-xl font-black mb-4">Asignar</h3><div id="subject-selector-list" class="grid grid-cols-2 gap-2 max-h-64 overflow-y-auto"></div><button onclick="window.closeModal('modal-assign-subject')" class="mt-6 w-full bg-slate-100 text-slate-500 py-3 rounded-xl font-bold text-xs">Cancelar</button></div></div>
     <div id="modal-copy-schedule" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[150] hidden items-center justify-center p-4"><div class="bg-white w-full max-w-md rounded-[2.5rem] p-8 modal-animate"><h3 class="text-xl font-black mb-4">Copiar</h3><div class="space-y-3 mb-6"><div><label class="block text-[10px] font-black uppercase text-slate-400">Sección</label><select id="copy-seccion" class="w-full p-3 bg-slate-50 rounded-xl text-sm outline-none"></select></div><div><label class="block text-[10px] font-black uppercase text-slate-400">Curso</label><select id="copy-curso" class="w-full p-3 bg-slate-50 rounded-xl text-sm outline-none"></select></div><div><label class="block text-[10px] font-black uppercase text-slate-400">Paralelo</label><select id="copy-paralelo" class="w-full p-3 bg-slate-50 rounded-xl text-sm outline-none"></select></div></div><button onclick="window.confirmCopySchedule()" class="w-full bg-blue-600 text-white py-3 rounded-xl font-bold text-sm">Copiar</button><button onclick="window.closeModal('modal-copy-schedule')" class="mt-3 w-full text-slate-400 font-bold uppercase text-xs">Cancelar</button></div></div>
@@ -184,15 +193,21 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-analytics.js";
         import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, getDoc, setDoc, collection, getDocs, updateDoc, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        const firebaseConfig = { apiKey: "AIzaSyB1eXkCiF5VZcTin0W5hBQv2X2PEE2bAJc", authDomain: "leccionario-virtual.firebaseapp.com", projectId: "leccionario-virtual", storageBucket: "leccionario-virtual.firebasestorage.app", messagingSenderId: "731785058376", appId: "1:731785058376:web:161550bdc3941e1a64207d" };
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-        const getCollectionRef = (name) => collection(db, name);
-        const getDocRef = (col, id) => doc(db, col, id);
+        // CONFIG
+        const firebaseConfig = { apiKey: "AIzaSyB1eXkCiF5VZcTin0W5hBQv2X2PEE2bAJc", authDomain: "leccionario-virtual.firebaseapp.com", projectId: "leccionario-virtual", storageBucket: "leccionario-virtual.firebasestorage.app", messagingSenderId: "731785058376", appId: "1:731785058376:web:161550bdc3941e1a64207d", measurementId: "G-ZR0SXQDNY9" };
+        let app, auth, db, analytics;
+        try {
+            app = initializeApp(firebaseConfig);
+            analytics = getAnalytics(app);
+            auth = getAuth(app);
+            db = getFirestore(app);
+            const statusEl = document.getElementById('firebase-status');
+            if(statusEl) { statusEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-green-500"></span> Conexión Firebase OK`; statusEl.className = "mb-6 py-2 px-4 rounded-xl bg-green-50 border border-green-200 text-xs font-bold text-green-700 flex items-center justify-center gap-2"; }
+        } catch(e) { console.error("Error", e); }
 
         const dom = {
             loader: document.getElementById('loader'), auth: document.getElementById('auth-container'), dashboard: document.getElementById('user-logged-in'),
@@ -201,14 +216,17 @@
         setTimeout(() => { if(dom.loader) dom.loader.style.display = 'none'; }, 2000);
 
         let state = { catalogs: { areas: [], materias: [], cursos: [], paralelos: [], secciones: [], roles: [] }, users: [], currentUser: null, currentSchedule: null, currentCatalog: null, viewDate: new Date(), calendarDate: new Date(), isRegisterMode: false };
+        const getDocRef = (col, id) => doc(db, col, id);
+        const getCollectionRef = (name) => collection(db, name);
 
         // AUTH
         onAuthStateChanged(auth, async (user) => {
             if(user) {
                 let uData = (await getDoc(getDocRef("users", user.uid))).data();
-                if(!uData) { // Fallback creation
-                    uData = { email: user.email, rol: "Docente", materias: [], areas: [] };
-                    await setDoc(getDocRef("users", user.uid), uData);
+                if(!uData) { // Fallback
+                    const emailDoc = await getDoc(getDocRef("users", user.email));
+                    if (emailDoc.exists()) { uData = emailDoc.data(); await setDoc(getDocRef("users", user.uid), uData); try { await deleteDoc(getDocRef("users", user.email)); } catch(e){} }
+                    else { uData = { email: user.email, rol: "Docente", materias: [], areas: [] }; await setDoc(getDocRef("users", user.uid), uData); }
                 }
                 loginSuccess({ uid: user.uid, email: user.email, ...uData });
             } else {
@@ -222,12 +240,7 @@
             document.getElementById('user-role-display').textContent = user.rol;
             document.getElementById('avatar-circle').textContent = (user.nombre||user.email)[0].toUpperCase();
             
-            // Dashboard info
-            if (user.materias) document.getElementById('my-subjects-list').innerHTML = user.materias.map(m => typeof m === 'object' ? `<span class='data-badge'>${m.name}</span>` : `<span class='data-badge'>${m}</span>`).join('');
-            
-            if (user.cursos) document.getElementById('my-courses-list').innerHTML = user.cursos.map(c => typeof c === 'object' ? `<span class='text-xs font-bold mr-2'>${c.name}</span>` : `<span class='text-xs font-bold mr-2'>${c}</span>`).join('');
-
-            const isAdmin = user.isSuperAdmin || (user.rol||"").toLowerCase().includes("admin") || user.email.includes("admin");
+            const isAdmin = user.isSuperAdmin || (user.rol||"").toLowerCase().includes("admin") || user.email.includes("admin") || user.email === "gasencio@ecomundo.edu.ec";
             document.getElementById('btn-open-admin').classList.toggle('hidden', !isAdmin);
             document.getElementById('btn-open-admin-header').classList.toggle('hidden', !isAdmin);
             
@@ -320,14 +333,6 @@
             const id = document.getElementById('form-user-id').value;
             const email = document.getElementById('form-email').value;
             const uid = document.getElementById('form-uid').value.trim() || email;
-            
-            // Map Checked Values (Ensure objects for Courses/Materias are handled in UI but saved robustly)
-            // For courses, we need to map back to objects {name, section} if possible, or just strings if simplified
-            // The current logic saves what is in value attribute.
-            // Let's ensure updateCourseOptions puts value as Name.
-            // We'll rely on string matching for simplicity in this version, as user asked for section linking in catalogs.
-            // When saving user, we just save the list of course names they are assigned to.
-            
             const userData = {
                 email, nombre: document.getElementById('form-name').value,
                 isSuperAdmin: document.getElementById('form-is-super-admin').checked,
@@ -401,7 +406,7 @@
                      if(subj) {
                          const subjName = (typeof subj === 'object') ? subj.name : subj;
                          const logId = `${dateInput}_${sched.id}_${slot.id}`;
-                         const logSnap = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'class_logs', logId));
+                         const logSnap = await getDoc(doc(db, 'class_logs', logId));
                          
                          let row = { time: `${slot.start} - ${slot.end}`, subject: subjName, teacher: "Sin Asignar", topic: "NO REGISTRADO", obs: "NO REGISTRADO", sign: `<span class="text-xs text-red-500 font-bold">PENDIENTE</span>` };
                          
@@ -464,8 +469,8 @@
         // Time & Assign
         window.openTimeConfig = () => { renderTimeSlotsList(); window.openModal('modal-time-slots'); };
         function renderTimeSlotsList() { document.getElementById('slots-list').innerHTML = (state.currentSchedule.slots||[]).map((s, i) => `<div class="flex justify-between p-2 border-b"><span>${s.start}-${s.end}</span><button onclick="window.removeTimeSlot(${i})" class="text-red-500">x</button></div>`).join(''); }
-        window.addTimeSlot = () => { const s = document.getElementById('ts-start').value, e = document.getElementById('ts-end').value; if(s&&e) { if(!state.currentSchedule.slots) state.currentSchedule.slots = []; state.currentSchedule.slots.push({id: Date.now(), start:s, end:e}); renderTimeSlotsList(); renderScheduleTable(state.currentSchedule); } };
-        window.removeTimeSlot = (i) => { state.currentSchedule.slots.splice(i,1); renderTimeSlotsList(); renderScheduleTable(state.currentSchedule); };
+        window.addTimeSlot = () => { const s = document.getElementById('ts-start').value, e = document.getElementById('ts-end').value; if(s&&e) { if(!state.currentSchedule.slots) state.currentSchedule.slots = []; state.currentSchedule.slots.push({id: Date.now(), start:s, end:e}); renderTimeSlotsList(); renderScheduleTable(); } };
+        window.removeTimeSlot = (i) => { state.currentSchedule.slots.splice(i,1); renderTimeSlotsList(); renderScheduleTable(); };
         window.openAssignSubject = (cid) => { 
             state.tempCellTarget = cid; 
             const c = document.getElementById('subject-selector-list'); 
@@ -473,29 +478,12 @@
             c.innerHTML = matOpts.map(m=>`<button onclick="window.assignSubject('${m}')" class="p-2 bg-blue-50 text-xs font-bold">${m}</button>`).join('')+`<button onclick="window.assignSubject('')" class="p-2 bg-red-50 text-xs font-bold col-span-2">Borrar</button>`; 
             window.openModal('modal-assign-subject'); 
         };
-        window.assignSubject = (s) => { if(s) state.currentSchedule.grid[state.tempCellTarget]=s; else delete state.currentSchedule.grid[state.tempCellTarget]; renderScheduleTable(state.currentSchedule); window.closeModal('modal-assign-subject'); };
+        window.assignSubject = (s) => { if(s) state.currentSchedule.grid[state.tempCellTarget]=s; else delete state.currentSchedule.grid[state.tempCellTarget]; renderScheduleTable(); window.closeModal('modal-assign-subject'); };
 
         // Catalog
-        window.openCatalogManager = (k) => { state.currentCatalog = k; document.getElementById('catalog-title').textContent = k; 
-            const eIn = document.getElementById('catalog-extra-input'); 
-            if(k==='materias' || k==='cursos') {
-                eIn.classList.remove('hidden');
-                document.getElementById('catalog-extra-label').textContent = k==='materias' ? "Área" : "Sección";
-                document.getElementById('catalog-extra-select').innerHTML = (k==='materias'?state.catalogs.areas:state.catalogs.secciones).map(v=>`<option value="${v}">${v}</option>`).join('');
-            } else eIn.classList.add('hidden');
-            renderCatalogList(); window.openModal('modal-catalog'); 
-        };
+        window.openCatalogManager = (k) => { state.currentCatalog = k; document.getElementById('catalog-title').textContent = k; renderCatalogList(); window.openModal('modal-catalog'); };
         function renderCatalogList() { document.getElementById('catalog-list').innerHTML = (state.catalogs[state.currentCatalog]||[]).map((i,idx) => `<div class="flex justify-between p-2 border-b"><span>${typeof i==='object'?i.name:i}</span><button onclick="window.removeCatalogItem(${idx})" class="text-red-500">x</button></div>`).join(''); }
-        window.addCatalogItem = async () => { 
-            const v = document.getElementById('catalog-input').value.trim(); 
-            const extra = document.getElementById('catalog-extra-select').value;
-            if(v) { 
-                if(state.currentCatalog === 'materias') state.catalogs.materias.push({name:v, area:extra});
-                else if(state.currentCatalog === 'cursos') state.catalogs.cursos.push({name:v, section:extra});
-                else state.catalogs[state.currentCatalog].push(v); 
-                await window.manualSaveCatalogs(); renderCatalogList(); renderCatalogs(); 
-            } 
-        };
+        window.addCatalogItem = async () => { const v = document.getElementById('catalog-input').value.trim(); if(v) { state.catalogs[state.currentCatalog].push(v); await window.manualSaveCatalogs(); renderCatalogList(); renderCatalogs(); } };
         window.removeCatalogItem = async (i) => { state.catalogs[state.currentCatalog].splice(i,1); await window.manualSaveCatalogs(); renderCatalogList(); renderCatalogs(); };
         function renderCatalogs() { document.getElementById('catalog-grid-inner').innerHTML = Object.keys(state.catalogs).map(k => `<div onclick="window.openCatalogManager('${k}')" class="bg-white p-4 rounded-xl shadow cursor-pointer"><h4 class="font-bold uppercase text-xs">${k}</h4></div>`).join(''); }
 
