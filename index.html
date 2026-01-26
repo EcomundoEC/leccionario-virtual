@@ -5,41 +5,32 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Leccionario Virtual - Gestión Total</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Librería para PDF (Versión Estable y Completa) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
-        /* Estilos UI */
         .role-badge { padding: 0.25rem 0.5rem; border-radius: 0.5rem; font-size: 9px; font-weight: 900; text-transform: uppercase; background: #f1f5f9; color: #64748b; display: inline-block; margin-right: 4px; margin-bottom: 2px; }
-        .role-Admin { background: #fee2e2; color: #ef4444; }
-        .role-Docente { background: #dcfce7; color: #16a34a; }
         .data-badge { display: inline-block; padding: 2px 6px; background: #eef2ff; color: #4f46e5; border-radius: 4px; font-size: 10px; font-weight: 700; margin-right: 2px; margin-bottom: 2px; border: 1px solid #e0e7ff; }
         .modal-animate { animation: fadeIn 0.2s ease-out; }
         @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
         .tab-btn { border-bottom: 3px solid transparent; color: #94a3b8; transition: all 0.2s; cursor: pointer; }
         .tab-btn.active { border-color: #2563eb; color: #1e293b; font-weight: 900; }
-        .check-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 0.5rem; max-height: 150px; overflow-y: auto; padding: 0.5rem; background: #f8fafc; border-radius: 0.75rem; border: 1px solid #e2e8f0; }
+        .check-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 0.5rem; max-height: 150px; overflow-y: auto; padding: 0.5rem; background: #f8fafc; border-radius: 0.75rem; border: 1px solid #e2e8f0; }
         .check-item { display: flex; align-items: center; font-size: 11px; color: #475569; cursor: pointer; user-select: none; }
         .check-item input { margin-right: 6px; accent-color: #2563eb; }
         .schedule-cell { height: 60px; border: 1px solid #e2e8f0; background: #fff; cursor: pointer; transition: all 0.2s; font-size: 11px; text-align: center; vertical-align: middle; padding: 4px; position: relative; }
         .schedule-cell:hover { background: #f8fafc; }
         .schedule-cell.filled { background: #eff6ff; color: #1e40af; font-weight: 700; border-color: #dbeafe; }
         .time-col { background: #f1f5f9; color: #64748b; font-weight: 800; font-size: 10px; width: 80px; text-align: center; }
-        .signature-img { max-height: 40px; max-width: 100px; object-fit: contain; display: block; margin: 0 auto; }
-        
-        /* Estilos Calendario Dashboard */
         .mini-calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; justify-items: center; max-width: 350px; margin: 0 auto; }
         .mini-day { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; font-size: 12px; border-radius: 99px; cursor: pointer; transition: all 0.2s; color: #64748b; }
         .mini-day:hover:not(.empty) { background: #f1f5f9; color: #1e293b; font-weight: bold; }
         .mini-day.selected { background: #2563eb; color: white; font-weight: bold; box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.3); }
         .mini-day.today { border: 2px solid #2563eb; color: #2563eb; font-weight: bold; }
         .mini-day.empty { cursor: default; }
-        .mini-header { font-size: 10px; font-weight: 900; text-transform: uppercase; color: #94a3b8; padding-bottom: 8px; text-align: center; }
-        
-        /* Estilos Tabla Reportes */
         .report-table th { background: #f8fafc; color: #64748b; font-size: 11px; text-transform: uppercase; font-weight: 800; padding: 12px; text-align: left; border-bottom: 2px solid #e2e8f0; }
         .report-table td { border-bottom: 1px solid #f1f5f9; padding: 10px 12px; font-size: 12px; color: #334155; }
         .status-missing { background: #fef2f2; color: #ef4444; padding: 4px 8px; border-radius: 6px; font-size: 10px; font-weight: 800; text-transform: uppercase; display: inline-block; }
         .status-done { background: #f0fdf4; color: #16a34a; padding: 4px 8px; border-radius: 6px; font-size: 10px; font-weight: 800; text-transform: uppercase; display: inline-block; }
+        .signature-img { max-height: 40px; max-width: 100px; object-fit: contain; display: block; margin: 0 auto; }
     </style>
 </head>
 <body class="bg-slate-50 min-h-screen font-sans text-slate-900">
@@ -147,11 +138,7 @@
 
             <div id="content-catalogs" class="hidden space-y-6">
                 <div class="flex justify-between items-center bg-white p-4 rounded-[2rem] border border-slate-100 shadow-sm">
-                    <div class="flex items-center gap-3 px-2">
-                        <h3 class="font-black text-slate-800 text-lg">Catálogos</h3>
-                        <!-- NUEVA OPCIÓN: CONFIGURAR CURSOS -->
-                        <button onclick="window.openCourseManager()" class="bg-blue-50 text-blue-600 px-4 py-2 rounded-xl text-xs font-bold hover:bg-blue-100 ml-4">Configurar Cursos y Paralelos</button>
-                    </div>
+                    <div class="flex items-center gap-3 px-2"><h3 class="font-black text-slate-800 text-lg">Catálogos</h3></div>
                     <button onclick="window.manualSaveCatalogs()" class="bg-slate-900 text-white px-6 py-3 rounded-xl font-black text-xs uppercase tracking-widest hover:bg-black transition-all">Guardar Todo</button>
                 </div>
                 <div id="catalog-grid-inner" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
@@ -196,8 +183,7 @@
             </form>
         </div>
     </div>
-    
-    <!-- Modal Catálogo (RENOVADO) -->
+    <!-- Other modals (Catalog, Time, Assign, Copy, Log) included similarly in logic -->
     <div id="modal-catalog" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[120] hidden items-center justify-center p-4"><div class="bg-white w-full max-w-md rounded-[2.5rem] p-8 modal-animate"><h3 id="catalog-title" class="text-2xl font-black mb-6">Administrar</h3><div id="catalog-extra-input" class="hidden mb-4"><label id="catalog-extra-label" class="block text-xs font-black mb-2 uppercase">Vinculación</label><select id="catalog-extra-select" class="w-full p-4 rounded-xl bg-slate-50 outline-none text-sm"></select></div><div class="flex gap-2 mb-6"><input type="text" id="catalog-input" class="flex-1 p-4 rounded-xl bg-slate-50 outline-none"><button onclick="window.addCatalogItem()" class="bg-blue-600 text-white px-6 rounded-xl font-bold">+</button></div><div id="catalog-list" class="max-h-60 overflow-y-auto space-y-2"></div><button onclick="window.closeModal('modal-catalog')" class="mt-6 w-full text-slate-400 font-bold uppercase text-xs">Cerrar</button></div></div>
 
     <!-- MODAL COURSE MANAGER (NUEVO) -->
@@ -251,6 +237,18 @@
 
         let state = { catalogs: { areas: [], materias: [], cursos: [], paralelos: [], secciones: [], roles: [] }, users: [], currentUser: null, currentSchedule: null, currentCatalog: null, viewDate: new Date(), calendarDate: new Date(), isRegisterMode: false };
 
+        // Test connection
+        (async () => {
+             try {
+                 await getDoc(getDocRef("config", "catalogs"));
+                 const el = document.getElementById('firebase-status');
+                 if(el) { el.innerHTML = "<span class='text-green-500'>●</span> Conectado"; el.classList.replace('text-slate-400', 'text-green-700'); }
+             } catch(e) {
+                 const el = document.getElementById('firebase-status');
+                 if(el) { el.innerHTML = "<span class='text-red-500'>●</span> Desconectado"; el.classList.replace('text-slate-400', 'text-red-700'); }
+             }
+        })();
+
         // AUTH
         onAuthStateChanged(auth, async (user) => {
             if(user) {
@@ -262,7 +260,6 @@
                 loginSuccess({ uid: user.uid, email: user.email, ...uData });
             } else {
                 dom.dashboard.classList.add('hidden'); dom.auth.classList.remove('hidden');
-                window.testConnection();
             }
         });
 
@@ -305,10 +302,8 @@
             const snap = await getDoc(getDocRef("config", "catalogs"));
             if(snap.exists()) {
                 state.catalogs = snap.data();
-                // Ensure array types
                 for(let k in state.catalogs) if(!Array.isArray(state.catalogs[k])) state.catalogs[k]=[];
             } else {
-                 // Empty start
                  state.catalogs = { areas: [], materias: [], cursos: [], paralelos: [], secciones: [], roles: [] };
                  await setDoc(getDocRef("config", "catalogs"), state.catalogs);
             }
@@ -359,10 +354,9 @@
             populateSelect('sel-seccion', state.catalogs.secciones);
             document.getElementById('sel-seccion').value = sec;
             
-            renderUserFormOptions(); // Trigger cascade
+            renderUserFormOptions(); 
             
             setChecked('chk-area', u.areas || []);
-            // Map simple strings to names if needed
             const matNames = (u.materias||[]).map(m => typeof m === 'object' ? m.name : m);
             setChecked('chk-materia', matNames);
             const curNames = (u.cursos||[]).map(c => typeof c === 'object' ? c.name : c);
@@ -387,7 +381,6 @@
             const sec = document.getElementById('sel-seccion').value;
             
             const rawCourses = getChecked('chk-curso');
-            // Re-hydrate courses with full object structure (name, section, parallels)
             const finalCourses = rawCourses.map(cName => {
                  const original = state.catalogs.cursos.find(c => c.name === cName && c.section === sec);
                  return original || { name: cName, section: sec };
@@ -475,7 +468,7 @@
                      if(subj) {
                          const subjName = (typeof subj === 'object') ? subj.name : subj;
                          const logId = `${dateInput}_${sched.id}_${slot.id}`;
-                         const logSnap = await getDoc(doc(db, 'class_logs', logId));
+                         const logSnap = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'class_logs', logId));
                          
                          let row = { time: `${slot.start} - ${slot.end}`, subject: subjName, teacher: "Sin Asignar", topic: "NO REGISTRADO", obs: "NO REGISTRADO", sign: `<span class="text-xs text-red-500 font-bold">PENDIENTE</span>` };
                          
@@ -625,6 +618,7 @@
                         <span class="font-bold">${c.name}</span>
                         <span class="text-slate-400 ml-2">Par: ${(c.parallels||[]).join(', ')}</span>
                     </div>
+                    <button onclick="window.deleteCourse('${c.name}', '${sec}')" class="text-red-500 font-bold ml-2">✕</button>
                 </div>
              `).join('');
              
@@ -657,6 +651,17 @@
                  updateCMList();
                  document.getElementById('cm-new-name').value = "";
              }
+        };
+
+        window.deleteCourse = async (courseName, sectionName) => {
+            if(!confirm(`¿Eliminar curso ${courseName}?`)) return;
+            state.catalogs.cursos = state.catalogs.cursos.filter(c => !(c.name === courseName && c.section === sectionName));
+            await window.manualSaveCatalogs();
+            // Refresh logic: re-call updateCMList.
+            // Since updateCMList is scoped, we manually trigger the change event or call it if exposed.
+            // We exposed it to window? No, updateCMList is local. 
+            // Workaround: trigger change on select
+            document.getElementById('cm-seccion').dispatchEvent(new Event('change'));
         };
 
         // Dashboard Utils
