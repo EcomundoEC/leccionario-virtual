@@ -31,6 +31,10 @@
         .status-missing { background: #fef2f2; color: #ef4444; padding: 4px 8px; border-radius: 6px; font-size: 10px; font-weight: 800; text-transform: uppercase; display: inline-block; }
         .status-done { background: #f0fdf4; color: #16a34a; padding: 4px 8px; border-radius: 6px; font-size: 10px; font-weight: 800; text-transform: uppercase; display: inline-block; }
         .signature-img { max-height: 40px; max-width: 100px; object-fit: contain; display: block; margin: 0 auto; }
+        
+        /* New Styles for Catalog */
+        .section-group { border-left: 3px solid #3b82f6; padding-left: 10px; margin-bottom: 8px; }
+        .section-label { font-size: 10px; font-weight: 900; text-transform: uppercase; color: #94a3b8; margin-bottom: 4px; }
     </style>
 </head>
 <body class="bg-slate-50 min-h-screen font-sans text-slate-900">
@@ -51,7 +55,7 @@
             <h1 class="text-3xl font-black mb-2 text-slate-800">Leccionario Virtual</h1>
             <p id="auth-subtitle" class="text-slate-400 text-sm mb-4">Ingresa tus credenciales</p>
             <div id="firebase-status" class="mb-6 py-2 px-4 rounded-xl bg-slate-50 border border-slate-200 text-xs font-mono text-slate-400 flex items-center justify-center gap-2">
-                <span class="w-2 h-2 rounded-full bg-yellow-300 animate-pulse"></span> Conectando...
+                <span class="w-2 h-2 rounded-full bg-yellow-300 animate-pulse"></span> Verificando conexión...
             </div>
             <form id="auth-form" class="space-y-5 text-left">
                 <input type="text" id="email" required placeholder="Correo" class="w-full px-5 py-4 rounded-2xl border border-slate-200 outline-none bg-slate-50">
@@ -61,7 +65,6 @@
             <div id="login-error" class="bg-red-50 text-red-500 text-xs p-3 rounded-xl mt-4 font-bold hidden border border-red-100 text-left"></div>
              <div class="mt-6 pt-6 border-t border-slate-100">
                 <button id="toggle-auth-mode" class="text-xs text-blue-500 font-bold uppercase tracking-wide hover:underline">¿Primera vez? Activa tu cuenta aquí</button>
-                <p class="text-[9px] text-slate-300 mt-2 font-bold uppercase tracking-widest">Modo Prueba: admin / admin</p>
             </div>
         </div>
     </div>
@@ -183,8 +186,10 @@
             </form>
         </div>
     </div>
-    <!-- Other modals (Catalog, Time, Assign, Copy, Log) included similarly in logic -->
-    <div id="modal-catalog" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[120] hidden items-center justify-center p-4"><div class="bg-white w-full max-w-md rounded-[2.5rem] p-8 modal-animate"><h3 id="catalog-title" class="text-2xl font-black mb-6">Administrar</h3><div id="catalog-extra-input" class="hidden mb-4"><label id="catalog-extra-label" class="block text-xs font-black mb-2 uppercase">Vinculación</label><select id="catalog-extra-select" class="w-full p-4 rounded-xl bg-slate-50 outline-none text-sm"></select></div><div class="flex gap-2 mb-6"><input type="text" id="catalog-input" class="flex-1 p-4 rounded-xl bg-slate-50 outline-none"><button onclick="window.addCatalogItem()" class="bg-blue-600 text-white px-6 rounded-xl font-bold">+</button></div><div id="catalog-list" class="max-h-60 overflow-y-auto space-y-2"></div><button onclick="window.closeModal('modal-catalog')" class="mt-6 w-full text-slate-400 font-bold uppercase text-xs">Cerrar</button></div></div>
+    
+    <!-- Modal Catálogo (RENOVADO) -->
+    <div id="modal-catalog" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[120] hidden items-center justify-center p-4"><div class="bg-white w-full max-w-md rounded-[2.5rem] p-8 modal-animate"><h3 id="catalog-title" class="text-2xl font-black mb-6">Administrar</h3><div id="catalog-extra-input" class="hidden mb-4"><label id="catalog-extra-label" class="block text-xs font-black mb-2 uppercase">Vinculación</label><div id="catalog-extra-container"></div></div><div class="flex gap-2 mb-6"><input type="text" id="catalog-input" class="flex-1 p-4 rounded-xl bg-slate-50 outline-none"><button onclick="window.addCatalogItem()" class="bg-blue-600 text-white px-6 rounded-xl font-bold">+</button></div><div id="catalog-list" class="max-h-60 overflow-y-auto space-y-2"></div><button onclick="window.closeModal('modal-catalog')" class="mt-6 w-full text-slate-400 font-bold uppercase text-xs">Cerrar</button></div></div>
+
     <div id="modal-time-slots" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[130] hidden items-center justify-center p-4"><div class="bg-white w-full max-w-lg rounded-[2.5rem] p-8 modal-animate"><div class="flex justify-between items-center mb-6"><h3 class="text-2xl font-black">Horas</h3><button onclick="window.closeModal('modal-time-slots')">✕</button></div><div class="flex gap-2 mb-4"><input type="time" id="ts-start" class="p-2 rounded-lg border text-sm"><input type="time" id="ts-end" class="p-2 rounded-lg border text-sm"><button onclick="window.addTimeSlot()" class="bg-slate-800 text-white rounded-lg px-4 text-xs font-bold">Agregar</button></div><div id="slots-list" class="space-y-2"></div></div></div>
     <div id="modal-assign-subject" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[140] hidden items-center justify-center p-4"><div class="bg-white w-full max-w-sm rounded-[2.5rem] p-8 modal-animate"><h3 class="text-xl font-black mb-4">Asignar</h3><div id="subject-selector-list" class="grid grid-cols-2 gap-2 max-h-64 overflow-y-auto"></div><button onclick="window.closeModal('modal-assign-subject')" class="mt-6 w-full bg-slate-100 text-slate-500 py-3 rounded-xl font-bold text-xs">Cancelar</button></div></div>
     <div id="modal-copy-schedule" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[150] hidden items-center justify-center p-4"><div class="bg-white w-full max-w-md rounded-[2.5rem] p-8 modal-animate"><h3 class="text-xl font-black mb-4">Copiar</h3><div class="space-y-3 mb-6"><div><label class="block text-[10px] font-black uppercase text-slate-400">Sección</label><select id="copy-seccion" class="w-full p-3 bg-slate-50 rounded-xl text-sm outline-none"></select></div><div><label class="block text-[10px] font-black uppercase text-slate-400">Curso</label><select id="copy-curso" class="w-full p-3 bg-slate-50 rounded-xl text-sm outline-none"></select></div><div><label class="block text-[10px] font-black uppercase text-slate-400">Paralelo</label><select id="copy-paralelo" class="w-full p-3 bg-slate-50 rounded-xl text-sm outline-none"></select></div></div><button onclick="window.confirmCopySchedule()" class="w-full bg-blue-600 text-white py-3 rounded-xl font-bold text-sm">Copiar</button><button onclick="window.closeModal('modal-copy-schedule')" class="mt-3 w-full text-slate-400 font-bold uppercase text-xs">Cancelar</button></div></div>
@@ -200,8 +205,8 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
         const appId = 'leccionario-v1';
-        const getCollectionRef = (name) => collection(db, 'artifacts', appId, 'public', 'data', name);
-        const getDocRef = (col, id) => doc(db, 'artifacts', appId, 'public', 'data', col, id);
+        const getCollectionRef = (name) => collection(db, name);
+        const getDocRef = (col, id) => doc(db, col, id);
 
         const dom = {
             loader: document.getElementById('loader'), auth: document.getElementById('auth-container'), dashboard: document.getElementById('user-logged-in'),
@@ -210,6 +215,19 @@
         setTimeout(() => { if(dom.loader) dom.loader.style.display = 'none'; }, 2000);
 
         let state = { catalogs: { areas: [], materias: [], cursos: [], paralelos: [], secciones: [], roles: [] }, users: [], currentUser: null, currentSchedule: null, currentCatalog: null, viewDate: new Date(), calendarDate: new Date(), isRegisterMode: false };
+
+        // Test Connection
+        window.testConnection = async () => {
+            try {
+                await getDoc(getDocRef("config", "catalogs"));
+                const el = document.getElementById('firebase-status');
+                if(el) { el.innerHTML = "<span class='text-green-500'>●</span> Conectado"; el.classList.replace('text-slate-400', 'text-green-700'); }
+            } catch(e) {
+                console.error(e);
+                const el = document.getElementById('firebase-status');
+                if(el) { el.innerHTML = "<span class='text-red-500'>●</span> Error de Conexión"; el.classList.replace('text-slate-400', 'text-red-700'); }
+            }
+        };
 
         // AUTH
         onAuthStateChanged(auth, async (user) => {
@@ -222,6 +240,7 @@
                 loginSuccess({ uid: user.uid, email: user.email, ...uData });
             } else {
                 dom.dashboard.classList.add('hidden'); dom.auth.classList.remove('hidden');
+                window.testConnection();
             }
         });
 
@@ -267,7 +286,7 @@
                 // Ensure array types
                 for(let k in state.catalogs) if(!Array.isArray(state.catalogs[k])) state.catalogs[k]=[];
             } else {
-                 // Empty start - force structure
+                 // Empty start
                  state.catalogs = { areas: [], materias: [], cursos: [], paralelos: [], secciones: [], roles: [] };
                  await setDoc(getDocRef("config", "catalogs"), state.catalogs);
             }
@@ -314,15 +333,13 @@
             document.getElementById('form-name').value = u.nombre || "";
             document.getElementById('form-is-super-admin').checked = !!u.isSuperAdmin;
             
-            // Pre-select section to trigger filters
             const sec = u.seccion;
             populateSelect('sel-seccion', state.catalogs.secciones);
             document.getElementById('sel-seccion').value = sec;
             
-            renderUserFormOptions(); // Will use current value of sel-seccion
+            renderUserFormOptions(); // Trigger cascade
             
             setChecked('chk-area', u.areas || []);
-            // Map simple strings to names if needed
             const matNames = (u.materias||[]).map(m => typeof m === 'object' ? m.name : m);
             setChecked('chk-materia', matNames);
             const curNames = (u.cursos||[]).map(c => typeof c === 'object' ? c.name : c);
@@ -331,7 +348,6 @@
             setChecked('chk-paralelo', parNames);
             
             document.getElementById('sel-rol').value = u.rol;
-            
             window.openModal('modal-user');
         };
         
@@ -345,21 +361,20 @@
             const id = document.getElementById('form-user-id').value;
             const email = document.getElementById('form-email').value;
             const uid = document.getElementById('form-uid').value.trim() || email;
-            
-            const rawCourses = getChecked('chk-curso');
             const sec = document.getElementById('sel-seccion').value;
-            // Map courses to objects with section
+            
+            // Map Back to Objects
+            const rawCourses = getChecked('chk-curso');
             const finalCourses = rawCourses.map(cName => ({ name: cName, section: sec }));
             
+            const rawPars = getChecked('chk-paralelo');
+            const finalPars = rawPars.map(pName => ({ name: pName, section: sec }));
+
             const rawMats = getChecked('chk-materia');
-            // Try to find area from catalog
             const finalMats = rawMats.map(mName => {
                 const found = state.catalogs.materias.find(m => m.name === mName || m === mName);
                 return found ? (typeof found === 'object' ? found : {name: mName, area: 'General'}) : {name: mName, area: 'General'};
             });
-            
-            const rawPars = getChecked('chk-paralelo');
-            const finalPars = rawPars.map(pName => ({ name: pName, section: sec }));
 
             const userData = {
                 email, nombre: document.getElementById('form-name').value,
@@ -434,11 +449,11 @@
                      if(subj) {
                          const subjName = (typeof subj === 'object') ? subj.name : subj;
                          const logId = `${dateInput}_${sched.id}_${slot.id}`;
-                         const logSnap = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'class_logs', logId));
+                         const logSnap = await getDoc(doc(db, 'class_logs', logId));
                          
                          let row = { time: `${slot.start} - ${slot.end}`, subject: subjName, teacher: "Sin Asignar", topic: "NO REGISTRADO", obs: "NO REGISTRADO", sign: `<span class="text-xs text-red-500 font-bold">PENDIENTE</span>` };
                          
-                         // Find Teacher (Strict Check)
+                         // Find Teacher
                          const t = users.find(u => 
                              u.seccion === sec && 
                              (u.cursos||[]).some(c => (typeof c === 'object' ? c.name : c) === cur) && 
@@ -484,7 +499,6 @@
              createCheckboxes('container-materias', matNames, 'chk-materia');
              populateSelect('sel-seccion', state.catalogs.secciones);
              populateSelect('sel-rol', state.catalogs.roles);
-             createCheckboxes('container-paralelos', state.catalogs.paralelos, 'chk-paralelo');
              updateUserCourses(); // Initial courses
         }
         document.getElementById('sel-seccion').onchange = updateUserCourses;
@@ -526,12 +540,19 @@
         window.openCatalogManager = (k) => { state.currentCatalog = k; document.getElementById('catalog-title').textContent = k; 
             const eIn = document.getElementById('catalog-extra-input'); 
             const eSel = document.getElementById('catalog-extra-select');
-            if(k==='materias' || k==='cursos' || k==='paralelos') {
-                eIn.classList.remove('hidden');
-                document.getElementById('catalog-extra-label').textContent = k==='materias' ? "Área" : "Sección";
-                const list = k==='materias'?state.catalogs.areas:state.catalogs.secciones;
-                eSel.innerHTML = (list||[]).map(v=>`<option value="${v}">${v}</option>`).join('');
-            } else eIn.classList.add('hidden');
+            const cont = document.getElementById('catalog-extra-input');
+            
+            if(k==='materias') {
+                cont.classList.remove('hidden');
+                document.getElementById('catalog-extra-label').textContent = "Vincular a Área";
+                eSel.innerHTML = (state.catalogs.areas || []).map(a => `<option value="${a}">${a}</option>`).join('');
+            } else if (k==='cursos' || k==='paralelos') {
+                cont.classList.remove('hidden');
+                document.getElementById('catalog-extra-label').textContent = "Vincular a Sección";
+                eSel.innerHTML = (state.catalogs.secciones || []).map(s => `<option value="${s}">${s}</option>`).join('');
+            } else {
+                cont.classList.add('hidden');
+            }
             renderCatalogList(); window.openModal('modal-catalog'); 
         };
         function renderCatalogList() { document.getElementById('catalog-list').innerHTML = (state.catalogs[state.currentCatalog]||[]).map((i,idx) => {
