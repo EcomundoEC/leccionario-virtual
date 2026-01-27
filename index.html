@@ -8,11 +8,13 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
         .role-badge { padding: 0.25rem 0.5rem; border-radius: 0.5rem; font-size: 9px; font-weight: 900; text-transform: uppercase; background: #f1f5f9; color: #64748b; display: inline-block; margin-right: 4px; margin-bottom: 2px; }
-        .data-badge { display: inline-block; padding: 2px 8px; background: #eef2ff; color: #4338ca; border-radius: 12px; font-size: 10px; font-weight: 700; margin-right: 4px; margin-bottom: 4px; border: 1px solid #c7d2fe; }
+        .data-badge { display: inline-block; padding: 2px 6px; background: #eef2ff; color: #4338ca; border-radius: 12px; font-size: 10px; font-weight: 700; margin-right: 2px; margin-bottom: 2px; border: 1px solid #c7d2fe; }
         .modal-animate { animation: fadeIn 0.2s ease-out; }
         @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
         .tab-btn { border-bottom: 3px solid transparent; color: #94a3b8; transition: all 0.2s; cursor: pointer; }
         .tab-btn.active { border-color: #2563eb; color: #1e293b; font-weight: 900; }
+        .auth-tab { border-bottom: 2px solid transparent; color: #94a3b8; width: 50%; padding-bottom: 8px; font-weight: bold; transition: all 0.2s; }
+        .auth-tab.active { border-color: #2563eb; color: #1e293b; }
         .check-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 0.5rem; max-height: 150px; overflow-y: auto; padding: 0.5rem; background: #f8fafc; border-radius: 0.75rem; border: 1px solid #e2e8f0; }
         .check-item { display: flex; align-items: center; font-size: 11px; color: #475569; cursor: pointer; user-select: none; }
         .check-item input { margin-right: 6px; accent-color: #2563eb; }
@@ -42,31 +44,50 @@
         </div>
     </div>
 
-    <!-- LOGIN -->
+    <!-- PANTALLA DE AUTENTICACIÓN -->
     <div id="auth-container" class="min-h-screen flex items-center justify-center p-4">
         <div class="bg-white p-10 rounded-[2.5rem] shadow-2xl border border-slate-200 w-full max-w-md text-center">
-            <div class="mx-auto mb-8 w-40 h-40 flex items-center justify-center">
+            <div class="mx-auto mb-6 w-32 h-32 flex items-center justify-center">
                 <img src="logo.png" alt="Logo" class="object-contain max-w-full max-h-full drop-shadow-md" onerror="this.src='https://placehold.co/150x150?text=LOGO';">
             </div>
-            <h1 class="text-3xl font-black mb-2 text-slate-800">Leccionario Virtual</h1>
-            <p id="auth-subtitle" class="text-slate-400 text-sm mb-4">Ingresa tus credenciales</p>
-            <div id="firebase-status" class="mb-6 py-2 px-4 rounded-xl bg-slate-50 border border-slate-200 text-xs font-mono text-slate-400 flex items-center justify-center gap-2">
-                <span class="w-2 h-2 rounded-full bg-yellow-300 animate-pulse"></span> Conectando...
+            
+            <h1 class="text-3xl font-black mb-1 text-slate-800">Leccionario Virtual</h1>
+            <div id="firebase-status" class="mb-6 text-[10px] font-mono text-slate-400 flex items-center justify-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-yellow-300 animate-pulse"></span> Verificando conexión...
             </div>
-            <form id="auth-form" class="space-y-5 text-left">
-                <input type="text" id="email" required placeholder="Correo" class="w-full px-5 py-4 rounded-2xl border border-slate-200 outline-none bg-slate-50">
-                <input type="password" id="password" required placeholder="Contraseña" class="w-full px-5 py-4 rounded-2xl border border-slate-200 outline-none bg-slate-50">
-                <button type="submit" class="w-full bg-blue-600 text-white py-4 rounded-2xl font-black uppercase tracking-widest hover:bg-blue-700 transition-all">Ingresar</button>
+
+            <!-- TABS LOGIN / REGISTRO -->
+            <div class="flex justify-center mb-6 border-b border-slate-100">
+                <button id="tab-login" onclick="window.toggleAuth('login')" class="auth-tab active">Iniciar Sesión</button>
+                <button id="tab-register" onclick="window.toggleAuth('register')" class="auth-tab">Crear Cuenta</button>
+            </div>
+
+            <!-- FORMULARIO LOGIN -->
+            <form id="login-form" class="space-y-4 text-left block">
+                <input type="text" id="login-email" required placeholder="Correo Institucional" class="w-full px-5 py-4 rounded-2xl border border-slate-200 outline-none bg-slate-50 focus:ring-2 focus:ring-blue-100">
+                <input type="password" id="login-pass" required placeholder="Contraseña" class="w-full px-5 py-4 rounded-2xl border border-slate-200 outline-none bg-slate-50 focus:ring-2 focus:ring-blue-100">
+                <button type="submit" class="w-full bg-blue-600 text-white py-4 rounded-2xl font-black uppercase tracking-widest hover:bg-blue-700 transition-all shadow-lg shadow-blue-200">Ingresar</button>
+                <p class="text-[9px] text-center text-slate-300 font-bold uppercase tracking-widest mt-2">Admin Demo: admin / admin</p>
             </form>
-            <div id="login-error" class="bg-red-50 text-red-500 text-xs p-3 rounded-xl mt-4 font-bold hidden border border-red-100 text-left"></div>
-             <div class="mt-6 pt-6 border-t border-slate-100">
-                <button id="toggle-auth-mode" class="text-xs text-blue-500 font-bold uppercase tracking-wide hover:underline">¿Primera vez? Activa tu cuenta aquí</button>
-                <p class="text-[9px] text-slate-300 mt-2 font-bold uppercase tracking-widest">Modo Prueba: admin / admin</p>
-            </div>
+
+            <!-- FORMULARIO REGISTRO -->
+            <form id="register-form" class="space-y-4 text-left hidden">
+                <input type="text" id="reg-name" required placeholder="Nombre Completo (Ej: Lic. Juan Perez)" class="w-full px-5 py-4 rounded-2xl border border-slate-200 outline-none bg-slate-50 focus:ring-2 focus:ring-blue-100">
+                <input type="email" id="reg-email" required placeholder="Correo Electrónico" class="w-full px-5 py-4 rounded-2xl border border-slate-200 outline-none bg-slate-50 focus:ring-2 focus:ring-blue-100">
+                <input type="password" id="reg-pass" required placeholder="Crear Contraseña" class="w-full px-5 py-4 rounded-2xl border border-slate-200 outline-none bg-slate-50 focus:ring-2 focus:ring-blue-100">
+                <div>
+                    <label class="block text-xs font-bold text-slate-400 ml-2 mb-1 uppercase">Subir Rúbrica / Firma (JPG)</label>
+                    <input type="file" id="reg-signature" accept="image/jpeg, image/png" class="w-full p-3 rounded-2xl border border-slate-200 bg-slate-50 text-xs file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-blue-100 file:text-blue-700 hover:file:bg-blue-200">
+                </div>
+                <button type="submit" class="w-full bg-green-600 text-white py-4 rounded-2xl font-black uppercase tracking-widest hover:bg-green-700 transition-all shadow-lg shadow-green-200">Registrar Usuario</button>
+                <p class="text-[10px] text-center text-slate-400 mt-2 leading-tight">Nota: El administrador asignará tus cursos posteriormente.</p>
+            </form>
+
+            <div id="auth-error" class="bg-red-50 text-red-500 text-xs p-3 rounded-xl mt-4 font-bold hidden border border-red-100 text-left"></div>
         </div>
     </div>
 
-    <!-- APP -->
+    <!-- APP DASHBOARD -->
     <div id="user-logged-in" class="hidden max-w-7xl mx-auto p-4 md:p-10">
         <div id="main-dashboard-view">
             <header class="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-8 gap-6">
@@ -75,9 +96,11 @@
                     <div id="avatar-circle" class="w-12 h-12 bg-blue-600 text-white rounded-2xl flex items-center justify-center font-black">U</div>
                     <div><span id="user-email-display" class="text-slate-800 text-sm font-bold block"></span><span id="user-role-display" class="text-[10px] text-slate-400 uppercase font-black tracking-widest"></span></div>
                     <button id="btn-open-admin-header" onclick="window.showAdminPanel()" class="hidden ml-2 p-2 bg-slate-100 rounded-xl hover:bg-blue-100 text-blue-600 transition">⚙️</button>
-                    <button id="logout-btn" class="ml-4 text-slate-400 hover:text-red-500 font-bold text-sm">Salir</button>
+                    <!-- BOTÓN SALIR -->
+                    <button onclick="window.logout()" class="ml-4 text-slate-400 hover:text-red-500 font-bold text-sm bg-slate-50 px-4 py-2 rounded-xl transition-colors">Salir</button>
                 </div>
             </header>
+            
             <div class="grid grid-cols-1 lg:grid-cols-12 gap-10">
                 <div class="lg:col-span-8 space-y-8">
                     <div class="bg-white p-10 rounded-[3rem] shadow-sm border border-slate-200">
@@ -113,9 +136,13 @@
             </div>
         </div>
 
+        <!-- PANEL ADMIN -->
         <div id="admin-view" class="hidden space-y-8">
             <div class="flex flex-col sm:flex-row justify-between items-end gap-4">
-                <button id="btn-back-dashboard" class="font-black text-xs text-slate-400 uppercase tracking-widest hover:text-blue-600 flex items-center gap-2">Volver</button>
+                <!-- BOTÓN VOLVER (NUEVO) -->
+                <button onclick="window.closeAdminPanel()" class="bg-white text-slate-500 border border-slate-200 px-6 py-3 rounded-xl font-black text-xs uppercase tracking-widest hover:bg-slate-50 hover:text-slate-800 flex items-center gap-2 shadow-sm transition-all">
+                    ← Volver al Dashboard
+                </button>
                 <div class="flex space-x-2 border-b border-slate-200 w-full sm:w-auto overflow-x-auto text-xs font-bold uppercase tracking-wide">
                     <button onclick="window.switchTab('users')" id="tab-users" class="tab-btn active px-4 py-3">Usuarios</button>
                     <button onclick="window.switchTab('catalogs')" id="tab-catalogs" class="tab-btn px-4 py-3">Académico</button>
@@ -137,6 +164,7 @@
                 <div class="bg-white rounded-[3rem] shadow-xl border border-slate-100 overflow-hidden"><div class="overflow-x-auto"><table class="w-full text-left min-w-[800px]"><thead><tr class="text-slate-400 text-[10px] uppercase font-black border-b border-slate-50"><th class="px-8 py-6">Usuario</th><th class="px-8 py-6">Datos</th><th class="px-8 py-6">Cursos</th><th class="px-8 py-6">Rol</th><th class="px-8 py-6 text-right">Acciones</th></tr></thead><tbody id="users-table-body" class="divide-y divide-slate-50"></tbody></table></div></div>
             </div>
 
+            <!-- ... Resto de Tabs (Catálogos, Cursos, Horarios, etc.) igual que antes ... -->
             <div id="content-catalogs" class="hidden space-y-6">
                 <div class="flex justify-between items-center bg-white p-4 rounded-[2rem] border border-slate-100 shadow-sm">
                     <div class="flex items-center gap-3 px-2"><h3 class="font-black text-slate-800 text-lg">Catálogos Básicos (Áreas, Materias, Secciones, Paralelos)</h3></div>
@@ -145,7 +173,6 @@
                 <div id="catalog-grid-inner" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
             </div>
 
-            <!-- TAB CURSOS (RENOVADA) -->
             <div id="content-courses" class="hidden space-y-6">
                 <div class="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100">
                     <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
@@ -181,12 +208,13 @@
             <div class="flex justify-between mb-8"><h3 class="text-3xl font-black text-slate-800">Usuario</h3><button onclick="window.closeModal('modal-user')" class="text-2xl">✕</button></div>
             <form id="user-form" class="space-y-6">
                 <input type="hidden" id="form-user-id">
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                <!-- Form fields same as previous -->
+                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
                     <div><label class="block text-xs font-black text-slate-400 mb-2 uppercase">Nombre</label><input type="text" id="form-name" required class="w-full p-4 rounded-2xl bg-slate-50 border-none outline-none"></div>
                     <div><label class="block text-xs font-black text-slate-400 mb-2 uppercase">Correo</label><input type="email" id="form-email" required class="w-full p-4 rounded-2xl bg-slate-50 border-none outline-none"></div>
                 </div>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                    <div><label class="block text-xs font-black text-slate-400 mb-2 uppercase">Contraseña</label><input type="text" id="form-pass" class="w-full p-4 rounded-2xl bg-slate-100 border-none outline-none"></div>
+                    <div><label class="block text-xs font-black text-slate-400 mb-2 uppercase">Contraseña</label><input type="text" id="form-pass" placeholder="Ingresar para modificar" class="w-full p-4 rounded-2xl bg-slate-100 border-none outline-none"></div>
                     <div><label class="block text-xs font-black text-slate-400 mb-2 uppercase">Firma</label><input type="file" id="form-signature" accept="image/*" class="w-full p-3 rounded-2xl bg-slate-50 border-none text-xs file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"></div>
                 </div>
                 <div class="mt-4 p-4 bg-slate-50 rounded-2xl border border-slate-100 flex items-center justify-between">
@@ -206,15 +234,28 @@
             </form>
         </div>
     </div>
-    <!-- Other modals (Catalog, Time, Assign, Copy, Log) included similarly in logic -->
+    <!-- Other modals (Catalog, Time, Assign, Copy, Log) same structure as before -->
     <div id="modal-catalog" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[120] hidden items-center justify-center p-4"><div class="bg-white w-full max-w-md rounded-[2.5rem] p-8 modal-animate"><h3 id="catalog-title" class="text-2xl font-black mb-6">Administrar</h3><div id="catalog-extra-input" class="hidden mb-4"><label id="catalog-extra-label" class="block text-xs font-black mb-2 uppercase">Vinculación</label><select id="catalog-extra-select" class="w-full p-4 rounded-xl bg-slate-50 outline-none text-sm"></select></div><div class="flex gap-2 mb-6"><input type="text" id="catalog-input" class="flex-1 p-4 rounded-xl bg-slate-50 outline-none"><button onclick="window.addCatalogItem()" class="bg-blue-600 text-white px-6 rounded-xl font-bold">+</button></div><div id="catalog-list" class="max-h-60 overflow-y-auto space-y-2"></div><button onclick="window.closeModal('modal-catalog')" class="mt-6 w-full text-slate-400 font-bold uppercase text-xs">Cerrar</button></div></div>
     <div id="modal-time-slots" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[130] hidden items-center justify-center p-4"><div class="bg-white w-full max-w-lg rounded-[2.5rem] p-8 modal-animate"><div class="flex justify-between items-center mb-6"><h3 class="text-2xl font-black">Horas</h3><button onclick="window.closeModal('modal-time-slots')">✕</button></div><div class="flex gap-2 mb-4"><input type="time" id="ts-start" class="p-2 rounded-lg border text-sm"><input type="time" id="ts-end" class="p-2 rounded-lg border text-sm"><button onclick="window.addTimeSlot()" class="bg-slate-800 text-white rounded-lg px-4 text-xs font-bold">Agregar</button></div><div id="slots-list" class="space-y-2"></div></div></div>
     <div id="modal-assign-subject" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[140] hidden items-center justify-center p-4"><div class="bg-white w-full max-w-sm rounded-[2.5rem] p-8 modal-animate"><h3 class="text-xl font-black mb-4">Asignar</h3><div id="subject-selector-list" class="grid grid-cols-2 gap-2 max-h-64 overflow-y-auto"></div><button onclick="window.closeModal('modal-assign-subject')" class="mt-6 w-full bg-slate-100 text-slate-500 py-3 rounded-xl font-bold text-xs">Cancelar</button></div></div>
     <div id="modal-copy-schedule" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[150] hidden items-center justify-center p-4"><div class="bg-white w-full max-w-md rounded-[2.5rem] p-8 modal-animate"><h3 class="text-xl font-black mb-4">Copiar</h3><div class="space-y-3 mb-6"><div><label class="block text-[10px] font-black uppercase text-slate-400">Sección</label><select id="copy-seccion" class="w-full p-3 bg-slate-50 rounded-xl text-sm outline-none"></select></div><div><label class="block text-[10px] font-black uppercase text-slate-400">Curso</label><select id="copy-curso" class="w-full p-3 bg-slate-50 rounded-xl text-sm outline-none"></select></div><div><label class="block text-[10px] font-black uppercase text-slate-400">Paralelo</label><select id="copy-paralelo" class="w-full p-3 bg-slate-50 rounded-xl text-sm outline-none"></select></div></div><button onclick="window.confirmCopySchedule()" class="w-full bg-blue-600 text-white py-3 rounded-xl font-bold text-sm">Copiar</button><button onclick="window.closeModal('modal-copy-schedule')" class="mt-3 w-full text-slate-400 font-bold uppercase text-xs">Cancelar</button></div></div>
     <div id="modal-class-log" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[160] hidden items-center justify-center p-4"><div class="bg-white w-full max-w-lg rounded-[2.5rem] p-10 modal-animate"><div class="flex justify-between mb-6"><div><h3 class="text-2xl font-black">Registro</h3><p id="log-class-info" class="text-xs font-bold text-blue-600"></p></div><button onclick="window.closeModal('modal-class-log')">✕</button></div><form id="log-form" class="space-y-4"><input type="hidden" id="log-id"><div><label class="block text-xs font-black text-slate-400 uppercase">Tema</label><input type="text" id="log-topic" required class="w-full p-4 rounded-xl bg-slate-50"></div><div><label class="block text-xs font-black text-slate-400 uppercase">Actividad</label><textarea id="log-content" required class="w-full p-4 rounded-xl bg-slate-50 h-32 resize-none"></textarea></div><button type="submit" class="w-full bg-blue-600 text-white py-4 rounded-xl font-black uppercase">Guardar</button></form></div></div>
+    <!-- MODAL COURSE MANAGER -->
+    <div id="modal-course-manager" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[130] hidden items-center justify-center p-4">
+        <div class="bg-white w-full max-w-lg rounded-[2.5rem] p-8 modal-animate max-h-[85vh] overflow-y-auto">
+            <h3 class="text-2xl font-black mb-6">Configurar Cursos</h3>
+            <div class="space-y-4">
+                <div><label class="block text-xs font-black uppercase mb-1 text-slate-400">Seleccionar Sección</label><select id="cm-seccion" class="w-full p-3 bg-slate-50 rounded-xl outline-none text-sm font-bold border border-slate-100"></select></div>
+                <div class="border-t border-slate-100 pt-4"><h4 class="font-bold text-slate-700 text-sm mb-3">Agregar Nuevo Curso</h4><input type="text" id="cm-new-name" placeholder="Ej: 1ero Bachillerato" class="w-full p-3 bg-slate-50 rounded-xl outline-none mb-3"><p class="text-[10px] uppercase font-black text-slate-400 mb-2">Paralelos para este curso</p><div id="cm-parallels-checks" class="grid grid-cols-4 gap-2 mb-4"></div><button onclick="window.addCourseWithParallels()" class="w-full bg-blue-600 text-white py-3 rounded-xl font-bold text-xs uppercase">Agregar Curso</button></div>
+                <div class="border-t border-slate-100 pt-4"><h4 class="font-bold text-slate-700 text-sm mb-2">Cursos Existentes</h4><div id="cm-courses-list" class="space-y-2"></div></div>
+            </div>
+            <button onclick="window.closeModal('modal-course-manager')" class="mt-6 w-full text-slate-400 font-bold uppercase text-xs">Cerrar</button>
+        </div>
+    </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-analytics.js";
         import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, getDoc, setDoc, collection, getDocs, updateDoc, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
@@ -250,7 +291,7 @@
         onAuthStateChanged(auth, async (user) => {
             if(user) {
                 let uData = (await getDoc(getDocRef("users", user.uid))).data();
-                if(!uData) { // Fallback creation
+                if(!uData) { 
                     uData = { email: user.email, rol: "Docente", materias: [], areas: [] };
                     await setDoc(getDocRef("users", user.uid), uData);
                 }
@@ -266,7 +307,6 @@
             document.getElementById('user-role-display').textContent = user.rol;
             document.getElementById('avatar-circle').textContent = (user.nombre||user.email)[0].toUpperCase();
             
-            // Dashboard info
             if (user.materias) document.getElementById('my-subjects-list').innerHTML = user.materias.map(m => typeof m === 'object' ? `<span class='data-badge'>${m.name}</span>` : `<span class='data-badge'>${m}</span>`).join('');
             if (user.cursos) document.getElementById('my-courses-list').innerHTML = user.cursos.map(c => typeof c === 'object' ? `<span class='text-xs font-bold mr-2'>${c.name}</span>` : `<span class='text-xs font-bold mr-2'>${c}</span>`).join('');
 
@@ -280,19 +320,47 @@
             updateDashboardDate();
         }
 
-        document.getElementById('auth-form').onsubmit = async (e) => {
+        // Toggle Auth
+        window.toggleAuth = (mode) => {
+             const isReg = mode === 'register';
+             state.isRegisterMode = isReg;
+             document.getElementById('auth-form').classList.toggle('hidden', isReg);
+             document.getElementById('register-form').classList.toggle('hidden', !isReg);
+             document.getElementById('tab-login').classList.toggle('active', !isReg);
+             document.getElementById('tab-register').classList.toggle('active', isReg);
+        };
+
+        // Submit forms
+        const handleAuth = async (e, mode) => {
             e.preventDefault();
-            const email = document.getElementById('email').value.trim();
-            const pass = document.getElementById('password').value;
+            const email = document.getElementById(mode === 'register' ? 'reg-email' : 'email').value.trim();
+            const pass = document.getElementById(mode === 'register' ? 'reg-pass' : 'password').value;
+            
             if (email === "admin" && pass === "admin") {
                 loginSuccess({ uid: "local", email: "admin", rol: "Admin", isSuperAdmin: true, materias: [], cursos: [] });
                 return;
             }
+
             try {
-                if (state.isRegisterMode) await createUserWithEmailAndPassword(auth, email, pass);
-                else await signInWithEmailAndPassword(auth, email, pass);
+                if (mode === 'register') {
+                    const userCredential = await createUserWithEmailAndPassword(auth, email, pass);
+                    const name = document.getElementById('reg-name').value;
+                    const sigFile = document.getElementById('reg-signature').files[0];
+                    let sigBase64 = "";
+                    if(sigFile) sigBase64 = await toBase64(sigFile);
+                    
+                    // Create user profile
+                    await setDoc(getDocRef("users", userCredential.user.uid), {
+                        email, nombre: name, rol: "Docente", firma: sigBase64, materias: [], cursos: [], areas: []
+                    });
+                } else {
+                    await signInWithEmailAndPassword(auth, email, pass);
+                }
             } catch(e) { document.getElementById('login-error').textContent = e.code; document.getElementById('login-error').classList.remove('hidden'); }
         };
+
+        document.getElementById('auth-form').onsubmit = (e) => handleAuth(e, 'login');
+        document.getElementById('register-form').onsubmit = (e) => handleAuth(e, 'register');
 
         // DATA
         async function loadCatalogs() {
@@ -301,7 +369,6 @@
                 state.catalogs = snap.data();
                 for(let k in state.catalogs) if(!Array.isArray(state.catalogs[k])) state.catalogs[k]=[];
             } else {
-                 // Empty start
                  state.catalogs = { areas: [], materias: [], cursos: [], paralelos: [], secciones: [], roles: [] };
                  await setDoc(getDocRef("config", "catalogs"), state.catalogs);
             }
@@ -331,6 +398,9 @@
         }
 
         // GLOBALS
+        window.logout = () => { signOut(auth).then(() => window.location.reload()); };
+        window.closeAdminPanel = () => { document.getElementById('admin-view').classList.add('hidden'); document.getElementById('main-dashboard-view').classList.remove('hidden'); };
+        
         window.switchTab = (tab) => {
             ['users','catalogs','schedules','leccionario','reports','courses'].forEach(t => document.getElementById('content-'+t).classList.add('hidden'));
             document.getElementById('content-'+tab).classList.remove('hidden');
@@ -364,8 +434,7 @@
             setChecked('chk-materia', matNames);
             const curNames = (u.cursos||[]).map(c => typeof c === 'object' ? c.name : c);
             setChecked('chk-curso', curNames);
-            const parNames = (u.paralelos||[]).map(p => typeof p === 'object' ? p.name : p);
-            setChecked('chk-paralelo', parNames);
+            setChecked('chk-paralelo', u.paralelos || []);
             
             document.getElementById('sel-rol').value = u.rol;
             window.openModal('modal-user');
@@ -475,7 +544,7 @@
                          
                          let row = { time: `${slot.start} - ${slot.end}`, subject: subjName, teacher: "Sin Asignar", topic: "NO REGISTRADO", obs: "NO REGISTRADO", sign: `<span class="text-xs text-red-500 font-bold">PENDIENTE</span>` };
                          
-                         // Find Teacher
+                         // Find Teacher (Strict Check)
                          const t = users.find(u => 
                              u.seccion === sec && 
                              (u.cursos||[]).some(c => (typeof c === 'object' ? c.name : c) === cur) && 
@@ -568,10 +637,6 @@
                 eIn.classList.remove('hidden');
                 document.getElementById('catalog-extra-label').textContent = "Vincular a Área";
                 eSel.innerHTML = (state.catalogs.areas || []).map(a => `<option value="${a}">${a}</option>`).join('');
-            } else if (k==='cursos' || k==='paralelos') {
-                eIn.classList.remove('hidden');
-                document.getElementById('catalog-extra-label').textContent = "Vincular a Sección";
-                eSel.innerHTML = (state.catalogs.secciones || []).map(s => `<option value="${s}">${s}</option>`).join('');
             } else {
                 eIn.classList.add('hidden');
             }
@@ -590,8 +655,11 @@
             const ex = document.getElementById('catalog-extra-select').value;
             if(v) { 
                 if(state.currentCatalog === 'materias') state.catalogs.materias.push({name:v, area:ex});
-                else if(state.currentCatalog === 'cursos') state.catalogs.cursos.push({name:v, section:ex});
-                else if(state.currentCatalog === 'paralelos') state.catalogs.paralelos.push({name:v, section:ex});
+                else if(state.currentCatalog === 'cursos') {
+                    // NEW COURSE MANAGER LOGIC handled in separate modal usually, but here simplified catalog
+                    // Initialize course with EMPTY parallels array by default
+                    state.catalogs.cursos.push({name:v, section:ex, parallels: []});
+                }
                 else state.catalogs[state.currentCatalog].push(v); 
                 await window.manualSaveCatalogs(); renderCatalogList(); renderCatalogs(); 
             } 
