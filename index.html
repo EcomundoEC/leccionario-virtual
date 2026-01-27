@@ -206,7 +206,7 @@
             </form>
         </div>
     </div>
-    <!-- Other modals -->
+    <!-- Other modals (Catalog, Time, Assign, Copy, Log) included similarly in logic -->
     <div id="modal-catalog" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[120] hidden items-center justify-center p-4"><div class="bg-white w-full max-w-md rounded-[2.5rem] p-8 modal-animate"><h3 id="catalog-title" class="text-2xl font-black mb-6">Administrar</h3><div id="catalog-extra-input" class="hidden mb-4"><label id="catalog-extra-label" class="block text-xs font-black mb-2 uppercase">Vinculación</label><select id="catalog-extra-select" class="w-full p-4 rounded-xl bg-slate-50 outline-none text-sm"></select></div><div class="flex gap-2 mb-6"><input type="text" id="catalog-input" class="flex-1 p-4 rounded-xl bg-slate-50 outline-none"><button onclick="window.addCatalogItem()" class="bg-blue-600 text-white px-6 rounded-xl font-bold">+</button></div><div id="catalog-list" class="max-h-60 overflow-y-auto space-y-2"></div><button onclick="window.closeModal('modal-catalog')" class="mt-6 w-full text-slate-400 font-bold uppercase text-xs">Cerrar</button></div></div>
     <div id="modal-time-slots" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[130] hidden items-center justify-center p-4"><div class="bg-white w-full max-w-lg rounded-[2.5rem] p-8 modal-animate"><div class="flex justify-between items-center mb-6"><h3 class="text-2xl font-black">Horas</h3><button onclick="window.closeModal('modal-time-slots')">✕</button></div><div class="flex gap-2 mb-4"><input type="time" id="ts-start" class="p-2 rounded-lg border text-sm"><input type="time" id="ts-end" class="p-2 rounded-lg border text-sm"><button onclick="window.addTimeSlot()" class="bg-slate-800 text-white rounded-lg px-4 text-xs font-bold">Agregar</button></div><div id="slots-list" class="space-y-2"></div></div></div>
     <div id="modal-assign-subject" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[140] hidden items-center justify-center p-4"><div class="bg-white w-full max-w-sm rounded-[2.5rem] p-8 modal-animate"><h3 class="text-xl font-black mb-4">Asignar</h3><div id="subject-selector-list" class="grid grid-cols-2 gap-2 max-h-64 overflow-y-auto"></div><button onclick="window.closeModal('modal-assign-subject')" class="mt-6 w-full bg-slate-100 text-slate-500 py-3 rounded-xl font-bold text-xs">Cancelar</button></div></div>
@@ -223,9 +223,8 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
         const appId = 'leccionario-v1';
-        // Direct Collections
-        const getCollectionRef = (name) => collection(db, name);
-        const getDocRef = (col, id) => doc(db, col, id);
+        const getCollectionRef = (name) => collection(db, 'artifacts', appId, 'public', 'data', name);
+        const getDocRef = (col, id) => doc(db, 'artifacts', appId, 'public', 'data', col, id);
 
         const dom = {
             loader: document.getElementById('loader'), auth: document.getElementById('auth-container'), dashboard: document.getElementById('user-logged-in'),
@@ -234,6 +233,18 @@
         setTimeout(() => { if(dom.loader) dom.loader.style.display = 'none'; }, 2000);
 
         let state = { catalogs: { areas: [], materias: [], cursos: [], paralelos: [], secciones: [], roles: [] }, users: [], currentUser: null, currentSchedule: null, currentCatalog: null, viewDate: new Date(), calendarDate: new Date(), isRegisterMode: false };
+
+        // Test connection
+        (async () => {
+             try {
+                 await getDoc(getDocRef("config", "catalogs"));
+                 const el = document.getElementById('firebase-status');
+                 if(el) { el.innerHTML = "<span class='text-green-500'>●</span> Conectado"; el.classList.replace('text-slate-400', 'text-green-700'); }
+             } catch(e) {
+                 const el = document.getElementById('firebase-status');
+                 if(el) { el.innerHTML = "<span class='text-red-500'>●</span> Desconectado"; el.classList.replace('text-slate-400', 'text-red-700'); }
+             }
+        })();
 
         // AUTH
         onAuthStateChanged(auth, async (user) => {
@@ -246,15 +257,6 @@
                 loginSuccess({ uid: user.uid, email: user.email, ...uData });
             } else {
                 dom.dashboard.classList.add('hidden'); dom.auth.classList.remove('hidden');
-                // Test connection
-                try {
-                     await getDoc(getDocRef("config", "catalogs"));
-                     const el = document.getElementById('firebase-status');
-                     if(el) { el.innerHTML = "<span class='text-green-500'>●</span> Conectado"; el.classList.replace('text-slate-400', 'text-green-700'); }
-                } catch(e) {
-                     const el = document.getElementById('firebase-status');
-                     if(el) { el.innerHTML = "<span class='text-red-500'>●</span> Desconectado"; el.classList.replace('text-slate-400', 'text-red-700'); }
-                }
             }
         });
 
@@ -362,9 +364,8 @@
             setChecked('chk-materia', matNames);
             const curNames = (u.cursos||[]).map(c => typeof c === 'object' ? c.name : c);
             setChecked('chk-curso', curNames);
-            // Parallels need to be checked based on what user has stored
-            // Assuming user stores strings "A", "B" etc.
-            setChecked('chk-paralelo', u.paralelos || []);
+            const parNames = (u.paralelos||[]).map(p => typeof p === 'object' ? p.name : p);
+            setChecked('chk-paralelo', parNames);
             
             document.getElementById('sel-rol').value = u.rol;
             window.openModal('modal-user');
@@ -388,8 +389,9 @@
                  return original || { name: cName, section: sec };
             });
             
-            const rawPars = getChecked('chk-paralelo'); // Just strings ["A", "B"]
-            
+            const rawPars = getChecked('chk-paralelo');
+            const finalPars = rawPars.map(pName => ({ name: pName, section: sec }));
+
             const rawMats = getChecked('chk-materia');
             const finalMats = rawMats.map(mName => {
                 const found = state.catalogs.materias.find(m => m.name === mName || m === mName);
@@ -404,7 +406,7 @@
                 areas: getChecked('chk-area'),
                 materias: finalMats,
                 cursos: finalCourses,
-                paralelos: rawPars
+                paralelos: finalPars
             };
             const f = document.getElementById('form-signature').files[0];
             if(f) userData.firma = await toBase64(f);
@@ -469,7 +471,7 @@
                      if(subj) {
                          const subjName = (typeof subj === 'object') ? subj.name : subj;
                          const logId = `${dateInput}_${sched.id}_${slot.id}`;
-                         const logSnap = await getDoc(doc(db, 'class_logs', logId));
+                         const logSnap = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'class_logs', logId));
                          
                          let row = { time: `${slot.start} - ${slot.end}`, subject: subjName, teacher: "Sin Asignar", topic: "NO REGISTRADO", obs: "NO REGISTRADO", sign: `<span class="text-xs text-red-500 font-bold">PENDIENTE</span>` };
                          
@@ -477,7 +479,7 @@
                          const t = users.find(u => 
                              u.seccion === sec && 
                              (u.cursos||[]).some(c => (typeof c === 'object' ? c.name : c) === cur) && 
-                             (u.paralelos||[]).some(p => p === par) && 
+                             (u.paralelos||[]).some(p => (typeof p === 'object' ? p.name : p) === par) && 
                              ((u.materias||[]).map(m=>typeof m==='object'?m.name:m).includes(subjName))
                          );
                          if(t) row.teacher = t.nombre || t.email;
@@ -519,20 +521,19 @@
              createCheckboxes('container-materias', matNames, 'chk-materia');
              populateSelect('sel-seccion', state.catalogs.secciones);
              populateSelect('sel-rol', state.catalogs.roles);
+             createCheckboxes('container-paralelos', state.catalogs.paralelos, 'chk-paralelo');
              updateUserCourses(); // Initial courses
         }
         document.getElementById('sel-seccion').onchange = updateUserCourses;
         function updateUserCourses() {
             const sec = document.getElementById('sel-seccion').value;
-            // FILTER COURSES BY SECTION (from catalogs.cursos objects)
-            const courses = (state.catalogs.cursos||[]).filter(c => c.section === sec).map(c => c.name);
+            // FILTER COURSES BY SECTION
+            const courses = (state.catalogs.cursos||[]).filter(c => (typeof c === 'string') || (c.section === sec)).map(c => (typeof c === 'object') ? c.name : c);
             createCheckboxes('container-cursos', courses, 'chk-curso');
             
-            // Populate parallels based on available courses in this section
-            const relevantCourses = (state.catalogs.cursos||[]).filter(c => c.section === sec);
-            const allPars = new Set();
-            relevantCourses.forEach(c => (c.parallels||[]).forEach(p => allPars.add(p)));
-            createCheckboxes('container-paralelos', Array.from(allPars), 'chk-paralelo');
+            // FILTER PARALLELS BY SECTION (As requested)
+            const parallels = (state.catalogs.paralelos||[]).filter(p => (typeof p === 'string') || (p.section === sec)).map(p => (typeof p === 'object') ? p.name : p);
+            createCheckboxes('container-paralelos', parallels, 'chk-paralelo');
         }
         function createCheckboxes(id, list, name) { document.getElementById(id).innerHTML = (list||[]).map(v => `<label class="check-item"><input type="checkbox" name="${name}" value="${v}"><span>${v}</span></label>`).join(''); }
         function populateSelect(id, list) { document.getElementById(id).innerHTML = (list||[]).map(v => `<option value="${v}">${v}</option>`).join(''); }
@@ -567,6 +568,10 @@
                 eIn.classList.remove('hidden');
                 document.getElementById('catalog-extra-label').textContent = "Vincular a Área";
                 eSel.innerHTML = (state.catalogs.areas || []).map(a => `<option value="${a}">${a}</option>`).join('');
+            } else if (k==='cursos' || k==='paralelos') {
+                eIn.classList.remove('hidden');
+                document.getElementById('catalog-extra-label').textContent = "Vincular a Sección";
+                eSel.innerHTML = (state.catalogs.secciones || []).map(s => `<option value="${s}">${s}</option>`).join('');
             } else {
                 eIn.classList.add('hidden');
             }
@@ -585,6 +590,8 @@
             const ex = document.getElementById('catalog-extra-select').value;
             if(v) { 
                 if(state.currentCatalog === 'materias') state.catalogs.materias.push({name:v, area:ex});
+                else if(state.currentCatalog === 'cursos') state.catalogs.cursos.push({name:v, section:ex});
+                else if(state.currentCatalog === 'paralelos') state.catalogs.paralelos.push({name:v, section:ex});
                 else state.catalogs[state.currentCatalog].push(v); 
                 await window.manualSaveCatalogs(); renderCatalogList(); renderCatalogs(); 
             } 
@@ -605,6 +612,7 @@
         document.getElementById('cm-seccion').onchange = updateCMList;
         function updateCMList() {
              const sec = document.getElementById('cm-seccion').value;
+             // Render existing courses
              const courses = (state.catalogs.cursos||[]).filter(c => c.section === sec);
              document.getElementById('cm-courses-list').innerHTML = courses.map((c, idx) => `
                 <div class="bg-slate-50 p-2 rounded-lg flex justify-between items-center text-xs">
