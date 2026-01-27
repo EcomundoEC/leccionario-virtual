@@ -8,7 +8,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
         .role-badge { padding: 0.25rem 0.5rem; border-radius: 0.5rem; font-size: 9px; font-weight: 900; text-transform: uppercase; background: #f1f5f9; color: #64748b; display: inline-block; margin-right: 4px; margin-bottom: 2px; }
-        .data-badge { display: inline-block; padding: 2px 6px; background: #eef2ff; color: #4338ca; border-radius: 12px; font-size: 10px; font-weight: 700; margin-right: 2px; margin-bottom: 2px; border: 1px solid #c7d2fe; }
+        .data-badge { display: inline-block; padding: 2px 6px; background: #eef2ff; color: #4338ca; border-radius: 4px; font-size: 10px; font-weight: 700; margin-right: 2px; margin-bottom: 2px; border: 1px solid #e0e7ff; }
         .modal-animate { animation: fadeIn 0.2s ease-out; }
         @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
         .tab-btn { border-bottom: 3px solid transparent; color: #94a3b8; transition: all 0.2s; cursor: pointer; }
@@ -55,14 +55,37 @@
             <div id="firebase-status" class="mb-6 py-2 px-4 rounded-xl bg-slate-50 border border-slate-200 text-xs font-mono text-slate-400 flex items-center justify-center gap-2">
                 <span class="w-2 h-2 rounded-full bg-yellow-300 animate-pulse"></span> Conectando...
             </div>
+
+            <!-- TABS DE AUTENTICACIÓN -->
+            <div class="flex justify-center mb-6 border-b border-slate-100">
+                <div id="tab-login" onclick="window.switchAuthTab('login')" class="auth-tab active">Iniciar Sesión</div>
+                <div id="tab-register" onclick="window.switchAuthTab('register')" class="auth-tab">Crear Cuenta</div>
+            </div>
+
             <form id="auth-form" class="space-y-5 text-left">
                 <input type="text" id="email" required placeholder="Correo" class="w-full px-5 py-4 rounded-2xl border border-slate-200 outline-none bg-slate-50">
                 <input type="password" id="password" required placeholder="Contraseña" class="w-full px-5 py-4 rounded-2xl border border-slate-200 outline-none bg-slate-50">
                 <button type="submit" class="w-full bg-blue-600 text-white py-4 rounded-2xl font-black uppercase tracking-widest hover:bg-blue-700 transition-all">Ingresar</button>
             </form>
+
+            <form id="register-form" class="space-y-4 text-left hidden">
+                <input type="text" id="reg-name" required placeholder="Nombre Completo (Ej: Lic. Juan Perez)" class="w-full px-5 py-4 rounded-2xl border border-slate-200 outline-none bg-slate-50 focus:ring-2 focus:ring-blue-100">
+                <input type="email" id="reg-email" required placeholder="Correo Electrónico" class="w-full px-5 py-4 rounded-2xl border border-slate-200 outline-none bg-slate-50 focus:ring-2 focus:ring-blue-100">
+                <input type="password" id="reg-pass" required placeholder="Crear Contraseña" class="w-full px-5 py-4 rounded-2xl border border-slate-200 outline-none bg-slate-50 focus:ring-2 focus:ring-blue-100">
+                <div>
+                    <label class="block text-xs font-bold text-slate-400 ml-2 mb-1 uppercase">Subir Firma (Imagen JPG/PNG)</label>
+                    <input type="file" id="reg-signature" accept="image/jpeg, image/png" class="w-full p-3 rounded-2xl border border-slate-200 bg-slate-50 text-xs file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-blue-100 file:text-blue-700 hover:file:bg-blue-200">
+                </div>
+                <button type="submit" class="w-full bg-green-600 text-white py-4 rounded-2xl font-black uppercase tracking-widest hover:bg-green-700 transition-all shadow-lg shadow-green-200">Registrar Usuario</button>
+            </form>
+
             <div id="login-error" class="bg-red-50 text-red-500 text-xs p-3 rounded-xl mt-4 font-bold hidden border border-red-100 text-left"></div>
+             
+             <!-- ENLACE DE AYUDA / CAMBIO RÁPIDO -->
              <div class="mt-6 pt-6 border-t border-slate-100">
-                <button id="toggle-auth-mode" class="text-xs text-blue-500 font-bold uppercase tracking-wide hover:underline">¿Primera vez? Activa tu cuenta aquí</button>
+                <button id="toggle-auth-text" onclick="window.switchAuthTab(window.state.isRegisterMode ? 'login' : 'register')" class="text-xs text-blue-500 font-bold uppercase tracking-wide hover:underline">
+                    ¿Primera vez? Activa tu cuenta aquí
+                </button>
                 <p class="text-[9px] text-slate-300 mt-2 font-bold uppercase tracking-widest">Modo Prueba: admin / admin</p>
             </div>
         </div>
@@ -76,9 +99,9 @@
                 <div class="flex items-center gap-4 bg-white p-3 pr-6 rounded-[2rem] border border-slate-200 shadow-sm">
                     <div id="avatar-circle" class="w-12 h-12 bg-blue-600 text-white rounded-2xl flex items-center justify-center font-black">U</div>
                     <div><span id="user-email-display" class="text-slate-800 text-sm font-bold block"></span><span id="user-role-display" class="text-[10px] text-slate-400 uppercase font-black tracking-widest"></span></div>
+                    <!-- BOTÓN ADMIN -->
                     <button id="btn-open-admin-header" onclick="window.showAdminPanel()" class="hidden ml-2 p-2 bg-slate-100 rounded-xl hover:bg-blue-100 text-blue-600 transition">⚙️</button>
-                    <!-- BOTÓN SALIR -->
-                    <button onclick="window.logout()" class="ml-4 text-slate-400 hover:text-red-500 font-bold text-sm bg-slate-50 px-4 py-2 rounded-xl transition-colors">Cerrar Sesión</button>
+                    <button id="logout-btn" class="ml-4 text-slate-400 hover:text-red-500 font-bold text-sm">Salir</button>
                 </div>
             </header>
             <div class="grid grid-cols-1 lg:grid-cols-12 gap-10">
@@ -117,28 +140,15 @@
         </div>
 
         <div id="admin-view" class="hidden space-y-8">
-            <header class="flex flex-col lg:flex-row justify-between items-center mb-8 gap-6 border-b border-slate-200 pb-6">
-                <div><h1 class="text-3xl font-black text-slate-900 tracking-tighter">Administración</h1><p class="text-slate-400 font-medium">Panel de Control</p></div>
-                <div class="flex gap-3">
-                     <!-- BOTÓN VOLVER -->
-                    <button onclick="window.closeAdminPanel()" class="bg-white text-slate-600 border border-slate-200 px-6 py-3 rounded-xl font-black text-xs uppercase tracking-widest hover:bg-slate-50 transition-all shadow-sm">
-                        ← Volver al Dashboard
-                    </button>
-                     <!-- BOTÓN SALIR ADMIN -->
-                    <button onclick="window.logout()" class="bg-red-50 text-red-500 border border-red-100 px-6 py-3 rounded-xl font-black text-xs uppercase tracking-widest hover:bg-red-100 transition-all shadow-sm">
-                        Cerrar Sesión
-                    </button>
-                </div>
-            </header>
-
             <div class="flex flex-col sm:flex-row justify-between items-end gap-4">
-                <div class="flex space-x-2 border-b border-slate-200 w-full sm:w-auto overflow-x-auto text-xs font-bold uppercase tracking-wide">
-                    <button onclick="window.switchTab('users')" id="tab-users" class="tab-btn active px-4 py-3">Usuarios</button>
-                    <button onclick="window.switchTab('catalogs')" id="tab-catalogs" class="tab-btn px-4 py-3">Académico</button>
-                    <button onclick="window.switchTab('courses')" id="tab-courses" class="tab-btn px-4 py-3 text-blue-600">Cursos</button>
-                    <button onclick="window.switchTab('schedules')" id="tab-schedules" class="tab-btn px-4 py-3">Horarios</button>
-                    <button onclick="window.switchTab('leccionario')" id="tab-leccionario" class="tab-btn px-4 py-3 text-blue-600">Leccionario</button>
-                    <button onclick="window.switchTab('reports')" id="tab-reports" class="tab-btn px-4 py-3 text-red-500">Informes</button>
+                <button id="btn-back-dashboard" onclick="window.closeAdminPanel()" class="font-black text-xs text-slate-400 uppercase tracking-widest hover:text-blue-600 flex items-center gap-2">Volver</button>
+                <div class="flex space-x-4 border-b border-slate-200 w-full sm:w-auto overflow-x-auto">
+                    <button onclick="window.switchTab('users')" id="tab-users" class="tab-btn active px-4 py-2 text-sm uppercase tracking-widest">Usuarios</button>
+                    <button onclick="window.switchTab('catalogs')" id="tab-catalogs" class="tab-btn px-4 py-2 text-sm uppercase tracking-widest">Académico</button>
+                    <button onclick="window.switchTab('courses')" id="tab-courses" class="tab-btn px-4 py-2 text-sm uppercase tracking-widest">Cursos</button>
+                    <button onclick="window.switchTab('schedules')" id="tab-schedules" class="tab-btn px-4 py-2 text-sm uppercase tracking-widest">Horarios</button>
+                    <button onclick="window.switchTab('leccionario')" id="tab-leccionario" class="tab-btn px-4 py-2 text-sm uppercase tracking-widest text-blue-600">Leccionario</button>
+                    <button onclick="window.switchTab('reports')" id="tab-reports" class="tab-btn px-4 py-2 text-sm uppercase tracking-widest text-red-500">Informes</button>
                 </div>
             </div>
             
@@ -155,7 +165,7 @@
 
             <div id="content-catalogs" class="hidden space-y-6">
                 <div class="flex justify-between items-center bg-white p-4 rounded-[2rem] border border-slate-100 shadow-sm">
-                    <div class="flex items-center gap-3 px-2"><h3 class="font-black text-slate-800 text-lg">Catálogos Básicos</h3></div>
+                    <div class="flex items-center gap-3 px-2"><h3 class="font-black text-slate-800 text-lg">Catálogos</h3></div>
                     <button onclick="window.manualSaveCatalogs()" class="bg-slate-900 text-white px-6 py-3 rounded-xl font-black text-xs uppercase tracking-widest hover:bg-black transition-all">Guardar Todo</button>
                 </div>
                 <div id="catalog-grid-inner" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
@@ -251,8 +261,8 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
         const appId = 'leccionario-v1';
-        const getCollectionRef = (name) => collection(db, name);
-        const getDocRef = (col, id) => doc(db, col, id);
+        const getCollectionRef = (name) => collection(db, 'artifacts', appId, 'public', 'data', name);
+        const getDocRef = (col, id) => doc(db, 'artifacts', appId, 'public', 'data', col, id);
 
         const dom = {
             loader: document.getElementById('loader'), auth: document.getElementById('auth-container'), dashboard: document.getElementById('user-logged-in'),
@@ -636,10 +646,6 @@
                 eIn.classList.remove('hidden');
                 document.getElementById('catalog-extra-label').textContent = "Vincular a Área";
                 eSel.innerHTML = (state.catalogs.areas || []).map(a => `<option value="${a}">${a}</option>`).join('');
-            } else if (k==='cursos') {
-                eIn.classList.remove('hidden');
-                document.getElementById('catalog-extra-label').textContent = "Vincular a Sección";
-                eSel.innerHTML = (state.catalogs.secciones || []).map(s => `<option value="${s}">${s}</option>`).join('');
             } else {
                 eIn.classList.add('hidden');
             }
