@@ -13,7 +13,7 @@
         @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
         .tab-btn { border-bottom: 3px solid transparent; color: #94a3b8; transition: all 0.2s; cursor: pointer; }
         .tab-btn.active { border-color: #2563eb; color: #1e293b; font-weight: 900; }
-        .auth-tab { border-bottom: 2px solid transparent; color: #94a3b8; width: 50%; padding-bottom: 8px; font-weight: bold; transition: all 0.2s; }
+        .auth-tab { border-bottom: 2px solid transparent; color: #94a3b8; width: 50%; padding-bottom: 12px; font-weight: bold; transition: all 0.2s; text-align: center; cursor: pointer; }
         .auth-tab.active { border-color: #2563eb; color: #1e293b; }
         .check-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 0.5rem; max-height: 150px; overflow-y: auto; padding: 0.5rem; background: #f8fafc; border-radius: 0.75rem; border: 1px solid #e2e8f0; }
         .check-item { display: flex; align-items: center; font-size: 11px; color: #475569; cursor: pointer; user-select: none; }
@@ -44,7 +44,7 @@
         </div>
     </div>
 
-    <!-- PANTALLA DE AUTENTICACIÓN -->
+    <!-- LOGIN / REGISTRO -->
     <div id="auth-container" class="min-h-screen flex items-center justify-center p-4">
         <div class="bg-white p-10 rounded-[2.5rem] shadow-2xl border border-slate-200 w-full max-w-md text-center">
             <div class="mx-auto mb-6 w-32 h-32 flex items-center justify-center">
@@ -56,31 +56,29 @@
                 <span class="w-2 h-2 rounded-full bg-yellow-300 animate-pulse"></span> Verificando conexión...
             </div>
 
-            <!-- TABS LOGIN / REGISTRO -->
+            <!-- TABS -->
             <div class="flex justify-center mb-6 border-b border-slate-100">
-                <button id="tab-login" onclick="window.toggleAuth('login')" class="auth-tab active">Iniciar Sesión</button>
-                <button id="tab-register" onclick="window.toggleAuth('register')" class="auth-tab">Crear Cuenta</button>
+                <div id="tab-login" onclick="window.switchAuthTab('login')" class="auth-tab active">Iniciar Sesión</div>
+                <div id="tab-register" onclick="window.switchAuthTab('register')" class="auth-tab">Crear Cuenta</div>
             </div>
 
-            <!-- FORMULARIO LOGIN -->
+            <!-- LOGIN FORM -->
             <form id="login-form" class="space-y-4 text-left block">
                 <input type="text" id="login-email" required placeholder="Correo Institucional" class="w-full px-5 py-4 rounded-2xl border border-slate-200 outline-none bg-slate-50 focus:ring-2 focus:ring-blue-100">
                 <input type="password" id="login-pass" required placeholder="Contraseña" class="w-full px-5 py-4 rounded-2xl border border-slate-200 outline-none bg-slate-50 focus:ring-2 focus:ring-blue-100">
                 <button type="submit" class="w-full bg-blue-600 text-white py-4 rounded-2xl font-black uppercase tracking-widest hover:bg-blue-700 transition-all shadow-lg shadow-blue-200">Ingresar</button>
-                <p class="text-[9px] text-center text-slate-300 font-bold uppercase tracking-widest mt-2">Admin Demo: admin / admin</p>
             </form>
 
-            <!-- FORMULARIO REGISTRO -->
+            <!-- REGISTER FORM -->
             <form id="register-form" class="space-y-4 text-left hidden">
                 <input type="text" id="reg-name" required placeholder="Nombre Completo (Ej: Lic. Juan Perez)" class="w-full px-5 py-4 rounded-2xl border border-slate-200 outline-none bg-slate-50 focus:ring-2 focus:ring-blue-100">
                 <input type="email" id="reg-email" required placeholder="Correo Electrónico" class="w-full px-5 py-4 rounded-2xl border border-slate-200 outline-none bg-slate-50 focus:ring-2 focus:ring-blue-100">
                 <input type="password" id="reg-pass" required placeholder="Crear Contraseña" class="w-full px-5 py-4 rounded-2xl border border-slate-200 outline-none bg-slate-50 focus:ring-2 focus:ring-blue-100">
                 <div>
-                    <label class="block text-xs font-bold text-slate-400 ml-2 mb-1 uppercase">Subir Rúbrica / Firma (JPG)</label>
+                    <label class="block text-xs font-bold text-slate-400 ml-2 mb-1 uppercase">Subir Firma (Imagen JPG/PNG)</label>
                     <input type="file" id="reg-signature" accept="image/jpeg, image/png" class="w-full p-3 rounded-2xl border border-slate-200 bg-slate-50 text-xs file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-blue-100 file:text-blue-700 hover:file:bg-blue-200">
                 </div>
                 <button type="submit" class="w-full bg-green-600 text-white py-4 rounded-2xl font-black uppercase tracking-widest hover:bg-green-700 transition-all shadow-lg shadow-green-200">Registrar Usuario</button>
-                <p class="text-[10px] text-center text-slate-400 mt-2 leading-tight">Nota: El administrador asignará tus cursos posteriormente.</p>
             </form>
 
             <div id="auth-error" class="bg-red-50 text-red-500 text-xs p-3 rounded-xl mt-4 font-bold hidden border border-red-100 text-left"></div>
@@ -136,13 +134,10 @@
             </div>
         </div>
 
-        <!-- PANEL ADMIN -->
         <div id="admin-view" class="hidden space-y-8">
             <div class="flex flex-col sm:flex-row justify-between items-end gap-4">
-                <!-- BOTÓN VOLVER (NUEVO) -->
-                <button onclick="window.closeAdminPanel()" class="bg-white text-slate-500 border border-slate-200 px-6 py-3 rounded-xl font-black text-xs uppercase tracking-widest hover:bg-slate-50 hover:text-slate-800 flex items-center gap-2 shadow-sm transition-all">
-                    ← Volver al Dashboard
-                </button>
+                <!-- BOTÓN VOLVER -->
+                <button onclick="window.closeAdminPanel()" class="font-black text-xs text-slate-400 uppercase tracking-widest hover:text-blue-600 flex items-center gap-2 border border-slate-200 px-4 py-2 rounded-lg bg-white">← Volver</button>
                 <div class="flex space-x-2 border-b border-slate-200 w-full sm:w-auto overflow-x-auto text-xs font-bold uppercase tracking-wide">
                     <button onclick="window.switchTab('users')" id="tab-users" class="tab-btn active px-4 py-3">Usuarios</button>
                     <button onclick="window.switchTab('catalogs')" id="tab-catalogs" class="tab-btn px-4 py-3">Académico</button>
@@ -164,10 +159,9 @@
                 <div class="bg-white rounded-[3rem] shadow-xl border border-slate-100 overflow-hidden"><div class="overflow-x-auto"><table class="w-full text-left min-w-[800px]"><thead><tr class="text-slate-400 text-[10px] uppercase font-black border-b border-slate-50"><th class="px-8 py-6">Usuario</th><th class="px-8 py-6">Datos</th><th class="px-8 py-6">Cursos</th><th class="px-8 py-6">Rol</th><th class="px-8 py-6 text-right">Acciones</th></tr></thead><tbody id="users-table-body" class="divide-y divide-slate-50"></tbody></table></div></div>
             </div>
 
-            <!-- ... Resto de Tabs (Catálogos, Cursos, Horarios, etc.) igual que antes ... -->
             <div id="content-catalogs" class="hidden space-y-6">
                 <div class="flex justify-between items-center bg-white p-4 rounded-[2rem] border border-slate-100 shadow-sm">
-                    <div class="flex items-center gap-3 px-2"><h3 class="font-black text-slate-800 text-lg">Catálogos Básicos (Áreas, Materias, Secciones, Paralelos)</h3></div>
+                    <div class="flex items-center gap-3 px-2"><h3 class="font-black text-slate-800 text-lg">Catálogos</h3></div>
                     <button onclick="window.manualSaveCatalogs()" class="bg-slate-900 text-white px-6 py-3 rounded-xl font-black text-xs uppercase tracking-widest hover:bg-black transition-all">Guardar Todo</button>
                 </div>
                 <div id="catalog-grid-inner" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
@@ -208,8 +202,7 @@
             <div class="flex justify-between mb-8"><h3 class="text-3xl font-black text-slate-800">Usuario</h3><button onclick="window.closeModal('modal-user')" class="text-2xl">✕</button></div>
             <form id="user-form" class="space-y-6">
                 <input type="hidden" id="form-user-id">
-                <!-- Form fields same as previous -->
-                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
                     <div><label class="block text-xs font-black text-slate-400 mb-2 uppercase">Nombre</label><input type="text" id="form-name" required class="w-full p-4 rounded-2xl bg-slate-50 border-none outline-none"></div>
                     <div><label class="block text-xs font-black text-slate-400 mb-2 uppercase">Correo</label><input type="email" id="form-email" required class="w-full p-4 rounded-2xl bg-slate-50 border-none outline-none"></div>
                 </div>
@@ -234,7 +227,7 @@
             </form>
         </div>
     </div>
-    <!-- Other modals (Catalog, Time, Assign, Copy, Log) same structure as before -->
+    <!-- Other modals (Catalog, Time, Assign, Copy, Log) included similarly in logic -->
     <div id="modal-catalog" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[120] hidden items-center justify-center p-4"><div class="bg-white w-full max-w-md rounded-[2.5rem] p-8 modal-animate"><h3 id="catalog-title" class="text-2xl font-black mb-6">Administrar</h3><div id="catalog-extra-input" class="hidden mb-4"><label id="catalog-extra-label" class="block text-xs font-black mb-2 uppercase">Vinculación</label><select id="catalog-extra-select" class="w-full p-4 rounded-xl bg-slate-50 outline-none text-sm"></select></div><div class="flex gap-2 mb-6"><input type="text" id="catalog-input" class="flex-1 p-4 rounded-xl bg-slate-50 outline-none"><button onclick="window.addCatalogItem()" class="bg-blue-600 text-white px-6 rounded-xl font-bold">+</button></div><div id="catalog-list" class="max-h-60 overflow-y-auto space-y-2"></div><button onclick="window.closeModal('modal-catalog')" class="mt-6 w-full text-slate-400 font-bold uppercase text-xs">Cerrar</button></div></div>
     <div id="modal-time-slots" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[130] hidden items-center justify-center p-4"><div class="bg-white w-full max-w-lg rounded-[2.5rem] p-8 modal-animate"><div class="flex justify-between items-center mb-6"><h3 class="text-2xl font-black">Horas</h3><button onclick="window.closeModal('modal-time-slots')">✕</button></div><div class="flex gap-2 mb-4"><input type="time" id="ts-start" class="p-2 rounded-lg border text-sm"><input type="time" id="ts-end" class="p-2 rounded-lg border text-sm"><button onclick="window.addTimeSlot()" class="bg-slate-800 text-white rounded-lg px-4 text-xs font-bold">Agregar</button></div><div id="slots-list" class="space-y-2"></div></div></div>
     <div id="modal-assign-subject" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[140] hidden items-center justify-center p-4"><div class="bg-white w-full max-w-sm rounded-[2.5rem] p-8 modal-animate"><h3 class="text-xl font-black mb-4">Asignar</h3><div id="subject-selector-list" class="grid grid-cols-2 gap-2 max-h-64 overflow-y-auto"></div><button onclick="window.closeModal('modal-assign-subject')" class="mt-6 w-full bg-slate-100 text-slate-500 py-3 rounded-xl font-bold text-xs">Cancelar</button></div></div>
@@ -291,7 +284,7 @@
         onAuthStateChanged(auth, async (user) => {
             if(user) {
                 let uData = (await getDoc(getDocRef("users", user.uid))).data();
-                if(!uData) { 
+                if(!uData) { // Fallback creation
                     uData = { email: user.email, rol: "Docente", materias: [], areas: [] };
                     await setDoc(getDocRef("users", user.uid), uData);
                 }
@@ -307,6 +300,7 @@
             document.getElementById('user-role-display').textContent = user.rol;
             document.getElementById('avatar-circle').textContent = (user.nombre||user.email)[0].toUpperCase();
             
+            // Dashboard info
             if (user.materias) document.getElementById('my-subjects-list').innerHTML = user.materias.map(m => typeof m === 'object' ? `<span class='data-badge'>${m.name}</span>` : `<span class='data-badge'>${m}</span>`).join('');
             if (user.cursos) document.getElementById('my-courses-list').innerHTML = user.cursos.map(c => typeof c === 'object' ? `<span class='text-xs font-bold mr-2'>${c.name}</span>` : `<span class='text-xs font-bold mr-2'>${c}</span>`).join('');
 
@@ -320,14 +314,14 @@
             updateDashboardDate();
         }
 
-        // Toggle Auth
-        window.toggleAuth = (mode) => {
-             const isReg = mode === 'register';
-             state.isRegisterMode = isReg;
-             document.getElementById('auth-form').classList.toggle('hidden', isReg);
-             document.getElementById('register-form').classList.toggle('hidden', !isReg);
-             document.getElementById('tab-login').classList.toggle('active', !isReg);
-             document.getElementById('tab-register').classList.toggle('active', isReg);
+        // Toggle Auth (Separate Tabs)
+        window.switchAuthTab = (mode) => {
+            state.isRegisterMode = (mode === 'register');
+            document.getElementById('auth-form').classList.toggle('hidden', state.isRegisterMode);
+            document.getElementById('register-form').classList.toggle('hidden', !state.isRegisterMode);
+            document.getElementById('tab-login').className = state.isRegisterMode ? 'auth-tab' : 'auth-tab active';
+            document.getElementById('tab-register').className = state.isRegisterMode ? 'auth-tab active' : 'auth-tab';
+            document.getElementById('auth-error').classList.add('hidden');
         };
 
         // Submit forms
@@ -356,7 +350,13 @@
                 } else {
                     await signInWithEmailAndPassword(auth, email, pass);
                 }
-            } catch(e) { document.getElementById('login-error').textContent = e.code; document.getElementById('login-error').classList.remove('hidden'); }
+            } catch(e) { 
+                const err = document.getElementById('auth-error'); // Use specific ID for login/register
+                if(!err) document.getElementById('login-error').textContent = e.code;
+                else { err.textContent = e.code; err.classList.remove('hidden'); }
+                // Use login-error fallback
+                document.getElementById('login-error').textContent = e.code; document.getElementById('login-error').classList.remove('hidden');
+            }
         };
 
         document.getElementById('auth-form').onsubmit = (e) => handleAuth(e, 'login');
@@ -369,6 +369,7 @@
                 state.catalogs = snap.data();
                 for(let k in state.catalogs) if(!Array.isArray(state.catalogs[k])) state.catalogs[k]=[];
             } else {
+                 // Empty start
                  state.catalogs = { areas: [], materias: [], cursos: [], paralelos: [], secciones: [], roles: [] };
                  await setDoc(getDocRef("config", "catalogs"), state.catalogs);
             }
@@ -458,9 +459,8 @@
                  return original || { name: cName, section: sec };
             });
             
-            const rawPars = getChecked('chk-paralelo');
-            const finalPars = rawPars.map(pName => ({ name: pName, section: sec }));
-
+            const rawPars = getChecked('chk-paralelo'); // Just strings ["A", "B"]
+            
             const rawMats = getChecked('chk-materia');
             const finalMats = rawMats.map(mName => {
                 const found = state.catalogs.materias.find(m => m.name === mName || m === mName);
@@ -544,7 +544,7 @@
                          
                          let row = { time: `${slot.start} - ${slot.end}`, subject: subjName, teacher: "Sin Asignar", topic: "NO REGISTRADO", obs: "NO REGISTRADO", sign: `<span class="text-xs text-red-500 font-bold">PENDIENTE</span>` };
                          
-                         // Find Teacher (Strict Check)
+                         // Find Teacher
                          const t = users.find(u => 
                              u.seccion === sec && 
                              (u.cursos||[]).some(c => (typeof c === 'object' ? c.name : c) === cur) && 
@@ -590,7 +590,6 @@
              createCheckboxes('container-materias', matNames, 'chk-materia');
              populateSelect('sel-seccion', state.catalogs.secciones);
              populateSelect('sel-rol', state.catalogs.roles);
-             createCheckboxes('container-paralelos', state.catalogs.paralelos, 'chk-paralelo');
              updateUserCourses(); // Initial courses
         }
         document.getElementById('sel-seccion').onchange = updateUserCourses;
@@ -601,6 +600,12 @@
             createCheckboxes('container-cursos', courses, 'chk-curso');
             
             // FILTER PARALLELS BY SECTION (As requested)
+            // But we actually want PARALLELS PER COURSE in the Schedule context, not here in User Profile?
+            // In User Profile we assign ALL parallels they teach.
+            // Let's stick to global parallels for now but filter by section if needed.
+            // Here we assume global parallels for simplicity in user assignment.
+            
+            // If parallels are linked to section (which they are now in Catalog Manager)
             const parallels = (state.catalogs.paralelos||[]).filter(p => (typeof p === 'string') || (p.section === sec)).map(p => (typeof p === 'object') ? p.name : p);
             createCheckboxes('container-paralelos', parallels, 'chk-paralelo');
         }
@@ -637,6 +642,10 @@
                 eIn.classList.remove('hidden');
                 document.getElementById('catalog-extra-label').textContent = "Vincular a Área";
                 eSel.innerHTML = (state.catalogs.areas || []).map(a => `<option value="${a}">${a}</option>`).join('');
+            } else if (k==='cursos' || k==='paralelos') {
+                eIn.classList.remove('hidden');
+                document.getElementById('catalog-extra-label').textContent = "Vincular a Sección";
+                eSel.innerHTML = (state.catalogs.secciones || []).map(s => `<option value="${s}">${s}</option>`).join('');
             } else {
                 eIn.classList.add('hidden');
             }
@@ -660,6 +669,7 @@
                     // Initialize course with EMPTY parallels array by default
                     state.catalogs.cursos.push({name:v, section:ex, parallels: []});
                 }
+                else if(state.currentCatalog === 'paralelos') state.catalogs.paralelos.push({name:v, section:ex});
                 else state.catalogs[state.currentCatalog].push(v); 
                 await window.manualSaveCatalogs(); renderCatalogList(); renderCatalogs(); 
             } 
