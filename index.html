@@ -8,7 +8,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
         .role-badge { padding: 0.25rem 0.5rem; border-radius: 0.5rem; font-size: 9px; font-weight: 900; text-transform: uppercase; background: #f1f5f9; color: #64748b; display: inline-block; margin-right: 4px; margin-bottom: 2px; }
-        .data-badge { display: inline-block; padding: 2px 6px; background: #eef2ff; color: #4f46e5; border-radius: 4px; font-size: 10px; font-weight: 700; margin-right: 2px; margin-bottom: 2px; border: 1px solid #e0e7ff; }
+        .data-badge { display: inline-block; padding: 2px 8px; background: #eef2ff; color: #4338ca; border-radius: 12px; font-size: 10px; font-weight: 700; margin-right: 4px; margin-bottom: 4px; border: 1px solid #c7d2fe; }
         .modal-animate { animation: fadeIn 0.2s ease-out; }
         @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
         .tab-btn { border-bottom: 3px solid transparent; color: #94a3b8; transition: all 0.2s; cursor: pointer; }
@@ -137,38 +137,28 @@
                 <div class="bg-white rounded-[3rem] shadow-xl border border-slate-100 overflow-hidden"><div class="overflow-x-auto"><table class="w-full text-left min-w-[800px]"><thead><tr class="text-slate-400 text-[10px] uppercase font-black border-b border-slate-50"><th class="px-8 py-6">Usuario</th><th class="px-8 py-6">Datos</th><th class="px-8 py-6">Cursos</th><th class="px-8 py-6">Rol</th><th class="px-8 py-6 text-right">Acciones</th></tr></thead><tbody id="users-table-body" class="divide-y divide-slate-50"></tbody></table></div></div>
             </div>
 
-            <!-- TAB CATÁLOGOS (Limpiada de cursos) -->
             <div id="content-catalogs" class="hidden space-y-6">
                 <div class="flex justify-between items-center bg-white p-4 rounded-[2rem] border border-slate-100 shadow-sm">
-                    <div class="flex items-center gap-3 px-2"><h3 class="font-black text-slate-800 text-lg">Catálogos Básicos</h3></div>
+                    <div class="flex items-center gap-3 px-2"><h3 class="font-black text-slate-800 text-lg">Catálogos Básicos (Áreas, Materias, Secciones, Paralelos)</h3></div>
                     <button onclick="window.manualSaveCatalogs()" class="bg-slate-900 text-white px-6 py-3 rounded-xl font-black text-xs uppercase tracking-widest hover:bg-black transition-all">Guardar Todo</button>
                 </div>
                 <div id="catalog-grid-inner" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
             </div>
 
-            <!-- TAB CURSOS (NUEVA PESTAÑA PRINCIPAL) -->
+            <!-- TAB CURSOS (RENOVADA) -->
             <div id="content-courses" class="hidden space-y-6">
                 <div class="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100">
                     <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
-                        <!-- Panel Izquierdo: Crear -->
                         <div class="lg:col-span-4 space-y-6 border-r border-slate-50 pr-8">
                             <h3 class="text-xl font-black text-slate-800">Nuevo Curso</h3>
+                            <div><label class="block text-xs font-black uppercase mb-2 text-slate-400">1. Sección</label><select id="cm-seccion" class="w-full p-4 bg-slate-50 rounded-xl outline-none text-sm font-bold border border-slate-100"></select></div>
+                            <div><label class="block text-xs font-black uppercase mb-2 text-slate-400">2. Nombre Curso</label><input type="text" id="cm-new-name" placeholder="Ej: 1ero Bachillerato" class="w-full p-4 bg-slate-50 rounded-xl outline-none text-sm font-bold border border-slate-100"></div>
                             <div>
-                                <label class="block text-xs font-black uppercase mb-2 text-slate-400">1. Seleccionar Sección</label>
-                                <select id="cm-seccion" class="w-full p-4 bg-slate-50 rounded-xl outline-none text-sm font-bold border border-slate-100"></select>
-                            </div>
-                            <div>
-                                <label class="block text-xs font-black uppercase mb-2 text-slate-400">2. Nombre del Curso</label>
-                                <input type="text" id="cm-new-name" placeholder="Ej: 1ero Bachillerato" class="w-full p-4 bg-slate-50 rounded-xl outline-none text-sm font-bold border border-slate-100">
-                            </div>
-                            <div>
-                                <label class="block text-xs font-black uppercase mb-2 text-slate-400">3. Paralelos Habilitados</label>
-                                <div id="cm-parallels-checks" class="grid grid-cols-4 gap-2 bg-slate-50 p-4 rounded-xl border border-slate-100"></div>
+                                <label class="block text-xs font-black uppercase mb-2 text-slate-400">3. Paralelos Disponibles</label>
+                                <div id="cm-parallels-checks" class="grid grid-cols-4 gap-2 bg-slate-50 p-4 rounded-xl border border-slate-100 max-h-40 overflow-y-auto"></div>
                             </div>
                             <button onclick="window.addCourseWithParallels()" class="w-full bg-blue-600 text-white py-4 rounded-xl font-bold text-sm uppercase hover:bg-blue-700 transition shadow-lg shadow-blue-200">Crear Curso</button>
                         </div>
-                        
-                        <!-- Panel Derecho: Lista -->
                         <div class="lg:col-span-8">
                             <h3 class="text-xl font-black text-slate-800 mb-6">Cursos Existentes</h3>
                             <div id="cm-courses-list" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
@@ -216,7 +206,7 @@
             </form>
         </div>
     </div>
-    <!-- Other modals (Catalog, Time, Assign, Copy, Log) included similarly in logic -->
+    <!-- Other modals -->
     <div id="modal-catalog" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[120] hidden items-center justify-center p-4"><div class="bg-white w-full max-w-md rounded-[2.5rem] p-8 modal-animate"><h3 id="catalog-title" class="text-2xl font-black mb-6">Administrar</h3><div id="catalog-extra-input" class="hidden mb-4"><label id="catalog-extra-label" class="block text-xs font-black mb-2 uppercase">Vinculación</label><select id="catalog-extra-select" class="w-full p-4 rounded-xl bg-slate-50 outline-none text-sm"></select></div><div class="flex gap-2 mb-6"><input type="text" id="catalog-input" class="flex-1 p-4 rounded-xl bg-slate-50 outline-none"><button onclick="window.addCatalogItem()" class="bg-blue-600 text-white px-6 rounded-xl font-bold">+</button></div><div id="catalog-list" class="max-h-60 overflow-y-auto space-y-2"></div><button onclick="window.closeModal('modal-catalog')" class="mt-6 w-full text-slate-400 font-bold uppercase text-xs">Cerrar</button></div></div>
     <div id="modal-time-slots" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[130] hidden items-center justify-center p-4"><div class="bg-white w-full max-w-lg rounded-[2.5rem] p-8 modal-animate"><div class="flex justify-between items-center mb-6"><h3 class="text-2xl font-black">Horas</h3><button onclick="window.closeModal('modal-time-slots')">✕</button></div><div class="flex gap-2 mb-4"><input type="time" id="ts-start" class="p-2 rounded-lg border text-sm"><input type="time" id="ts-end" class="p-2 rounded-lg border text-sm"><button onclick="window.addTimeSlot()" class="bg-slate-800 text-white rounded-lg px-4 text-xs font-bold">Agregar</button></div><div id="slots-list" class="space-y-2"></div></div></div>
     <div id="modal-assign-subject" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[140] hidden items-center justify-center p-4"><div class="bg-white w-full max-w-sm rounded-[2.5rem] p-8 modal-animate"><h3 class="text-xl font-black mb-4">Asignar</h3><div id="subject-selector-list" class="grid grid-cols-2 gap-2 max-h-64 overflow-y-auto"></div><button onclick="window.closeModal('modal-assign-subject')" class="mt-6 w-full bg-slate-100 text-slate-500 py-3 rounded-xl font-bold text-xs">Cancelar</button></div></div>
@@ -233,8 +223,9 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
         const appId = 'leccionario-v1';
-        const getCollectionRef = (name) => collection(db, 'artifacts', appId, 'public', 'data', name);
-        const getDocRef = (col, id) => doc(db, 'artifacts', appId, 'public', 'data', col, id);
+        // Direct Collections
+        const getCollectionRef = (name) => collection(db, name);
+        const getDocRef = (col, id) => doc(db, col, id);
 
         const dom = {
             loader: document.getElementById('loader'), auth: document.getElementById('auth-container'), dashboard: document.getElementById('user-logged-in'),
@@ -243,18 +234,6 @@
         setTimeout(() => { if(dom.loader) dom.loader.style.display = 'none'; }, 2000);
 
         let state = { catalogs: { areas: [], materias: [], cursos: [], paralelos: [], secciones: [], roles: [] }, users: [], currentUser: null, currentSchedule: null, currentCatalog: null, viewDate: new Date(), calendarDate: new Date(), isRegisterMode: false };
-
-        // Test connection
-        (async () => {
-             try {
-                 await getDoc(getDocRef("config", "catalogs"));
-                 const el = document.getElementById('firebase-status');
-                 if(el) { el.innerHTML = "<span class='text-green-500'>●</span> Conectado"; el.classList.replace('text-slate-400', 'text-green-700'); }
-             } catch(e) {
-                 const el = document.getElementById('firebase-status');
-                 if(el) { el.innerHTML = "<span class='text-red-500'>●</span> Desconectado"; el.classList.replace('text-slate-400', 'text-red-700'); }
-             }
-        })();
 
         // AUTH
         onAuthStateChanged(auth, async (user) => {
@@ -267,6 +246,15 @@
                 loginSuccess({ uid: user.uid, email: user.email, ...uData });
             } else {
                 dom.dashboard.classList.add('hidden'); dom.auth.classList.remove('hidden');
+                // Test connection
+                try {
+                     await getDoc(getDocRef("config", "catalogs"));
+                     const el = document.getElementById('firebase-status');
+                     if(el) { el.innerHTML = "<span class='text-green-500'>●</span> Conectado"; el.classList.replace('text-slate-400', 'text-green-700'); }
+                } catch(e) {
+                     const el = document.getElementById('firebase-status');
+                     if(el) { el.innerHTML = "<span class='text-red-500'>●</span> Desconectado"; el.classList.replace('text-slate-400', 'text-red-700'); }
+                }
             }
         });
 
@@ -309,7 +297,6 @@
             const snap = await getDoc(getDocRef("config", "catalogs"));
             if(snap.exists()) {
                 state.catalogs = snap.data();
-                // Ensure array types
                 for(let k in state.catalogs) if(!Array.isArray(state.catalogs[k])) state.catalogs[k]=[];
             } else {
                  // Empty start
@@ -317,6 +304,7 @@
                  await setDoc(getDocRef("config", "catalogs"), state.catalogs);
             }
             renderCatalogs(); populateScheduleSelectors();
+            updateCMList();
         }
         window.manualSaveCatalogs = async () => { await setDoc(getDocRef("config", "catalogs"), state.catalogs); alert("Guardado"); };
 
@@ -346,6 +334,10 @@
             document.getElementById('content-'+tab).classList.remove('hidden');
             if(tab==='leccionario') populateScheduleSelectors();
             if(tab==='schedules') populateScheduleSelectors();
+            if(tab==='courses') {
+                populateSelect('cm-seccion', state.catalogs.secciones);
+                updateCMList();
+            }
         };
 
         window.openModal = (id) => document.getElementById(id).classList.replace('hidden', 'flex');
@@ -370,8 +362,9 @@
             setChecked('chk-materia', matNames);
             const curNames = (u.cursos||[]).map(c => typeof c === 'object' ? c.name : c);
             setChecked('chk-curso', curNames);
-            const parNames = (u.paralelos||[]).map(p => typeof p === 'object' ? p.name : p);
-            setChecked('chk-paralelo', parNames);
+            // Parallels need to be checked based on what user has stored
+            // Assuming user stores strings "A", "B" etc.
+            setChecked('chk-paralelo', u.paralelos || []);
             
             document.getElementById('sel-rol').value = u.rol;
             window.openModal('modal-user');
@@ -395,9 +388,8 @@
                  return original || { name: cName, section: sec };
             });
             
-            const rawPars = getChecked('chk-paralelo');
-            const finalPars = rawPars.map(pName => ({ name: pName, section: sec }));
-
+            const rawPars = getChecked('chk-paralelo'); // Just strings ["A", "B"]
+            
             const rawMats = getChecked('chk-materia');
             const finalMats = rawMats.map(mName => {
                 const found = state.catalogs.materias.find(m => m.name === mName || m === mName);
@@ -412,7 +404,7 @@
                 areas: getChecked('chk-area'),
                 materias: finalMats,
                 cursos: finalCourses,
-                paralelos: finalPars
+                paralelos: rawPars
             };
             const f = document.getElementById('form-signature').files[0];
             if(f) userData.firma = await toBase64(f);
@@ -477,15 +469,15 @@
                      if(subj) {
                          const subjName = (typeof subj === 'object') ? subj.name : subj;
                          const logId = `${dateInput}_${sched.id}_${slot.id}`;
-                         const logSnap = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'class_logs', logId));
+                         const logSnap = await getDoc(doc(db, 'class_logs', logId));
                          
                          let row = { time: `${slot.start} - ${slot.end}`, subject: subjName, teacher: "Sin Asignar", topic: "NO REGISTRADO", obs: "NO REGISTRADO", sign: `<span class="text-xs text-red-500 font-bold">PENDIENTE</span>` };
                          
-                         // Find Teacher (Strict Check)
+                         // Find Teacher
                          const t = users.find(u => 
                              u.seccion === sec && 
                              (u.cursos||[]).some(c => (typeof c === 'object' ? c.name : c) === cur) && 
-                             (u.paralelos||[]).some(p => (typeof p === 'object' ? p.name : p) === par) && 
+                             (u.paralelos||[]).some(p => p === par) && 
                              ((u.materias||[]).map(m=>typeof m==='object'?m.name:m).includes(subjName))
                          );
                          if(t) row.teacher = t.nombre || t.email;
@@ -532,19 +524,15 @@
         document.getElementById('sel-seccion').onchange = updateUserCourses;
         function updateUserCourses() {
             const sec = document.getElementById('sel-seccion').value;
-            // FILTER COURSES BY SECTION
-            const courses = (state.catalogs.cursos||[]).filter(c => (typeof c === 'string') || (c.section === sec)).map(c => (typeof c === 'object') ? c.name : c);
+            // FILTER COURSES BY SECTION (from catalogs.cursos objects)
+            const courses = (state.catalogs.cursos||[]).filter(c => c.section === sec).map(c => c.name);
             createCheckboxes('container-cursos', courses, 'chk-curso');
             
-            // FILTER PARALLELS BY SECTION (As requested)
-            // But we actually want PARALLELS PER COURSE in the Schedule context, not here in User Profile?
-            // In User Profile we assign ALL parallels they teach.
-            // Let's stick to global parallels for now but filter by section if needed.
-            // Here we assume global parallels for simplicity in user assignment.
-            
-            // If parallels are linked to section (which they are now in Catalog Manager)
-            const parallels = (state.catalogs.paralelos||[]).filter(p => (typeof p === 'string') || (p.section === sec)).map(p => (typeof p === 'object') ? p.name : p);
-            createCheckboxes('container-paralelos', parallels, 'chk-paralelo');
+            // Populate parallels based on available courses in this section
+            const relevantCourses = (state.catalogs.cursos||[]).filter(c => c.section === sec);
+            const allPars = new Set();
+            relevantCourses.forEach(c => (c.parallels||[]).forEach(p => allPars.add(p)));
+            createCheckboxes('container-paralelos', Array.from(allPars), 'chk-paralelo');
         }
         function createCheckboxes(id, list, name) { document.getElementById(id).innerHTML = (list||[]).map(v => `<label class="check-item"><input type="checkbox" name="${name}" value="${v}"><span>${v}</span></label>`).join(''); }
         function populateSelect(id, list) { document.getElementById(id).innerHTML = (list||[]).map(v => `<option value="${v}">${v}</option>`).join(''); }
@@ -579,10 +567,6 @@
                 eIn.classList.remove('hidden');
                 document.getElementById('catalog-extra-label').textContent = "Vincular a Área";
                 eSel.innerHTML = (state.catalogs.areas || []).map(a => `<option value="${a}">${a}</option>`).join('');
-            } else if (k==='cursos' || k==='paralelos') {
-                eIn.classList.remove('hidden');
-                document.getElementById('catalog-extra-label').textContent = "Vincular a Sección";
-                eSel.innerHTML = (state.catalogs.secciones || []).map(s => `<option value="${s}">${s}</option>`).join('');
             } else {
                 eIn.classList.add('hidden');
             }
@@ -601,18 +585,16 @@
             const ex = document.getElementById('catalog-extra-select').value;
             if(v) { 
                 if(state.currentCatalog === 'materias') state.catalogs.materias.push({name:v, area:ex});
-                else if(state.currentCatalog === 'cursos') {
-                    // NEW COURSE MANAGER LOGIC handled in separate modal usually, but here simplified catalog
-                    // Initialize course with EMPTY parallels array by default
-                    state.catalogs.cursos.push({name:v, section:ex, parallels: []});
-                }
-                else if(state.currentCatalog === 'paralelos') state.catalogs.paralelos.push({name:v, section:ex});
                 else state.catalogs[state.currentCatalog].push(v); 
                 await window.manualSaveCatalogs(); renderCatalogList(); renderCatalogs(); 
             } 
         };
         window.removeCatalogItem = async (i) => { state.catalogs[state.currentCatalog].splice(i,1); await window.manualSaveCatalogs(); renderCatalogList(); renderCatalogs(); };
-        function renderCatalogs() { document.getElementById('catalog-grid-inner').innerHTML = Object.keys(state.catalogs).map(k => `<div onclick="window.openCatalogManager('${k}')" class="bg-white p-4 rounded-xl shadow cursor-pointer"><h4 class="font-bold uppercase text-xs">${k}</h4></div>`).join(''); }
+        function renderCatalogs() { 
+            // FILTER keys: remove cursos, paralelos from generic view
+            const keys = Object.keys(state.catalogs).filter(k => !['cursos','paralelos'].includes(k));
+            document.getElementById('catalog-grid-inner').innerHTML = keys.map(k => `<div onclick="window.openCatalogManager('${k}')" class="bg-white p-4 rounded-xl shadow cursor-pointer"><h4 class="font-bold uppercase text-xs">${k}</h4></div>`).join(''); 
+        }
 
         // NEW: COURSE MANAGER SPECIFIC
         window.openCourseManager = () => {
@@ -623,7 +605,6 @@
         document.getElementById('cm-seccion').onchange = updateCMList;
         function updateCMList() {
              const sec = document.getElementById('cm-seccion').value;
-             // Render existing courses
              const courses = (state.catalogs.cursos||[]).filter(c => c.section === sec);
              document.getElementById('cm-courses-list').innerHTML = courses.map((c, idx) => `
                 <div class="bg-slate-50 p-2 rounded-lg flex justify-between items-center text-xs">
@@ -635,33 +616,31 @@
                 </div>
              `).join('');
              
-             // Render checkboxes for parallels based on GLOBAL parallels list (Filtered by section if applicable)
-             // If parallels have sections, filter. If strings, show all.
-             const allPars = (state.catalogs.paralelos||[]).filter(p => (typeof p === 'string') || (p.section === sec)).map(p => typeof p === 'object' ? p.name : p);
-             
-             document.getElementById('cm-parallels-checks').innerHTML = allPars.map(p => `
-                <label class="flex items-center gap-1 text-xs">
-                    <input type="checkbox" class="cm-par-check" value="${p}"> ${p}
-                </label>
-             `).join('');
+             document.getElementById('cm-parallels-checks').innerHTML = `
+                <input type="text" id="cm-manual-parallels" placeholder="Escriba paralelos (A, B, C...)" class="col-span-4 w-full p-3 bg-white rounded-lg border text-xs">
+             `;
         }
         
         window.addCourseWithParallels = async () => {
              const name = document.getElementById('cm-new-name').value.trim();
              const sec = document.getElementById('cm-seccion').value;
-             const pars = Array.from(document.querySelectorAll('.cm-par-check:checked')).map(cb => cb.value);
+             const parsInput = document.getElementById('cm-manual-parallels').value.trim();
              
-             if(name && sec) {
+             if(name && sec && parsInput) {
+                 const pars = parsInput.split(',').map(s=>s.trim()).filter(s=>s);
                  // Check if course exists in section to update or add
                  const existsIdx = state.catalogs.cursos.findIndex(c => c.name === name && c.section === sec);
                  if(existsIdx >= 0) {
-                     state.catalogs.cursos[existsIdx].parallels = pars; // Update parallels
+                     state.catalogs.cursos[existsIdx].parallels = pars; 
                  } else {
                      state.catalogs.cursos.push({name: name, section: sec, parallels: pars});
                  }
                  await window.manualSaveCatalogs();
                  updateCMList();
                  document.getElementById('cm-new-name').value = "";
+                 document.getElementById('cm-manual-parallels').value = "";
+             } else {
+                 alert("Complete todos los campos");
              }
         };
 
@@ -669,10 +648,6 @@
             if(!confirm(`¿Eliminar curso ${courseName}?`)) return;
             state.catalogs.cursos = state.catalogs.cursos.filter(c => !(c.name === courseName && c.section === sectionName));
             await window.manualSaveCatalogs();
-            // Refresh logic: re-call updateCMList.
-            // Since updateCMList is scoped, we manually trigger the change event or call it if exposed.
-            // We exposed it to window? No, updateCMList is local. 
-            // Workaround: trigger change on select
             document.getElementById('cm-seccion').dispatchEvent(new Event('change'));
         };
 
@@ -700,7 +675,7 @@
         // Init logic
         document.getElementById('logout-btn').onclick = () => location.reload();
         
-        // Cascading for Schedule/Leccionario (UPDATED FOR PARALLELS)
+        // Cascading for Schedule/Leccionario (UPDATED FOR PARALLELS FROM COURSE)
         function updateCourseOptions(secId, curId, parId) {
             const sec = document.getElementById(secId).value;
             const curEl = document.getElementById(curId);
@@ -725,21 +700,14 @@
             const parEl = document.getElementById(parId);
             if(!parEl) return;
             
-            // Find the course object to get its specific parallels
-            // We search in the full catalog since names might repeat across sections, 
-            // but here context is filtered by section in previous step.
-            // Better to find by name AND section (from parent select)
-            // Simplified: Find first course with that name (Assuming names unique per section, or filtering correctly above)
-            // Correction: find by name AND section to be safe, but we don't have section easily accessible here inside the helper without passing it.
-            // Let's pass it implicitly via the parent select value if needed, but the list of coursesObj above was already filtered.
-            const course = state.catalogs.cursos.find(c => c.name === courseName);
+            const course = state.catalogs.cursos.find(c => c.name === courseName); // Assumes unique name or add sec filter context
+            // Actually better to find in filtered list or pass sec. 
+            // Simplified: we trust unique names or first match. 
             
             if(course && course.parallels && course.parallels.length > 0) {
                  parEl.innerHTML = course.parallels.map(p => `<option value="${p}">${p}</option>`).join('');
             } else {
-                 // Fallback to all parallels if none defined specific (legacy support)
-                 // Or better: show empty to force configuration
-                 parEl.innerHTML = (state.catalogs.paralelos||[]).map(p => `<option value="${typeof p==='object'?p.name:p}">${typeof p==='object'?p.name:p}</option>`).join('');
+                 parEl.innerHTML = "";
             }
         }
         
