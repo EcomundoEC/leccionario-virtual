@@ -44,16 +44,16 @@
         </div>
     </div>
 
-    <!-- LOGIN / REGISTRO -->
+    <!-- LOGIN -->
     <div id="auth-container" class="min-h-screen flex items-center justify-center p-4">
         <div class="bg-white p-10 rounded-[2.5rem] shadow-2xl border border-slate-200 w-full max-w-md text-center">
-            <div class="mx-auto mb-6 w-32 h-32 flex items-center justify-center">
+            <div class="mx-auto mb-8 w-40 h-40 flex items-center justify-center">
                 <img src="logo.png" alt="Logo" class="object-contain max-w-full max-h-full drop-shadow-md" onerror="this.src='https://placehold.co/150x150?text=LOGO';">
             </div>
-            
-            <h1 class="text-3xl font-black mb-1 text-slate-800">Leccionario Virtual</h1>
-            <div id="firebase-status" class="mb-6 text-[10px] font-mono text-slate-400 flex items-center justify-center gap-2">
-                <span class="w-2 h-2 rounded-full bg-yellow-300 animate-pulse"></span> Verificando conexión...
+            <h1 class="text-3xl font-black mb-2 text-slate-800">Leccionario Virtual</h1>
+            <p id="auth-subtitle" class="text-slate-400 text-sm mb-4">Ingresa tus credenciales</p>
+            <div id="firebase-status" class="mb-6 py-2 px-4 rounded-xl bg-slate-50 border border-slate-200 text-xs font-mono text-slate-400 flex items-center justify-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-yellow-300 animate-pulse"></span> Verificando...
             </div>
 
             <!-- TABS -->
@@ -62,14 +62,12 @@
                 <div id="tab-register" onclick="window.switchAuthTab('register')" class="auth-tab">Crear Cuenta</div>
             </div>
 
-            <!-- LOGIN FORM -->
-            <form id="login-form" class="space-y-4 text-left block">
-                <input type="text" id="login-email" required placeholder="Correo Institucional" class="w-full px-5 py-4 rounded-2xl border border-slate-200 outline-none bg-slate-50 focus:ring-2 focus:ring-blue-100">
-                <input type="password" id="login-pass" required placeholder="Contraseña" class="w-full px-5 py-4 rounded-2xl border border-slate-200 outline-none bg-slate-50 focus:ring-2 focus:ring-blue-100">
-                <button type="submit" class="w-full bg-blue-600 text-white py-4 rounded-2xl font-black uppercase tracking-widest hover:bg-blue-700 transition-all shadow-lg shadow-blue-200">Ingresar</button>
+            <form id="auth-form" class="space-y-5 text-left">
+                <input type="text" id="email" required placeholder="Correo Institucional" class="w-full px-5 py-4 rounded-2xl border border-slate-200 outline-none bg-slate-50">
+                <input type="password" id="password" required placeholder="Contraseña" class="w-full px-5 py-4 rounded-2xl border border-slate-200 outline-none bg-slate-50">
+                <button type="submit" class="w-full bg-blue-600 text-white py-4 rounded-2xl font-black uppercase tracking-widest hover:bg-blue-700 transition-all shadow-lg">Ingresar</button>
             </form>
 
-            <!-- REGISTER FORM -->
             <form id="register-form" class="space-y-4 text-left hidden">
                 <input type="text" id="reg-name" required placeholder="Nombre Completo (Ej: Lic. Juan Perez)" class="w-full px-5 py-4 rounded-2xl border border-slate-200 outline-none bg-slate-50 focus:ring-2 focus:ring-blue-100">
                 <input type="email" id="reg-email" required placeholder="Correo Electrónico" class="w-full px-5 py-4 rounded-2xl border border-slate-200 outline-none bg-slate-50 focus:ring-2 focus:ring-blue-100">
@@ -81,11 +79,11 @@
                 <button type="submit" class="w-full bg-green-600 text-white py-4 rounded-2xl font-black uppercase tracking-widest hover:bg-green-700 transition-all shadow-lg shadow-green-200">Registrar Usuario</button>
             </form>
 
-            <div id="auth-error" class="bg-red-50 text-red-500 text-xs p-3 rounded-xl mt-4 font-bold hidden border border-red-100 text-left"></div>
+            <div id="login-error" class="bg-red-50 text-red-500 text-xs p-3 rounded-xl mt-4 font-bold hidden border border-red-100 text-left"></div>
         </div>
     </div>
 
-    <!-- APP DASHBOARD -->
+    <!-- APP -->
     <div id="user-logged-in" class="hidden max-w-7xl mx-auto p-4 md:p-10">
         <div id="main-dashboard-view">
             <header class="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-8 gap-6">
@@ -94,11 +92,9 @@
                     <div id="avatar-circle" class="w-12 h-12 bg-blue-600 text-white rounded-2xl flex items-center justify-center font-black">U</div>
                     <div><span id="user-email-display" class="text-slate-800 text-sm font-bold block"></span><span id="user-role-display" class="text-[10px] text-slate-400 uppercase font-black tracking-widest"></span></div>
                     <button id="btn-open-admin-header" onclick="window.showAdminPanel()" class="hidden ml-2 p-2 bg-slate-100 rounded-xl hover:bg-blue-100 text-blue-600 transition">⚙️</button>
-                    <!-- BOTÓN SALIR -->
-                    <button onclick="window.logout()" class="ml-4 text-slate-400 hover:text-red-500 font-bold text-sm bg-slate-50 px-4 py-2 rounded-xl transition-colors">Salir</button>
+                    <button id="logout-btn" class="ml-4 text-slate-400 hover:text-red-500 font-bold text-sm">Salir</button>
                 </div>
             </header>
-            
             <div class="grid grid-cols-1 lg:grid-cols-12 gap-10">
                 <div class="lg:col-span-8 space-y-8">
                     <div class="bg-white p-10 rounded-[3rem] shadow-sm border border-slate-200">
@@ -112,7 +108,6 @@
                         </div>
                         <div id="daily-classes-list" class="space-y-6"></div>
                     </div>
-                    
                     <div class="bg-blue-50 p-8 rounded-[3rem] border border-blue-100">
                         <h3 class="font-black text-lg text-blue-800 mb-4">Mis Asignaciones</h3>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -136,15 +131,14 @@
 
         <div id="admin-view" class="hidden space-y-8">
             <div class="flex flex-col sm:flex-row justify-between items-end gap-4">
-                <!-- BOTÓN VOLVER -->
-                <button onclick="window.closeAdminPanel()" class="font-black text-xs text-slate-400 uppercase tracking-widest hover:text-blue-600 flex items-center gap-2 border border-slate-200 px-4 py-2 rounded-lg bg-white">← Volver</button>
-                <div class="flex space-x-2 border-b border-slate-200 w-full sm:w-auto overflow-x-auto text-xs font-bold uppercase tracking-wide">
-                    <button onclick="window.switchTab('users')" id="tab-users" class="tab-btn active px-4 py-3">Usuarios</button>
-                    <button onclick="window.switchTab('catalogs')" id="tab-catalogs" class="tab-btn px-4 py-3">Académico</button>
-                    <button onclick="window.switchTab('courses')" id="tab-courses" class="tab-btn px-4 py-3 text-blue-600">Cursos</button>
-                    <button onclick="window.switchTab('schedules')" id="tab-schedules" class="tab-btn px-4 py-3">Horarios</button>
-                    <button onclick="window.switchTab('leccionario')" id="tab-leccionario" class="tab-btn px-4 py-3 text-blue-600">Leccionario</button>
-                    <button onclick="window.switchTab('reports')" id="tab-reports" class="tab-btn px-4 py-3 text-red-500">Informes</button>
+                <button id="btn-back-dashboard" class="font-black text-xs text-slate-400 uppercase tracking-widest hover:text-blue-600 flex items-center gap-2">Volver</button>
+                <div class="flex space-x-4 border-b border-slate-200 w-full sm:w-auto overflow-x-auto">
+                    <button onclick="window.switchTab('users')" id="tab-users" class="tab-btn active px-4 py-2 text-sm uppercase tracking-widest">Usuarios</button>
+                    <button onclick="window.switchTab('catalogs')" id="tab-catalogs" class="tab-btn px-4 py-2 text-sm uppercase tracking-widest">Académico</button>
+                    <button onclick="window.switchTab('courses')" id="tab-courses" class="tab-btn px-4 py-2 text-sm uppercase tracking-widest">Cursos</button>
+                    <button onclick="window.switchTab('schedules')" id="tab-schedules" class="tab-btn px-4 py-2 text-sm uppercase tracking-widest">Horarios</button>
+                    <button onclick="window.switchTab('leccionario')" id="tab-leccionario" class="tab-btn px-4 py-2 text-sm uppercase tracking-widest text-blue-600">Leccionario</button>
+                    <button onclick="window.switchTab('reports')" id="tab-reports" class="tab-btn px-4 py-2 text-sm uppercase tracking-widest text-red-500">Informes</button>
                 </div>
             </div>
             
@@ -161,7 +155,7 @@
 
             <div id="content-catalogs" class="hidden space-y-6">
                 <div class="flex justify-between items-center bg-white p-4 rounded-[2rem] border border-slate-100 shadow-sm">
-                    <div class="flex items-center gap-3 px-2"><h3 class="font-black text-slate-800 text-lg">Catálogos</h3></div>
+                    <div class="flex items-center gap-3 px-2"><h3 class="font-black text-slate-800 text-lg">Catálogos Básicos</h3></div>
                     <button onclick="window.manualSaveCatalogs()" class="bg-slate-900 text-white px-6 py-3 rounded-xl font-black text-xs uppercase tracking-widest hover:bg-black transition-all">Guardar Todo</button>
                 </div>
                 <div id="catalog-grid-inner" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
@@ -207,7 +201,7 @@
                     <div><label class="block text-xs font-black text-slate-400 mb-2 uppercase">Correo</label><input type="email" id="form-email" required class="w-full p-4 rounded-2xl bg-slate-50 border-none outline-none"></div>
                 </div>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                    <div><label class="block text-xs font-black text-slate-400 mb-2 uppercase">Contraseña</label><input type="text" id="form-pass" placeholder="Ingresar para modificar" class="w-full p-4 rounded-2xl bg-slate-100 border-none outline-none"></div>
+                    <div><label class="block text-xs font-black text-slate-400 mb-2 uppercase">Contraseña</label><input type="text" id="form-pass" class="w-full p-4 rounded-2xl bg-slate-100 border-none outline-none"></div>
                     <div><label class="block text-xs font-black text-slate-400 mb-2 uppercase">Firma</label><input type="file" id="form-signature" accept="image/*" class="w-full p-3 rounded-2xl bg-slate-50 border-none text-xs file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"></div>
                 </div>
                 <div class="mt-4 p-4 bg-slate-50 rounded-2xl border border-slate-100 flex items-center justify-between">
@@ -227,28 +221,15 @@
             </form>
         </div>
     </div>
-    <!-- Other modals (Catalog, Time, Assign, Copy, Log) included similarly in logic -->
+    <!-- Other modals -->
     <div id="modal-catalog" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[120] hidden items-center justify-center p-4"><div class="bg-white w-full max-w-md rounded-[2.5rem] p-8 modal-animate"><h3 id="catalog-title" class="text-2xl font-black mb-6">Administrar</h3><div id="catalog-extra-input" class="hidden mb-4"><label id="catalog-extra-label" class="block text-xs font-black mb-2 uppercase">Vinculación</label><select id="catalog-extra-select" class="w-full p-4 rounded-xl bg-slate-50 outline-none text-sm"></select></div><div class="flex gap-2 mb-6"><input type="text" id="catalog-input" class="flex-1 p-4 rounded-xl bg-slate-50 outline-none"><button onclick="window.addCatalogItem()" class="bg-blue-600 text-white px-6 rounded-xl font-bold">+</button></div><div id="catalog-list" class="max-h-60 overflow-y-auto space-y-2"></div><button onclick="window.closeModal('modal-catalog')" class="mt-6 w-full text-slate-400 font-bold uppercase text-xs">Cerrar</button></div></div>
     <div id="modal-time-slots" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[130] hidden items-center justify-center p-4"><div class="bg-white w-full max-w-lg rounded-[2.5rem] p-8 modal-animate"><div class="flex justify-between items-center mb-6"><h3 class="text-2xl font-black">Horas</h3><button onclick="window.closeModal('modal-time-slots')">✕</button></div><div class="flex gap-2 mb-4"><input type="time" id="ts-start" class="p-2 rounded-lg border text-sm"><input type="time" id="ts-end" class="p-2 rounded-lg border text-sm"><button onclick="window.addTimeSlot()" class="bg-slate-800 text-white rounded-lg px-4 text-xs font-bold">Agregar</button></div><div id="slots-list" class="space-y-2"></div></div></div>
     <div id="modal-assign-subject" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[140] hidden items-center justify-center p-4"><div class="bg-white w-full max-w-sm rounded-[2.5rem] p-8 modal-animate"><h3 class="text-xl font-black mb-4">Asignar</h3><div id="subject-selector-list" class="grid grid-cols-2 gap-2 max-h-64 overflow-y-auto"></div><button onclick="window.closeModal('modal-assign-subject')" class="mt-6 w-full bg-slate-100 text-slate-500 py-3 rounded-xl font-bold text-xs">Cancelar</button></div></div>
     <div id="modal-copy-schedule" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[150] hidden items-center justify-center p-4"><div class="bg-white w-full max-w-md rounded-[2.5rem] p-8 modal-animate"><h3 class="text-xl font-black mb-4">Copiar</h3><div class="space-y-3 mb-6"><div><label class="block text-[10px] font-black uppercase text-slate-400">Sección</label><select id="copy-seccion" class="w-full p-3 bg-slate-50 rounded-xl text-sm outline-none"></select></div><div><label class="block text-[10px] font-black uppercase text-slate-400">Curso</label><select id="copy-curso" class="w-full p-3 bg-slate-50 rounded-xl text-sm outline-none"></select></div><div><label class="block text-[10px] font-black uppercase text-slate-400">Paralelo</label><select id="copy-paralelo" class="w-full p-3 bg-slate-50 rounded-xl text-sm outline-none"></select></div></div><button onclick="window.confirmCopySchedule()" class="w-full bg-blue-600 text-white py-3 rounded-xl font-bold text-sm">Copiar</button><button onclick="window.closeModal('modal-copy-schedule')" class="mt-3 w-full text-slate-400 font-bold uppercase text-xs">Cancelar</button></div></div>
     <div id="modal-class-log" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[160] hidden items-center justify-center p-4"><div class="bg-white w-full max-w-lg rounded-[2.5rem] p-10 modal-animate"><div class="flex justify-between mb-6"><div><h3 class="text-2xl font-black">Registro</h3><p id="log-class-info" class="text-xs font-bold text-blue-600"></p></div><button onclick="window.closeModal('modal-class-log')">✕</button></div><form id="log-form" class="space-y-4"><input type="hidden" id="log-id"><div><label class="block text-xs font-black text-slate-400 uppercase">Tema</label><input type="text" id="log-topic" required class="w-full p-4 rounded-xl bg-slate-50"></div><div><label class="block text-xs font-black text-slate-400 uppercase">Actividad</label><textarea id="log-content" required class="w-full p-4 rounded-xl bg-slate-50 h-32 resize-none"></textarea></div><button type="submit" class="w-full bg-blue-600 text-white py-4 rounded-xl font-black uppercase">Guardar</button></form></div></div>
-    <!-- MODAL COURSE MANAGER -->
-    <div id="modal-course-manager" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[130] hidden items-center justify-center p-4">
-        <div class="bg-white w-full max-w-lg rounded-[2.5rem] p-8 modal-animate max-h-[85vh] overflow-y-auto">
-            <h3 class="text-2xl font-black mb-6">Configurar Cursos</h3>
-            <div class="space-y-4">
-                <div><label class="block text-xs font-black uppercase mb-1 text-slate-400">Seleccionar Sección</label><select id="cm-seccion" class="w-full p-3 bg-slate-50 rounded-xl outline-none text-sm font-bold border border-slate-100"></select></div>
-                <div class="border-t border-slate-100 pt-4"><h4 class="font-bold text-slate-700 text-sm mb-3">Agregar Nuevo Curso</h4><input type="text" id="cm-new-name" placeholder="Ej: 1ero Bachillerato" class="w-full p-3 bg-slate-50 rounded-xl outline-none mb-3"><p class="text-[10px] uppercase font-black text-slate-400 mb-2">Paralelos para este curso</p><div id="cm-parallels-checks" class="grid grid-cols-4 gap-2 mb-4"></div><button onclick="window.addCourseWithParallels()" class="w-full bg-blue-600 text-white py-3 rounded-xl font-bold text-xs uppercase">Agregar Curso</button></div>
-                <div class="border-t border-slate-100 pt-4"><h4 class="font-bold text-slate-700 text-sm mb-2">Cursos Existentes</h4><div id="cm-courses-list" class="space-y-2"></div></div>
-            </div>
-            <button onclick="window.closeModal('modal-course-manager')" class="mt-6 w-full text-slate-400 font-bold uppercase text-xs">Cerrar</button>
-        </div>
-    </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-analytics.js";
         import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, getDoc, setDoc, collection, getDocs, updateDoc, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
@@ -257,8 +238,8 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
         const appId = 'leccionario-v1';
-        const getCollectionRef = (name) => collection(db, 'artifacts', appId, 'public', 'data', name);
-        const getDocRef = (col, id) => doc(db, 'artifacts', appId, 'public', 'data', col, id);
+        const getCollectionRef = (name) => collection(db, name);
+        const getDocRef = (col, id) => doc(db, col, id);
 
         const dom = {
             loader: document.getElementById('loader'), auth: document.getElementById('auth-container'), dashboard: document.getElementById('user-logged-in'),
@@ -283,12 +264,19 @@
         // AUTH
         onAuthStateChanged(auth, async (user) => {
             if(user) {
-                let uData = (await getDoc(getDocRef("users", user.uid))).data();
-                if(!uData) { // Fallback creation
-                    uData = { email: user.email, rol: "Docente", materias: [], areas: [] };
-                    await setDoc(getDocRef("users", user.uid), uData);
+                // Ensure doc fetch logic is robust
+                try {
+                    let uData = (await getDoc(getDocRef("users", user.uid))).data();
+                    if(!uData) {
+                        const emailDoc = await getDoc(getDocRef("users", user.email));
+                        if (emailDoc.exists()) { uData = emailDoc.data(); await setDoc(getDocRef("users", user.uid), uData); }
+                        else { uData = { email: user.email, rol: "Docente", materias: [], areas: [] }; await setDoc(getDocRef("users", user.uid), uData); }
+                    }
+                    loginSuccess({ uid: user.uid, email: user.email, ...uData });
+                } catch(e) {
+                    // Fallback to minimal user
+                    loginSuccess({ uid: user.uid, email: user.email, rol: "Docente" });
                 }
-                loginSuccess({ uid: user.uid, email: user.email, ...uData });
             } else {
                 dom.dashboard.classList.add('hidden'); dom.auth.classList.remove('hidden');
             }
@@ -300,7 +288,6 @@
             document.getElementById('user-role-display').textContent = user.rol;
             document.getElementById('avatar-circle').textContent = (user.nombre||user.email)[0].toUpperCase();
             
-            // Dashboard info
             if (user.materias) document.getElementById('my-subjects-list').innerHTML = user.materias.map(m => typeof m === 'object' ? `<span class='data-badge'>${m.name}</span>` : `<span class='data-badge'>${m}</span>`).join('');
             if (user.cursos) document.getElementById('my-courses-list').innerHTML = user.cursos.map(c => typeof c === 'object' ? `<span class='text-xs font-bold mr-2'>${c.name}</span>` : `<span class='text-xs font-bold mr-2'>${c}</span>`).join('');
 
@@ -351,11 +338,15 @@
                     await signInWithEmailAndPassword(auth, email, pass);
                 }
             } catch(e) { 
+                // Error message handling
+                let msg = e.code;
+                if(e.code === 'auth/invalid-credential') msg = "Credenciales incorrectas.";
+                if(e.code === 'auth/user-not-found') msg = "Usuario no encontrado.";
+                
                 const err = document.getElementById('auth-error'); // Use specific ID for login/register
-                if(!err) document.getElementById('login-error').textContent = e.code;
-                else { err.textContent = e.code; err.classList.remove('hidden'); }
-                // Use login-error fallback
-                document.getElementById('login-error').textContent = e.code; document.getElementById('login-error').classList.remove('hidden');
+                if(!err) document.getElementById('login-error').textContent = msg;
+                else { err.textContent = msg; err.classList.remove('hidden'); }
+                document.getElementById('login-error').textContent = msg; document.getElementById('login-error').classList.remove('hidden');
             }
         };
 
@@ -459,8 +450,9 @@
                  return original || { name: cName, section: sec };
             });
             
-            const rawPars = getChecked('chk-paralelo'); // Just strings ["A", "B"]
-            
+            const rawPars = getChecked('chk-paralelo');
+            const finalPars = rawPars.map(pName => ({ name: pName, section: sec }));
+
             const rawMats = getChecked('chk-materia');
             const finalMats = rawMats.map(mName => {
                 const found = state.catalogs.materias.find(m => m.name === mName || m === mName);
@@ -544,7 +536,7 @@
                          
                          let row = { time: `${slot.start} - ${slot.end}`, subject: subjName, teacher: "Sin Asignar", topic: "NO REGISTRADO", obs: "NO REGISTRADO", sign: `<span class="text-xs text-red-500 font-bold">PENDIENTE</span>` };
                          
-                         // Find Teacher
+                         // Find Teacher (Strict Check)
                          const t = users.find(u => 
                              u.seccion === sec && 
                              (u.cursos||[]).some(c => (typeof c === 'object' ? c.name : c) === cur) && 
@@ -590,6 +582,7 @@
              createCheckboxes('container-materias', matNames, 'chk-materia');
              populateSelect('sel-seccion', state.catalogs.secciones);
              populateSelect('sel-rol', state.catalogs.roles);
+             createCheckboxes('container-paralelos', state.catalogs.paralelos, 'chk-paralelo');
              updateUserCourses(); // Initial courses
         }
         document.getElementById('sel-seccion').onchange = updateUserCourses;
@@ -664,22 +657,14 @@
             const ex = document.getElementById('catalog-extra-select').value;
             if(v) { 
                 if(state.currentCatalog === 'materias') state.catalogs.materias.push({name:v, area:ex});
-                else if(state.currentCatalog === 'cursos') {
-                    // NEW COURSE MANAGER LOGIC handled in separate modal usually, but here simplified catalog
-                    // Initialize course with EMPTY parallels array by default
-                    state.catalogs.cursos.push({name:v, section:ex, parallels: []});
-                }
+                else if(state.currentCatalog === 'cursos') state.catalogs.cursos.push({name:v, section:ex});
                 else if(state.currentCatalog === 'paralelos') state.catalogs.paralelos.push({name:v, section:ex});
                 else state.catalogs[state.currentCatalog].push(v); 
                 await window.manualSaveCatalogs(); renderCatalogList(); renderCatalogs(); 
             } 
         };
         window.removeCatalogItem = async (i) => { state.catalogs[state.currentCatalog].splice(i,1); await window.manualSaveCatalogs(); renderCatalogList(); renderCatalogs(); };
-        function renderCatalogs() { 
-            // FILTER keys: remove cursos, paralelos from generic view
-            const keys = Object.keys(state.catalogs).filter(k => !['cursos','paralelos'].includes(k));
-            document.getElementById('catalog-grid-inner').innerHTML = keys.map(k => `<div onclick="window.openCatalogManager('${k}')" class="bg-white p-4 rounded-xl shadow cursor-pointer"><h4 class="font-bold uppercase text-xs">${k}</h4></div>`).join(''); 
-        }
+        function renderCatalogs() { document.getElementById('catalog-grid-inner').innerHTML = Object.keys(state.catalogs).map(k => `<div onclick="window.openCatalogManager('${k}')" class="bg-white p-4 rounded-xl shadow cursor-pointer"><h4 class="font-bold uppercase text-xs">${k}</h4></div>`).join(''); }
 
         // NEW: COURSE MANAGER SPECIFIC
         window.openCourseManager = () => {
