@@ -33,9 +33,38 @@
         
         /* Signature Preview */
         .sig-preview { width: 80px; height: 40px; object-fit: contain; border: 1px dashed #cbd5e1; border-radius: 4px; background: #f8fafc; }
+
+        /* Toast Notifications */
+        #toast-container { position: fixed; bottom: 20px; right: 20px; z-index: 10000; display: flex; flex-direction: column; gap: 10px; }
+        .toast { padding: 1rem; border-radius: 0.75rem; color: white; font-weight: bold; font-size: 0.875rem; shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); animation: slideIn 0.3s ease-out; display: flex; align-items: center; gap: 10px; min-width: 250px; }
+        .toast-success { background-color: #10b981; }
+        .toast-error { background-color: #ef4444; }
+        
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        /* Tabs Styling */
+        .tab-btn { @apply px-4 py-2 text-sm font-bold text-slate-500 border-b-2 border-transparent hover:text-blue-600 transition-colors; }
+        .tab-btn.active { @apply text-blue-600 border-blue-600; }
+        
+        /* Dropdown */
+        .dropdown:hover .dropdown-menu { display: block; }
+
+        /* Schedule Matrix */
+        .matrix-table { width: 100%; border-collapse: separate; border-spacing: 2px; }
+        .matrix-th { background: #3b82f6; color: white; padding: 10px; font-size: 0.8rem; border-radius: 8px; font-weight: 800; text-align: center; }
+        .matrix-time-cell { background: #eff6ff; color: #1e40af; font-weight: bold; padding: 10px; border-radius: 8px; font-size: 0.75rem; text-align: center; vertical-align: middle; width: 100px; }
+        .matrix-cell { background: white; border: 1px solid #e2e8f0; border-radius: 8px; padding: 8px; height: 80px; vertical-align: top; cursor: pointer; transition: all 0.2s; position: relative; }
+        .matrix-cell:hover { border-color: #3b82f6; background: #f8fafc; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
+        .matrix-cell-content { height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+        .matrix-add-icon { color: #cbd5e1; font-size: 1.5rem; }
+        .matrix-cell:hover .matrix-add-icon { color: #3b82f6; }
+        .matrix-subject { font-weight: bold; color: #1e293b; font-size: 0.8rem; line-height: 1.2; }
     </style>
 </head>
-<body class="font-sans">
+<body class="font-sans text-slate-800">
 
     <!-- LOADER -->
     <div id="loader" class="loader-overlay">
@@ -44,6 +73,9 @@
             <h2 class="text-xl font-black text-slate-800">Cargando Sistema...</h2>
         </div>
     </div>
+
+    <!-- TOAST CONTAINER -->
+    <div id="toast-container"></div>
 
     <!-- VISTA DE AUTENTICACIÓN -->
     <div id="auth-view" class="min-h-screen flex items-center justify-center p-4">
@@ -108,11 +140,11 @@
         </div>
     </div>
 
-    <!-- VISTA PRINCIPAL (Dashboard y Admin) -->
+    <!-- VISTA PRINCIPAL -->
     <div id="app-view" class="hidden min-h-screen">
-        <!-- Sidebar / Navigation -->
+        <!-- Navbar -->
         <nav class="bg-white border-b border-slate-200 px-6 py-4 flex flex-col md:flex-row justify-between items-center sticky top-0 z-50 shadow-sm">
-            <div class="flex items-center gap-4 mb-4 md:mb-0">
+            <div class="flex items-center gap-4 mb-4 md:mb-0 cursor-pointer" onclick="showSection('dashboard')">
                 <div class="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white font-black text-xl">L</div>
                 <div>
                     <h1 class="font-black text-slate-800 leading-tight">Panel Académico</h1>
@@ -121,26 +153,87 @@
             </div>
             
             <div class="flex items-center gap-4">
-                <div class="hidden md:flex flex-col text-right mr-2">
+                <!-- Menu Académico (Admin Only) -->
+                <div id="nav-academic" class="hidden relative dropdown group">
+                    <button class="flex items-center gap-2 text-sm font-bold text-slate-600 hover:text-blue-600 py-2">
+                        <i class="fa-solid fa-graduation-cap"></i> Académico <i class="fa-solid fa-chevron-down text-xs"></i>
+                    </button>
+                    <div class="dropdown-menu hidden absolute top-full right-0 w-56 bg-white border border-slate-200 rounded-xl shadow-xl mt-1 py-2 z-50">
+                        <a href="#" onclick="showSection('academic-admin')" class="block px-4 py-2 text-sm text-slate-600 hover:bg-slate-50 hover:text-blue-600">
+                            <i class="fa-solid fa-sliders w-5"></i> Admin. Académica
+                        </a>
+                        <a href="#" onclick="showSection('courses')" class="block px-4 py-2 text-sm text-slate-600 hover:bg-slate-50 hover:text-blue-600">
+                            <i class="fa-solid fa-layer-group w-5"></i> Cursos y Paralelos
+                        </a>
+                        <a href="#" onclick="showSection('distributive')" class="block px-4 py-2 text-sm text-slate-600 hover:bg-slate-50 hover:text-blue-600">
+                            <i class="fa-solid fa-chalkboard-user w-5"></i> Distributivo
+                        </a>
+                         <a href="#" onclick="showSection('schedules')" class="block px-4 py-2 text-sm text-slate-600 hover:bg-slate-50 hover:text-blue-600">
+                            <i class="fa-regular fa-calendar-days w-5"></i> Horarios
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Menu Reportes (Nuevo) -->
+                <div id="nav-reports" class="hidden relative dropdown group ml-2">
+                    <button class="flex items-center gap-2 text-sm font-bold text-slate-600 hover:text-blue-600 py-2">
+                        <i class="fa-solid fa-print"></i> Reportes <i class="fa-solid fa-chevron-down text-xs"></i>
+                    </button>
+                    <div class="dropdown-menu hidden absolute top-full right-0 w-56 bg-white border border-slate-200 rounded-xl shadow-xl mt-1 py-2 z-50">
+                        <a href="#" onclick="showSection('leccionario-report')" class="block px-4 py-2 text-sm text-slate-600 hover:bg-slate-50 hover:text-blue-600">
+                            <i class="fa-solid fa-book-open w-5"></i> Leccionario Diario
+                        </a>
+                    </div>
+                </div>
+
+                <div class="hidden md:flex flex-col text-right mr-2 ml-4 pl-4 border-l border-slate-200">
                     <span id="user-name-display" class="text-sm font-bold text-slate-700">Usuario</span>
                     <span id="user-email-display" class="text-[10px] text-slate-400">correo@ejemplo.com</span>
                 </div>
                 
-                <!-- Botones de Acción -->
-                <button id="btn-admin-panel" onclick="showSection('users')" class="hidden bg-slate-100 text-slate-600 hover:bg-slate-200 px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2">
-                    <i class="fa-solid fa-users-gear"></i> Gestión Usuarios
+                <button id="btn-admin-panel" onclick="showSection('users')" class="hidden bg-slate-100 text-slate-600 hover:bg-slate-200 px-3 py-2 rounded-xl text-xs font-bold transition items-center gap-2" title="Gestión Usuarios">
+                    <i class="fa-solid fa-users-gear"></i>
                 </button>
                 
-                <button onclick="handleLogout()" class="bg-red-50 text-red-500 hover:bg-red-100 px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2">
-                    <i class="fa-solid fa-right-from-bracket"></i> Salir
+                <button onclick="handleLogout()" class="bg-red-50 text-red-500 hover:bg-red-100 px-3 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2">
+                    <i class="fa-solid fa-right-from-bracket"></i>
                 </button>
             </div>
         </nav>
 
-        <!-- Contenido Principal -->
+        <!-- Main Content -->
         <main class="p-6 max-w-7xl mx-auto">
             
-            <!-- SECCIÓN: GESTIÓN DE USUARIOS (Solo Admin) -->
+            <!-- 1. DASHBOARD -->
+            <div id="section-dashboard" class="hidden">
+                <div class="mb-8 flex justify-between items-end">
+                    <div>
+                        <h2 class="text-3xl font-black text-slate-800">Mi Agenda de Hoy</h2>
+                        <p class="text-slate-500" id="current-date-label">Cargando fecha...</p>
+                    </div>
+                    <div class="text-right hidden md:block">
+                        <span class="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">Ciclo Escolar 2024-2025</span>
+                    </div>
+                </div>
+                
+                <!-- Grid de Clases de Hoy -->
+                <div id="dashboard-daily-schedule" class="grid grid-cols-1 gap-4">
+                    <!-- Loading state -->
+                    <div class="text-center py-20 bg-white rounded-3xl border border-dashed border-slate-300">
+                        <div class="inline-flex w-16 h-16 bg-slate-50 rounded-full items-center justify-center text-2xl mb-4 animate-bounce">📅</div>
+                        <p class="text-slate-400 font-medium">Buscando clases para hoy...</p>
+                    </div>
+                </div>
+
+                 <div class="mt-12">
+                    <h3 class="text-xl font-bold text-slate-800 mb-4 border-b border-slate-200 pb-2">Resumen de Cargas</h3>
+                    <div id="dashboard-cards" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 opacity-75">
+                         <!-- Cards pequeñas -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- 2. GESTIÓN DE USUARIOS -->
             <div id="section-users" class="hidden space-y-6">
                 <div class="flex justify-between items-center">
                     <h2 class="text-2xl font-black text-slate-800">Gestión de Usuarios</h2>
@@ -148,12 +241,11 @@
                         <button onclick="loadUsers()" class="bg-white border border-slate-200 text-slate-600 px-4 py-2 rounded-xl text-xs font-bold hover:bg-slate-50">
                             <i class="fa-solid fa-rotate"></i> Recargar
                         </button>
-                        <button onclick="openModal('modal-user-edit')" class="btn-primary px-6 py-2 rounded-xl text-xs font-bold">
+                        <button onclick="openModal('modal-user-edit'); resetEditForm();" class="btn-primary px-6 py-2 rounded-xl text-xs font-bold">
                             <i class="fa-solid fa-plus"></i> Nuevo Usuario
                         </button>
                     </div>
                 </div>
-
                 <div class="glass-panel rounded-2xl overflow-hidden shadow-sm">
                     <div class="overflow-x-auto">
                         <table class="w-full custom-table">
@@ -173,11 +265,329 @@
                 </div>
             </div>
 
-            <!-- Dashboard Placeholder (Para otras secciones) -->
-            <div id="section-dashboard" class="hidden">
-                <div class="text-center py-20">
-                    <h2 class="text-3xl font-black text-slate-300">Bienvenido al Dashboard</h2>
-                    <p class="text-slate-400 mt-2">Selecciona una opción del menú (si eres admin) o revisa tu horario.</p>
+            <!-- 3. ADMINISTRACIÓN ACADÉMICA -->
+            <div id="section-academic-admin" class="hidden space-y-6">
+                 <div class="flex justify-between items-center">
+                    <h2 class="text-2xl font-black text-slate-800">Administración Académica</h2>
+                </div>
+
+                <!-- Tabs -->
+                <div class="border-b border-slate-200 mb-6 flex gap-2">
+                    <button class="tab-btn active" onclick="switchTab(this, 'tab-sections')">Secciones</button>
+                    <button class="tab-btn" onclick="switchTab(this, 'tab-areas')">Áreas</button>
+                    <button class="tab-btn" onclick="switchTab(this, 'tab-subjects')">Materias</button>
+                </div>
+
+                <!-- Tab Content: SECCIONES -->
+                <div id="tab-sections" class="tab-content grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <!-- Formulario -->
+                    <div class="glass-panel p-6 rounded-2xl h-fit">
+                        <h3 class="font-bold text-lg mb-4">Nueva Sección</h3>
+                        <form id="form-section" class="space-y-4">
+                            <div class="space-y-1">
+                                <label class="text-xs font-bold text-slate-500 uppercase">Nombre Sección</label>
+                                <input type="text" id="section-name" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none" placeholder="Ej: Matutina, Vespertina, Básica..." required>
+                            </div>
+                            <button type="submit" class="btn-primary w-full py-2 rounded-xl text-sm font-bold">Guardar Sección</button>
+                        </form>
+                    </div>
+                    <!-- Lista -->
+                    <div class="glass-panel rounded-2xl overflow-hidden lg:col-span-2">
+                        <table class="w-full custom-table">
+                            <thead><tr><th>Nombre Sección</th><th class="text-right">Acciones</th></tr></thead>
+                            <tbody id="sections-table-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Tab Content: ÁREAS -->
+                <div id="tab-areas" class="tab-content hidden grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div class="glass-panel p-6 rounded-2xl h-fit">
+                        <h3 class="font-bold text-lg mb-4">Nueva Área</h3>
+                        <form id="form-area" class="space-y-4">
+                            <div class="space-y-1">
+                                <label class="text-xs font-bold text-slate-500 uppercase">Nombre Área</label>
+                                <input type="text" id="area-name" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none" placeholder="Ej: Ciencias Exactas, Lengua..." required>
+                            </div>
+                            <button type="submit" class="btn-primary w-full py-2 rounded-xl text-sm font-bold">Guardar Área</button>
+                        </form>
+                    </div>
+                    <div class="glass-panel rounded-2xl overflow-hidden lg:col-span-2">
+                        <table class="w-full custom-table">
+                            <thead><tr><th>Nombre Área</th><th class="text-right">Acciones</th></tr></thead>
+                            <tbody id="areas-table-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Tab Content: MATERIAS -->
+                <div id="tab-subjects" class="tab-content hidden grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div class="glass-panel p-6 rounded-2xl h-fit">
+                        <h3 class="font-bold text-lg mb-4">Nueva Materia</h3>
+                        <form id="form-subject" class="space-y-4">
+                            <div class="space-y-1">
+                                <label class="text-xs font-bold text-slate-500 uppercase">Nombre Materia</label>
+                                <input type="text" id="subject-name" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none" placeholder="Ej: Matemáticas Avanzadas" required>
+                            </div>
+                            <div class="space-y-1">
+                                <label class="text-xs font-bold text-slate-500 uppercase">Área Perteneciente</label>
+                                <select id="subject-area-select" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none text-sm" required>
+                                    <option value="">Seleccione Área...</option>
+                                </select>
+                            </div>
+                            <button type="submit" class="btn-primary w-full py-2 rounded-xl text-sm font-bold">Guardar Materia</button>
+                        </form>
+                    </div>
+                    <div class="glass-panel rounded-2xl overflow-hidden lg:col-span-2">
+                        <table class="w-full custom-table">
+                            <thead><tr><th>Materia</th><th>Área</th><th class="text-right">Acciones</th></tr></thead>
+                            <tbody id="subjects-table-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 4. GESTIÓN DE CURSOS Y PARALELOS -->
+            <div id="section-courses" class="hidden space-y-6">
+                <div class="flex justify-between items-center">
+                    <h2 class="text-2xl font-black text-slate-800">Cursos y Paralelos</h2>
+                </div>
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <!-- Formulario Curso -->
+                    <div class="glass-panel p-6 rounded-2xl h-fit">
+                        <h3 class="font-bold text-lg mb-4">Crear Curso</h3>
+                        <form id="form-course" class="space-y-4">
+                            <div class="space-y-1">
+                                <label class="text-xs font-bold text-slate-500 uppercase">Nombre Curso</label>
+                                <input type="text" id="course-name" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none" placeholder="Ej: 1er Año Bachillerato" required>
+                            </div>
+                            <div class="space-y-1">
+                                <label class="text-xs font-bold text-slate-500 uppercase">Sección</label>
+                                <select id="course-section-select" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none text-sm" required>
+                                    <option value="">Seleccione Sección...</option>
+                                </select>
+                            </div>
+                            <div class="space-y-1">
+                                <label class="text-xs font-bold text-slate-500 uppercase">Paralelos (Separados por comas)</label>
+                                <input type="text" id="course-parallels" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none" placeholder="A, B, C" required>
+                                <p class="text-[10px] text-slate-400">Ejemplo: A, B, C</p>
+                            </div>
+                            <button type="submit" class="btn-primary w-full py-2 rounded-xl text-sm font-bold">Guardar Curso</button>
+                        </form>
+                    </div>
+                    <!-- Lista Cursos -->
+                    <div class="glass-panel rounded-2xl overflow-hidden lg:col-span-2">
+                        <table class="w-full custom-table">
+                            <thead><tr><th>Curso</th><th>Sección</th><th>Paralelos</th><th class="text-right">Acciones</th></tr></thead>
+                            <tbody id="courses-table-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 5. DISTRIBUTIVO -->
+            <div id="section-distributive" class="hidden space-y-6">
+                <div class="flex justify-between items-center">
+                    <h2 class="text-2xl font-black text-slate-800">Distributivo de Materias</h2>
+                </div>
+                
+                <div class="glass-panel p-6 rounded-2xl">
+                    <h3 class="font-bold text-sm text-slate-500 uppercase mb-4">Asignar Materia a Docente</h3>
+                    <form id="form-distributive" class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+                        <div class="space-y-1">
+                            <label class="text-xs font-bold text-slate-500">Docente</label>
+                            <select id="dist-teacher-select" class="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg outline-none text-sm" required></select>
+                        </div>
+                        <div class="space-y-1">
+                            <label class="text-xs font-bold text-slate-500">Curso</label>
+                            <select id="dist-course-select" class="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg outline-none text-sm" required onchange="updateDistParallels()"></select>
+                        </div>
+                        <div class="space-y-1">
+                            <label class="text-xs font-bold text-slate-500">Paralelo</label>
+                            <select id="dist-parallel-select" class="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg outline-none text-sm" required></select>
+                        </div>
+                        <div class="space-y-1">
+                            <label class="text-xs font-bold text-slate-500">Materia</label>
+                            <select id="dist-subject-select" class="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg outline-none text-sm" required></select>
+                        </div>
+                    </form>
+                    <div class="mt-4 flex justify-end">
+                        <button type="submit" form="form-distributive" class="btn-primary px-6 py-2 rounded-xl text-sm font-bold">Asignar Carga</button>
+                    </div>
+                </div>
+
+                <div class="glass-panel rounded-2xl overflow-hidden">
+                    <table class="w-full custom-table">
+                        <thead><tr><th>Docente</th><th>Curso / Paralelo</th><th>Materia</th><th class="text-right">Acciones</th></tr></thead>
+                        <tbody id="distributive-table-body">
+                            <tr><td colspan="4" class="text-center p-8 text-slate-400">No hay asignaciones registradas.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- 6. HORARIOS (MATRIZ INTERACTIVA) -->
+            <div id="section-schedules" class="hidden space-y-6">
+                <div class="flex justify-between items-center">
+                    <h2 class="text-2xl font-black text-slate-800">Matriz de Horarios</h2>
+                </div>
+                
+                <div class="glass-panel p-6 rounded-2xl">
+                    <h3 class="font-bold text-sm text-slate-500 uppercase mb-4">1. Selección de Curso</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div class="relative group">
+                            <select id="sched-section-select" class="block w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl appearance-none focus:ring-2 focus:ring-blue-500 font-bold text-slate-700" onchange="updateSchedCourses()">
+                                <option value="">Selecciona Sección...</option>
+                            </select>
+                        </div>
+                         <div class="relative group">
+                            <select id="sched-course-select" class="block w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl appearance-none focus:ring-2 focus:ring-blue-500 font-bold text-slate-700" onchange="updateSchedParallels()" disabled>
+                                <option value="">Selecciona Curso...</option>
+                            </select>
+                        </div>
+                        <div class="relative group">
+                            <select id="sched-parallel-select" class="block w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl appearance-none focus:ring-2 focus:ring-blue-500 font-bold text-slate-700" onchange="loadScheduleMatrix()" disabled>
+                                <option value="">Selecciona Paralelo...</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="schedule-matrix-container" class="hidden animate-fade-in space-y-4">
+                    <div class="flex flex-col md:flex-row justify-between items-center gap-4 bg-blue-50 p-4 rounded-xl border border-blue-100">
+                        <div>
+                            <h3 class="font-bold text-blue-800">Configuración de Horas</h3>
+                            <p class="text-xs text-blue-600">Añade los bloques horarios para armar la matriz.</p>
+                        </div>
+                        <form onsubmit="addPeriod(event)" class="flex gap-2 items-center">
+                            <input type="time" id="period-start" required class="p-2 border border-blue-200 rounded-lg text-sm bg-white" title="Inicio">
+                            <span class="text-blue-400 font-bold">-</span>
+                            <input type="time" id="period-end" required class="p-2 border border-blue-200 rounded-lg text-sm bg-white" title="Fin">
+                            <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-blue-700 transition">
+                                <i class="fa-solid fa-plus mr-1"></i> Añadir Hora
+                            </button>
+                        </form>
+                    </div>
+
+                    <div class="glass-panel p-4 rounded-2xl overflow-x-auto">
+                        <table class="matrix-table">
+                            <thead>
+                                <tr>
+                                    <th class="w-[100px]"></th>
+                                    <th class="matrix-th">Lunes</th>
+                                    <th class="matrix-th">Martes</th>
+                                    <th class="matrix-th">Miércoles</th>
+                                    <th class="matrix-th">Jueves</th>
+                                    <th class="matrix-th">Viernes</th>
+                                    <th class="w-[50px]"></th>
+                                </tr>
+                            </thead>
+                            <tbody id="matrix-body">
+                                <!-- JS Generated -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 7. REPORTE LECCIONARIO (NUEVO) -->
+            <div id="section-leccionario-report" class="hidden space-y-6">
+                <div class="flex justify-between items-center">
+                    <h2 class="text-2xl font-black text-slate-800">Reporte de Leccionario</h2>
+                </div>
+
+                <div class="glass-panel p-6 rounded-2xl">
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                        <!-- Filtros Cascada -->
+                        <div class="space-y-1">
+                            <label class="text-xs font-bold text-slate-500 uppercase">Sección</label>
+                            <select id="rep-section-select" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none text-sm" onchange="updateRepCourses()">
+                                <option value="">Seleccione...</option>
+                            </select>
+                        </div>
+                        <div class="space-y-1">
+                            <label class="text-xs font-bold text-slate-500 uppercase">Curso</label>
+                            <select id="rep-course-select" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none text-sm" onchange="updateRepParallels()" disabled>
+                                <option value="">Seleccione...</option>
+                            </select>
+                        </div>
+                        <div class="space-y-1">
+                            <label class="text-xs font-bold text-slate-500 uppercase">Paralelo</label>
+                            <select id="rep-parallel-select" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none text-sm" disabled>
+                                <option value="">Seleccione...</option>
+                            </select>
+                        </div>
+                         <div class="space-y-1">
+                            <label class="text-xs font-bold text-slate-500 uppercase">Fecha del Reporte</label>
+                            <input type="date" id="rep-date" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none text-sm">
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6 border-t border-slate-100 pt-4">
+                        <div class="space-y-1">
+                            <label class="text-xs font-bold text-slate-500 uppercase">Institución</label>
+                            <input type="text" id="rep-institution" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none text-sm" placeholder="Nombre de la Institución">
+                        </div>
+                        <div class="space-y-1">
+                            <label class="text-xs font-bold text-slate-500 uppercase">Código Auditoría</label>
+                            <input type="text" id="rep-audit-code" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none text-sm" placeholder="Ej: AUD-2024-001">
+                        </div>
+                    </div>
+
+                    <div class="flex justify-end gap-2">
+                        <button onclick="generateLeccionarioReport()" class="bg-blue-600 text-white px-6 py-3 rounded-xl font-bold shadow-lg shadow-blue-200 hover:bg-blue-700 transition">
+                            <i class="fa-solid fa-file-invoice mr-2"></i> Generar Reporte
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Contenedor del Reporte -->
+                <div id="report-container" class="hidden bg-white p-8 rounded-2xl shadow-xl border border-slate-200">
+                    <!-- Cabecera del Reporte -->
+                    <div class="border-b-2 border-slate-800 pb-4 mb-6">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <h1 class="text-2xl font-black text-slate-900 uppercase tracking-widest" id="print-institution">INSTITUCIÓN EDUCATIVA</h1>
+                                <p class="text-sm font-bold text-slate-600">REPORTE DE LECCIONARIO DIARIO</p>
+                            </div>
+                            <div class="text-right">
+                                <p class="text-xs font-bold text-slate-500">CÓDIGO: <span id="print-code" class="text-slate-900">---</span></p>
+                                <p class="text-xs font-bold text-slate-500">FECHA: <span id="print-date" class="text-slate-900">---</span></p>
+                            </div>
+                        </div>
+                        <div class="mt-4 flex gap-8 text-sm">
+                            <p><span class="font-bold text-slate-500">CURSO:</span> <span id="print-course" class="font-bold">---</span></p>
+                            <p><span class="font-bold text-slate-500">PARALELO:</span> <span id="print-parallel" class="font-bold">---</span></p>
+                        </div>
+                    </div>
+
+                    <!-- Tabla del Reporte -->
+                    <div class="overflow-hidden border border-slate-200 rounded-lg">
+                        <table class="w-full text-sm">
+                            <thead class="bg-slate-100 text-slate-700">
+                                <tr>
+                                    <th class="border-b border-r border-slate-200 p-3 text-left w-24">HORA</th>
+                                    <th class="border-b border-r border-slate-200 p-3 text-left">MATERIA / DOCENTE</th>
+                                    <th class="border-b border-r border-slate-200 p-3 text-left">TEMA TRATADO</th>
+                                    <th class="border-b border-r border-slate-200 p-3 text-left">OBSERVACIÓN</th>
+                                    <th class="border-b border-slate-200 p-3 text-center w-32">FIRMA</th>
+                                </tr>
+                            </thead>
+                            <tbody id="report-body">
+                                <!-- Filas generadas -->
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="mt-8 pt-8 border-t border-slate-200 text-center">
+                        <p class="text-xs text-slate-400">Generado automáticamente por Leccionario Virtual</p>
+                    </div>
+                    
+                    <div class="mt-6 flex justify-end no-print">
+                        <button onclick="window.print()" class="bg-slate-800 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-slate-700">
+                            <i class="fa-solid fa-print mr-2"></i> Imprimir / PDF
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -236,11 +646,83 @@
         </div>
     </div>
 
+    <!-- MODAL: ASIGNAR MATERIA (HORARIO) -->
+    <div id="modal-assign-subject" class="fixed inset-0 bg-slate-900/80 z-[100] hidden items-center justify-center p-4">
+        <div class="bg-white w-full max-w-sm rounded-3xl p-6 modal-animate shadow-2xl">
+            <h3 class="text-lg font-black text-slate-800 mb-1">Asignar Materia</h3>
+            <p class="text-xs text-slate-400 mb-4" id="assign-modal-subtitle">Lunes 07:00 - 07:40</p>
+            
+            <input type="hidden" id="assign-period-id">
+            <input type="hidden" id="assign-day">
+            
+            <div class="space-y-4">
+                <select id="assign-subject-select" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none font-bold text-slate-700">
+                    <option value="">-- Seleccionar --</option>
+                </select>
+                
+                <div class="flex gap-2 pt-2">
+                    <button onclick="removeAssignment()" class="flex-1 bg-red-50 text-red-500 py-2 rounded-xl text-xs font-bold hover:bg-red-100">
+                        <i class="fa-solid fa-trash mr-1"></i> Borrar
+                    </button>
+                    <button onclick="saveAssignment()" class="flex-1 bg-blue-600 text-white py-2 rounded-xl text-xs font-bold hover:bg-blue-700 shadow-lg shadow-blue-200">
+                        <i class="fa-solid fa-check mr-1"></i> Guardar
+                    </button>
+                </div>
+            </div>
+            <button onclick="closeModal('modal-assign-subject')" class="absolute top-4 right-4 text-slate-300 hover:text-slate-500"><i class="fa-solid fa-times"></i></button>
+        </div>
+    </div>
+
+    <!-- MODAL: FIRMAR LECCIONARIO -->
+    <div id="modal-sign-leccionario" class="fixed inset-0 bg-slate-900/80 z-[100] hidden items-center justify-center p-4">
+        <div class="bg-white w-full max-w-lg rounded-3xl p-8 modal-animate shadow-2xl">
+            <div class="flex items-center gap-4 mb-6">
+                <div class="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-xl"><i class="fa-solid fa-file-signature"></i></div>
+                <div>
+                    <h3 class="text-xl font-black text-slate-800">Firmar Leccionario</h3>
+                    <p class="text-xs text-slate-500" id="sign-class-info">Matemáticas | 10mo A</p>
+                </div>
+            </div>
+
+            <form id="form-sign-leccionario" class="space-y-4">
+                <input type="hidden" id="sign-schedule-id">
+                <input type="hidden" id="sign-course-id">
+                <input type="hidden" id="sign-subject-id">
+                <input type="hidden" id="sign-period-start">
+                <input type="hidden" id="sign-period-end">
+
+                <div class="space-y-1">
+                    <label class="text-xs font-bold text-slate-500 uppercase">Tema de Clase</label>
+                    <input type="text" id="sign-topic" required class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none font-medium" placeholder="Ej: Introducción al Álgebra">
+                </div>
+                
+                <div class="space-y-1">
+                    <label class="text-xs font-bold text-slate-500 uppercase">Observaciones (Opcional)</label>
+                    <textarea id="sign-obs" rows="3" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none text-sm" placeholder="Novedades ocurridas en clase..."></textarea>
+                </div>
+
+                <div class="bg-yellow-50 border border-yellow-100 p-4 rounded-xl flex gap-3 items-start">
+                    <i class="fa-solid fa-triangle-exclamation text-yellow-600 mt-1"></i>
+                    <p class="text-xs text-yellow-800 leading-relaxed">
+                        Al firmar, estás certificando que la clase fue impartida en el horario establecido. Se estampará tu firma digital automáticamente.
+                    </p>
+                </div>
+
+                <div class="flex gap-3 pt-2">
+                    <button type="button" onclick="closeModal('modal-sign-leccionario')" class="flex-1 bg-slate-100 text-slate-500 py-3 rounded-xl font-bold hover:bg-slate-200">Cancelar</button>
+                    <button type="submit" class="flex-1 bg-green-600 text-white py-3 rounded-xl font-bold hover:bg-green-700 shadow-lg shadow-green-200 flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-pen-nib"></i> Firmar y Guardar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- FIREBASE MODULE -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { getFirestore, doc, getDoc, setDoc, collection, getDocs, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, setDoc, collection, getDocs, updateDoc, deleteDoc, addDoc, query, where, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         // --- CONFIGURACIÓN ---
         const firebaseConfig = { 
@@ -256,42 +738,45 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        // --- ESTADO ---
+        // --- ESTADO GLOBAL ---
         let currentUser = null;
+        let globalData = {
+            users: [],
+            sections: [],
+            areas: [],
+            subjects: [],
+            courses: [],
+            distributive: [],
+            schedules: [], // All schedules needed for day view
+            course_periods: [],
+            currentPeriods: [], // Filas del horario
+            currentAssignments: [] // Celdas del horario
+        };
         
         // --- AUTH LOGIC ---
         onAuthStateChanged(auth, async (user) => {
             const loader = document.getElementById('loader');
-            const statusText = document.getElementById('db-status-text');
             const statusDot = document.getElementById('db-status-dot');
 
             if (user) {
-                // Fetch User Data from DB (Root Collection)
                 try {
                     const userRef = doc(db, "users", user.uid);
                     const userSnap = await getDoc(userRef);
                     
                     if (userSnap.exists()) {
                         currentUser = { uid: user.uid, ...userSnap.data() };
+                        initApp(currentUser);
+                        if(statusDot) { statusDot.classList.replace('bg-yellow-400', 'bg-green-500'); statusDot.classList.remove('animate-pulse'); }
                     } else {
-                        // Create basic profile if missing
-                        currentUser = { uid: user.uid, email: user.email, rol: "Docente" };
-                        await setDoc(userRef, currentUser);
-                    }
-                    
-                    initApp(currentUser);
-                    
-                    // Update connection status UI
-                    if(statusDot) {
-                        statusDot.classList.replace('bg-yellow-300', 'bg-green-500');
-                        statusDot.classList.remove('animate-pulse');
-                        statusText.textContent = "Conectado";
+                        console.warn("User auth exists but firestore doc missing (Deleted?). Logging out.");
+                        await signOut(auth);
+                        showToast("Usuario no encontrado o eliminado.", 'error');
+                        showAuthView();
                     }
 
                 } catch (error) {
                     console.error("Error fetching user:", error);
-                    // Fallback login
-                    initApp({ uid: user.uid, email: user.email, rol: "Docente" });
+                    showToast("Error de conexión parcial", 'error');
                 }
             } else {
                 showAuthView();
@@ -300,27 +785,33 @@
             setTimeout(() => { if(loader) loader.style.display = 'none'; }, 500);
         });
 
-        // --- APP LOGIC ---
-        function initApp(user) {
+        // --- APP INIT ---
+        async function initApp(user) {
             document.getElementById('auth-view').classList.add('hidden');
             document.getElementById('app-view').classList.remove('hidden');
             
-            // Populate Header
             document.getElementById('user-name-display').textContent = user.nombre || "Usuario";
             document.getElementById('user-email-display').textContent = user.email;
             document.getElementById('user-role-label').textContent = user.rol;
             
-            // Check Admin Privileges
             const superAdmins = ["gasencio@ecomundo.edu.ec", "ajuanazo@ecomundo.edu.ec"];
             const isAdmin = user.isSuperAdmin || superAdmins.includes(user.email) || user.rol === 'Admin';
             
+            await loadAllAcademicData();
+
             if (isAdmin) {
                 document.getElementById('btn-admin-panel').classList.remove('hidden');
-                loadUsers(); // Preload users list if admin
-                showSection('users'); // Go directly to users for testing
+                document.getElementById('nav-academic').classList.remove('hidden');
+                document.getElementById('nav-reports').classList.remove('hidden');
+                showSection('dashboard');
             } else {
                 showSection('dashboard');
             }
+            
+            // Cargar Dashboard Diario
+            renderDailyDashboard();
+            // Cargar resumen de cargas (el anterior)
+            loadTeacherAssignments(user.uid);
         }
 
         function showAuthView() {
@@ -328,186 +819,659 @@
             document.getElementById('auth-view').classList.remove('hidden');
         }
 
-        // --- USER MANAGEMENT ---
-        window.loadUsers = async () => {
-            const tbody = document.getElementById('users-table-body');
-            tbody.innerHTML = `<tr><td colspan="4" class="text-center p-8"><div class="inline-block w-6 h-6 border-2 border-blue-600 rounded-full animate-spin border-t-transparent"></div></td></tr>`;
-            
-            try {
-                const querySnapshot = await getDocs(collection(db, "users"));
-                const users = [];
-                querySnapshot.forEach((doc) => users.push({id: doc.id, ...doc.data()}));
-                
-                if (users.length === 0) {
-                    tbody.innerHTML = `<tr><td colspan="4" class="text-center p-8 text-slate-400">No hay usuarios registrados.</td></tr>`;
-                    return;
-                }
+        // --- FUNCIONES PARA REPORTE DE LECCIONARIO ---
+        window.updateRepCourses = () => {
+             const sectionId = document.getElementById('rep-section-select').value;
+             const courseSel = document.getElementById('rep-course-select');
+             const parSel = document.getElementById('rep-parallel-select');
+             
+             courseSel.innerHTML = '<option value="">Seleccione...</option>';
+             parSel.innerHTML = '<option value="">Seleccione...</option>';
+             parSel.disabled = true;
+             courseSel.disabled = true;
 
-                tbody.innerHTML = users.map(u => `
-                    <tr>
-                        <td>
-                            <div class="font-bold text-slate-800">${u.nombre || "Sin Nombre"}</div>
-                            <div class="text-xs text-slate-400">${u.email}</div>
-                        </td>
-                        <td>
-                            ${u.firma ? 
-                                `<img src="${u.firma}" class="sig-preview" title="Firma Cargada">` : 
-                                `<span class="text-xs text-red-400 font-bold bg-red-50 px-2 py-1 rounded">Pendiente</span>`}
-                        </td>
-                        <td><span class="role-badge role-${u.rol}">${u.rol}</span></td>
-                        <td class="text-right">
-                            <button onclick="window.editUser('${u.id}')" class="text-blue-600 hover:bg-blue-50 p-2 rounded-lg transition"><i class="fa-solid fa-pen-to-square"></i></button>
-                        </td>
-                    </tr>
-                `).join('');
-                
-                // Store users in global state for editing lookup
-                window.usersData = users;
+             if (!sectionId) return;
 
-            } catch (error) {
-                console.error(error);
-                tbody.innerHTML = `<tr><td colspan="4" class="text-center p-8 text-red-500 font-bold">Error al cargar datos: ${error.message}</td></tr>`;
+             const courses = globalData.courses.filter(c => c.sectionId === sectionId);
+             courseSel.innerHTML += courses.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+             courseSel.disabled = false;
+        };
+
+        window.updateRepParallels = () => {
+             const courseId = document.getElementById('rep-course-select').value;
+             const parSel = document.getElementById('rep-parallel-select');
+             parSel.innerHTML = '<option value="">Seleccione...</option>';
+             parSel.disabled = true;
+
+             if (!courseId) return;
+
+             const course = globalData.courses.find(c => c.id === courseId);
+             if (course) {
+                 parSel.innerHTML += course.parallels.map(p => `<option value="${p}">${p}</option>`).join('');
+                 parSel.disabled = false;
+             }
+        };
+
+        window.generateLeccionarioReport = async () => {
+            const sectionId = document.getElementById('rep-section-select').value;
+            const courseId = document.getElementById('rep-course-select').value;
+            const parallel = document.getElementById('rep-parallel-select').value;
+            const dateStr = document.getElementById('rep-date').value;
+            const institution = document.getElementById('rep-institution').value;
+            const auditCode = document.getElementById('rep-audit-code').value;
+
+            if(!sectionId || !courseId || !parallel || !dateStr || !institution || !auditCode) {
+                showToast("Por favor complete todos los campos del reporte.", 'error');
+                return;
             }
-        };
-        
-        window.editUser = (uid) => {
-            const user = window.usersData.find(u => u.id === uid);
-            if (!user) return;
+
+            // 1. Calcular Día
+            const dateObj = new Date(dateStr + 'T00:00:00'); // Force local time
+            const days = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
+            const dayName = days[dateObj.getDay()];
+
+            // 2. Buscar Horario Teórico (Schedules para ese curso/paralelo/día)
+            // Necesitamos fetch fresco para asegurar datos
+            const qSched = query(collection(db, "schedules"), 
+                where("courseId", "==", courseId), 
+                where("parallel", "==", parallel),
+                where("day", "==", dayName)
+            );
+            const snapSched = await getDocs(qSched);
+            let schedules = [];
+            snapSched.forEach(d => schedules.push({id: d.id, ...d.data()}));
+
+            if(schedules.length === 0) {
+                showToast(`No hay clases programadas para el ${dayName} en este curso.`, 'error');
+                document.getElementById('report-container').classList.add('hidden');
+                return;
+            }
+
+            // 3. Buscar Entradas de Leccionario (Firmas)
+            const qEntries = query(collection(db, "leccionario_entries"), 
+                where("courseId", "==", courseId), 
+                where("date", "==", dateStr)
+            );
+            const snapEntries = await getDocs(qEntries);
+            let entries = [];
+            snapEntries.forEach(d => entries.push({id: d.id, ...d.data()}));
+
+            // 4. Buscar Periodos de Tiempo
+            const qPeriods = query(collection(db, "course_periods"), 
+                where("courseId", "==", courseId), 
+                where("parallel", "==", parallel)
+            );
+            const snapPeriods = await getDocs(qPeriods);
+            let periods = [];
+            snapPeriods.forEach(d => periods.push({id: d.id, ...d.data()}));
+
+            // 5. Cruzar Datos y Ordenar
+            let reportRows = schedules.map(sched => {
+                const period = periods.find(p => p.id === sched.periodId);
+                const entry = entries.find(e => e.scheduleId === sched.id); // Match por scheduleId
+                const subject = globalData.subjects.find(s => s.id === sched.subjectId);
+                
+                // Buscar Docente en Distributivo
+                const distItem = globalData.distributive.find(d => 
+                    d.courseId === courseId && d.parallel === parallel && d.subjectId === sched.subjectId
+                );
+                const teacher = globalData.users.find(u => u.id === distItem?.teacherId);
+
+                return {
+                    start: period ? period.start : "00:00",
+                    end: period ? period.end : "00:00",
+                    subjectName: subject ? subject.name : "Desconocida",
+                    teacherName: teacher ? teacher.nombre : "Sin Asignar",
+                    topic: entry ? entry.topic : "NO FIRMADO",
+                    observation: entry ? entry.observation : "NO FIRMADO",
+                    signature: entry ? entry.signatureSnapshot : null,
+                    isSigned: !!entry
+                };
+            });
+
+            // Ordenar por hora
+            reportRows.sort((a,b) => a.start.localeCompare(b.start));
+
+            // 6. Renderizar Reporte
+            document.getElementById('print-institution').textContent = institution.toUpperCase();
+            document.getElementById('print-code').textContent = auditCode;
+            document.getElementById('print-date').textContent = dateStr;
             
-            document.getElementById('edit-uid').value = user.id;
-            document.getElementById('edit-name').value = user.nombre || "";
-            document.getElementById('edit-email').value = user.email || "";
-            document.getElementById('edit-rol').value = user.rol || "Docente";
-            document.getElementById('edit-is-super').checked = !!user.isSuperAdmin;
-            
-            window.openModal('modal-user-edit');
+            const courseObj = globalData.courses.find(c => c.id === courseId);
+            document.getElementById('print-course').textContent = courseObj ? courseObj.name : "";
+            document.getElementById('print-parallel').textContent = parallel;
+
+            const tbody = document.getElementById('report-body');
+            tbody.innerHTML = reportRows.map(row => `
+                <tr class="border-b border-slate-200 hover:bg-slate-50">
+                    <td class="p-3 border-r border-slate-200">
+                        <div class="font-bold text-slate-800">${row.start}</div>
+                        <div class="text-xs text-slate-500">${row.end}</div>
+                    </td>
+                    <td class="p-3 border-r border-slate-200">
+                        <div class="font-bold text-slate-800">${row.subjectName}</div>
+                        <div class="text-xs text-slate-500 italic">${row.teacherName}</div>
+                    </td>
+                    <td class="p-3 border-r border-slate-200 ${!row.isSigned ? 'text-red-500 font-bold bg-red-50' : 'text-slate-700'}">
+                        ${row.topic}
+                    </td>
+                    <td class="p-3 border-r border-slate-200 ${!row.isSigned ? 'text-red-500 font-bold bg-red-50' : 'text-slate-600 italic'}">
+                        ${row.observation || '-'}
+                    </td>
+                    <td class="p-3 text-center">
+                        ${row.isSigned && row.signature 
+                            ? `<img src="${row.signature}" class="h-12 mx-auto object-contain">` 
+                            : `<span class="text-xs text-slate-300 font-bold">PENDIENTE</span>`}
+                    </td>
+                </tr>
+            `).join('');
+
+            document.getElementById('report-container').classList.remove('hidden');
+            // Scroll al reporte
+            document.getElementById('report-container').scrollIntoView({ behavior: 'smooth' });
         };
-        
-        // Save User Changes
-        document.getElementById('form-user-edit').addEventListener('submit', async (e) => {
+
+
+        // --- DASHBOARD: AGENDA DIARIA ---
+        window.renderDailyDashboard = async () => {
+            const container = document.getElementById('dashboard-daily-schedule');
+            const dateLabel = document.getElementById('current-date-label');
+            
+            // 1. Determinar Día
+            const days = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
+            const now = new Date();
+            const todayName = days[now.getDay()];
+            const fullDate = now.toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+            
+            dateLabel.textContent = fullDate.charAt(0).toUpperCase() + fullDate.slice(1);
+
+            // 2. Filtrar Distributivo del Docente
+            // Obtenemos qué materias da el docente actual
+            const myDistributive = globalData.distributive.filter(d => d.teacherId === currentUser.uid);
+            
+            if (myDistributive.length === 0) {
+                 container.innerHTML = `<div class="text-center py-10"><p class="text-slate-400">No tienes carga horaria asignada.</p></div>`;
+                 return;
+            }
+
+            // 3. Buscar en Schedules las clases de HOY para esas materias/cursos
+            // Esto requiere un cruce de datos: 
+            // Para cada entrada del distributivo, buscar si hay schedule hoy.
+            
+            let todaysClasses = [];
+
+            // Traemos todos los horarios (optimizacion: idealmente query filtrado, pero aqui filtramos en memoria por simplicidad del demo)
+            // Necesitamos 'schedules' y 'course_periods' cargados en globalData.
+            // Para asegurar integridad, hacemos fetch fresco de horarios si no existen
+            const schedSnap = await getDocs(collection(db, "schedules"));
+            const allSchedules = [];
+            schedSnap.forEach(d => allSchedules.push({id: d.id, ...d.data()}));
+            
+            const perSnap = await getDocs(collection(db, "course_periods"));
+            const allPeriods = [];
+            perSnap.forEach(d => allPeriods.push({id: d.id, ...d.data()}));
+
+            // Algoritmo de Cruce
+            myDistributive.forEach(dist => {
+                // Buscar horarios que coincidan con Curso + Paralelo + Materia + Día de Hoy
+                const matches = allSchedules.filter(s => 
+                    s.courseId === dist.courseId && 
+                    s.parallel === dist.parallel && 
+                    s.subjectId === dist.subjectId &&
+                    s.day === todayName
+                );
+
+                matches.forEach(match => {
+                    const period = allPeriods.find(p => p.id === match.periodId);
+                    if (period) {
+                        todaysClasses.push({
+                            scheduleId: match.id,
+                            distributiveId: dist.id,
+                            subjectId: dist.subjectId,
+                            courseId: dist.courseId,
+                            parallel: dist.parallel,
+                            start: period.start,
+                            end: period.end,
+                            // Datos UI
+                            subjectName: globalData.subjects.find(s => s.id === dist.subjectId)?.name,
+                            courseName: globalData.courses.find(c => c.id === dist.courseId)?.name
+                        });
+                    }
+                });
+            });
+
+            // 4. Ordenar por Hora
+            todaysClasses.sort((a,b) => a.start.localeCompare(b.start));
+
+            // 5. Renderizar
+            if (todaysClasses.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-12 bg-white rounded-3xl border border-slate-100">
+                        <div class="inline-flex w-16 h-16 bg-green-50 rounded-full items-center justify-center text-2xl mb-4">☕</div>
+                        <h3 class="font-bold text-slate-700">¡Día Libre!</h3>
+                        <p class="text-slate-400 text-sm">No tienes clases programadas para hoy ${todayName}.</p>
+                    </div>`;
+                return;
+            }
+
+            container.innerHTML = todaysClasses.map(cls => {
+                // Verificar si ya firmó hoy (Simulado: chequeariamos collection leccionario_entries)
+                // Para demo, siempre mostramos botón habilitado
+                return `
+                <div class="bg-white p-5 rounded-2xl border-l-4 border-blue-600 shadow-sm flex flex-col md:flex-row items-center justify-between gap-4">
+                    <div class="flex items-center gap-4 w-full md:w-auto">
+                        <div class="bg-blue-50 px-4 py-2 rounded-xl text-center min-w-[90px]">
+                            <span class="block text-lg font-black text-blue-700">${cls.start}</span>
+                            <span class="block text-xs font-bold text-blue-400">a ${cls.end}</span>
+                        </div>
+                        <div>
+                            <h4 class="text-lg font-black text-slate-800">${cls.subjectName}</h4>
+                            <p class="text-sm text-slate-500 font-medium">
+                                <i class="fa-solid fa-users text-xs mr-1"></i> ${cls.courseName} "<strong>${cls.parallel}</strong>"
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <button onclick="openSignModal('${cls.scheduleId}', '${cls.courseName}', '${cls.parallel}', '${cls.subjectName}', '${cls.courseId}', '${cls.subjectId}', '${cls.start}', '${cls.end}')" 
+                        class="w-full md:w-auto bg-slate-800 text-white px-6 py-3 rounded-xl font-bold text-sm hover:bg-slate-700 transition flex items-center justify-center gap-2 shadow-lg shadow-slate-200">
+                        <i class="fa-solid fa-pen-nib"></i> Registrar Lección
+                    </button>
+                </div>
+                `;
+            }).join('');
+        };
+
+        // --- FIRMA DE LECCIONARIO ---
+        window.openSignModal = (schedId, courseName, parallel, subjectName, cId, sId, start, end) => {
+            // Validar Firma
+            if (!currentUser.firma) {
+                showToast("⚠️ ERROR: No tienes firma digital configurada. Ve a tu perfil.", 'error');
+                return;
+            }
+
+            document.getElementById('sign-class-info').textContent = `${subjectName} | ${courseName} "${parallel}"`;
+            document.getElementById('sign-schedule-id').value = schedId;
+            document.getElementById('sign-course-id').value = cId;
+            document.getElementById('sign-subject-id').value = sId;
+            document.getElementById('sign-period-start').value = start;
+            document.getElementById('sign-period-end').value = end;
+            
+            document.getElementById('form-sign-leccionario').reset();
+            window.openModal('modal-sign-leccionario');
+        };
+
+        document.getElementById('form-sign-leccionario').addEventListener('submit', async (e) => {
             e.preventDefault();
-            const uid = document.getElementById('edit-uid').value;
             const btn = e.submitter;
-            const originalText = btn.textContent;
-            btn.textContent = "Guardando...";
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Guardando...';
             btn.disabled = true;
 
-            const updates = {
-                nombre: document.getElementById('edit-name').value,
-                rol: document.getElementById('edit-rol').value,
-                isSuperAdmin: document.getElementById('edit-is-super').checked
+            const data = {
+                teacherId: currentUser.uid,
+                teacherName: currentUser.nombre,
+                scheduleId: document.getElementById('sign-schedule-id').value,
+                courseId: document.getElementById('sign-course-id').value,
+                subjectId: document.getElementById('sign-subject-id').value,
+                topic: document.getElementById('sign-topic').value,
+                observation: document.getElementById('sign-obs').value,
+                date: new Date().toISOString().split('T')[0], // YYYY-MM-DD
+                timestamp: new Date().toISOString(),
+                signatureSnapshot: currentUser.firma, // Guardamos la firma tal cual estaba en ese momento
+                periodStart: document.getElementById('sign-period-start').value,
+                periodEnd: document.getElementById('sign-period-end').value
             };
-            
-            // Handle Signature
-            const sigFile = document.getElementById('edit-signature').files[0];
-            if (sigFile) {
-                updates.firma = await toBase64(sigFile);
-            }
 
             try {
-                if (uid) {
-                    await updateDoc(doc(db, "users", uid), updates);
-                } else {
-                    // New user logic (requires Auth API usually, simplified here to DB only for demo)
-                    // In real app, create user in Auth first.
-                }
-                await window.loadUsers();
-                window.closeModal('modal-user-edit');
-            } catch(error) {
-                alert("Error guardando usuario: " + error.message);
+                await addDoc(collection(db, "leccionario_entries"), data);
+                showToast("✅ Leccionario Firmado y Guardado Correctamente");
+                window.closeModal('modal-sign-leccionario');
+            } catch (error) {
+                showToast("Error al firmar: " + error.message, 'error');
             } finally {
-                btn.textContent = originalText;
+                btn.innerHTML = originalText;
                 btn.disabled = false;
             }
         });
 
 
-        // --- UI HELPERS ---
-        window.switchAuth = (mode) => {
-            document.getElementById('login-form').classList.toggle('hidden', mode !== 'login');
-            document.getElementById('register-form').classList.toggle('hidden', mode !== 'register');
-            document.getElementById('tab-login').className = mode === 'login' ? 'flex-1 pb-3 text-sm font-bold text-blue-600 border-b-2 border-blue-600' : 'flex-1 pb-3 text-sm font-bold text-slate-400 hover:text-slate-600';
-            document.getElementById('tab-register').className = mode === 'register' ? 'flex-1 pb-3 text-sm font-bold text-blue-600 border-b-2 border-blue-600' : 'flex-1 pb-3 text-sm font-bold text-slate-400 hover:text-slate-600';
-            document.getElementById('auth-message').classList.add('hidden');
-        };
+        // --- CARGADORES DE DATOS ---
 
-        window.showSection = (sectionId) => {
-            document.querySelectorAll('main > div').forEach(el => el.classList.add('hidden'));
-            const target = document.getElementById('section-'+sectionId);
-            if(target) target.classList.remove('hidden');
-        };
+        async function loadAllAcademicData() {
+            await Promise.all([
+                loadUsers(),
+                loadSections(),
+                loadAreas(),
+                loadSubjects(),
+                loadCourses(),
+                loadDistributive()
+            ]);
+            updateDropdowns();
+        }
 
-        window.openModal = (id) => document.getElementById(id).classList.replace('hidden', 'flex');
-        window.closeModal = (id) => document.getElementById(id).classList.replace('flex', 'hidden');
-
-        window.handleLogout = async () => {
-            await signOut(auth);
-            window.location.reload();
-        };
-
-        // --- FORM HANDLERS ---
-        
-        // LOGIN
-        document.getElementById('login-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const email = document.getElementById('login-email').value;
-            const pass = document.getElementById('login-pass').value;
-            const msg = document.getElementById('auth-message');
-            
+        // 1. Usuarios (CORREGIDO: ELIMINACIÓN REAL)
+        window.loadUsers = async () => {
+            const tbody = document.getElementById('users-table-body');
+            tbody.innerHTML = `<tr><td colspan="4" class="text-center p-8"><i class="fa-solid fa-spinner fa-spin"></i></td></tr>`;
             try {
-                await signInWithEmailAndPassword(auth, email, pass);
-            } catch (error) {
-                msg.textContent = "Error: " + error.code;
-                msg.className = "mt-4 text-xs font-bold text-center p-2 rounded-lg bg-red-100 text-red-600 block";
-                msg.classList.remove('hidden');
-            }
-        });
-
-        // REGISTER
-        document.getElementById('register-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const email = document.getElementById('reg-email').value;
-            const pass = document.getElementById('reg-pass').value;
-            const name = document.getElementById('reg-name').value;
-            const sigFile = document.getElementById('reg-signature').files[0];
-            const msg = document.getElementById('auth-message');
-
-            try {
-                // 1. Create Auth User
-                const cred = await createUserWithEmailAndPassword(auth, email, pass);
+                const querySnapshot = await getDocs(collection(db, "users"));
+                globalData.users = [];
+                querySnapshot.forEach((doc) => globalData.users.push({id: doc.id, ...doc.data()}));
                 
-                // 2. Prepare Data
-                let signatureBase64 = null;
-                if (sigFile) signatureBase64 = await toBase64(sigFile);
+                if (globalData.users.length === 0) { tbody.innerHTML = `<tr><td colspan="4" class="text-center p-4">Sin datos</td></tr>`; return; }
 
-                // 3. Save to DB
-                await setDoc(doc(db, "users", cred.user.uid), {
-                    email: email,
-                    nombre: name,
-                    rol: "Docente",
-                    firma: signatureBase64,
-                    createdAt: new Date().toISOString()
+                tbody.innerHTML = globalData.users.map(u => `
+                    <tr>
+                        <td>
+                            <div class="font-bold text-slate-800">${u.nombre || "Sin Nombre"}</div>
+                            <div class="text-xs text-slate-400">${u.email}</div>
+                        </td>
+                        <td>${u.firma ? '<i class="fa-solid fa-check text-green-500"></i>' : '<i class="fa-solid fa-xmark text-red-300"></i>'}</td>
+                        <td><span class="role-badge role-${u.rol}">${u.rol}</span></td>
+                        <td class="text-right flex justify-end gap-2">
+                            <button onclick="window.editUser('${u.id}')" class="text-blue-600 p-2 hover:bg-blue-50 rounded"><i class="fa-solid fa-pen"></i></button>
+                            <button onclick="window.deleteUser('${u.id}')" class="text-red-500 p-2 hover:bg-red-50 rounded" title="Eliminar"><i class="fa-solid fa-trash"></i></button>
+                        </td>
+                    </tr>`).join('');
+            } catch (e) { console.error(e); }
+        };
+
+        window.deleteUser = async (id) => {
+            if(!confirm("ADVERTENCIA: ¿Realmente desea eliminar este usuario de la base de datos?")) return;
+            try { 
+                await deleteDoc(doc(db, "users", id)); 
+                // Actualizar la tabla localmente sin recargar toda la página si es posible, o recargar
+                showToast("Usuario eliminado correctamente"); 
+                // Si el usuario borrado es el actual, salir
+                if(currentUser && currentUser.uid === id) {
+                    await handleLogout();
+                } else {
+                    await loadUsers(); 
+                }
+            } catch(e) { 
+                showToast("Error al eliminar: " + e.message, 'error'); 
+            }
+        };
+
+        // 2-6. Datos Académicos (Sections, Areas, Subjects, Courses, Distributive)
+        // (Funciones similares abreviadas para ahorrar espacio, lógica idéntica a versión anterior)
+        window.loadSections = async () => { const s = await getDocs(collection(db, "sections")); globalData.sections=[]; s.forEach(d=>globalData.sections.push({id:d.id,...d.data()})); renderSimpleTable('sections-table-body', globalData.sections, 'sections'); };
+        window.loadAreas = async () => { const s = await getDocs(collection(db, "areas")); globalData.areas=[]; s.forEach(d=>globalData.areas.push({id:d.id,...d.data()})); renderSimpleTable('areas-table-body', globalData.areas, 'areas'); };
+        window.loadSubjects = async () => { const s = await getDocs(collection(db, "subjects")); globalData.subjects=[]; s.forEach(d=>globalData.subjects.push({id:d.id,...d.data()})); renderSubjectsTable(); };
+        window.loadCourses = async () => { const s = await getDocs(collection(db, "courses")); globalData.courses=[]; s.forEach(d=>globalData.courses.push({id:d.id,...d.data()})); renderCoursesTable(); };
+        window.loadDistributive = async () => { const s = await getDocs(collection(db, "distributive")); globalData.distributive=[]; s.forEach(d=>globalData.distributive.push({id:d.id,...d.data()})); renderDistributiveTable(); };
+
+        function renderSimpleTable(id, data, col) {
+            document.getElementById(id).innerHTML = data.map(i => `<tr><td class="font-bold">${i.name}</td><td class="text-right"><button onclick="deleteItem('${col}','${i.id}')" class="text-red-400 hover:text-red-600"><i class="fa-solid fa-trash"></i></button></td></tr>`).join('');
+        }
+        function renderSubjectsTable() {
+            document.getElementById('subjects-table-body').innerHTML = globalData.subjects.map(s => {
+                const area = globalData.areas.find(a => a.id === s.areaId)?.name || '---';
+                return `<tr><td class="font-bold">${s.name}</td><td class="text-xs uppercase">${area}</td><td class="text-right"><button onclick="deleteItem('subjects','${s.id}')" class="text-red-400"><i class="fa-solid fa-trash"></i></button></td></tr>`;
+            }).join('');
+        }
+        function renderCoursesTable() {
+             document.getElementById('courses-table-body').innerHTML = globalData.courses.map(c => {
+                const sec = globalData.sections.find(s => s.id === c.sectionId)?.name || '---';
+                return `<tr><td class="font-bold">${c.name}</td><td class="text-xs">${sec}</td><td>${c.parallels.join(', ')}</td><td class="text-right"><button onclick="deleteItem('courses','${c.id}')" class="text-red-400"><i class="fa-solid fa-trash"></i></button></td></tr>`;
+            }).join('');
+        }
+        function renderDistributiveTable() {
+            document.getElementById('distributive-table-body').innerHTML = globalData.distributive.map(d => {
+                const t = globalData.users.find(u => u.id === d.teacherId)?.nombre || '---';
+                const s = globalData.subjects.find(s => s.id === d.subjectId)?.name || '---';
+                const c = globalData.courses.find(c => c.id === d.courseId)?.name || '---';
+                return `<tr><td class="font-bold text-sm">${t}</td><td class="text-xs"><span class="font-bold">${c}</span> (${d.parallel})</td><td class="text-sm">${s}</td><td class="text-right"><button onclick="deleteItem('distributive','${d.id}')" class="text-red-400"><i class="fa-solid fa-trash"></i></button></td></tr>`;
+            }).join('');
+        }
+
+        // 7. Dashboard Resumen
+        window.loadTeacherAssignments = async (teacherId) => {
+            const container = document.getElementById('dashboard-cards');
+            const myAssignments = globalData.distributive.filter(d => d.teacherId === teacherId);
+            // No mostrar mensaje vacío aquí para no duplicar con el calendario, solo dejar vacío o cards
+            if (myAssignments.length === 0) { container.innerHTML = ""; return; }
+            
+            container.innerHTML = myAssignments.map(assign => {
+                const subject = globalData.subjects.find(s => s.id === assign.subjectId);
+                const course = globalData.courses.find(c => c.id === assign.courseId);
+                const hue = (parseInt(assign.subjectId.substr(0, 2), 16) * 137) % 360;
+                return `
+                <div class="bg-white rounded-xl p-4 shadow-sm border border-slate-100 relative overflow-hidden">
+                    <div class="absolute top-0 right-0 w-16 h-16 bg-[hsl(${hue},70%,90%)] rounded-bl-full opacity-50"></div>
+                    <div class="relative z-10">
+                        <h3 class="text-sm font-black text-slate-800 leading-tight mb-1 truncate">${subject?.name || 'Materia'}</h3>
+                        <p class="text-xs text-slate-500">${course?.name || 'Curso'} (${assign.parallel})</p>
+                    </div>
+                </div>`;
+            }).join('');
+        };
+
+        // --- GESTIÓN DE HORARIOS (MATRIZ) ---
+
+        window.updateSchedCourses = () => {
+            const sectionId = document.getElementById('sched-section-select').value;
+            const courseSel = document.getElementById('sched-course-select');
+            const parSel = document.getElementById('sched-parallel-select');
+            courseSel.innerHTML = '<option value="">Selecciona Curso...</option>';
+            parSel.innerHTML = '<option value="">Selecciona Paralelo...</option>';
+            parSel.disabled = true;
+            document.getElementById('schedule-matrix-container').classList.add('hidden');
+
+            if (!sectionId) { courseSel.disabled = true; return; }
+            courseSel.innerHTML += globalData.courses.filter(c => c.sectionId === sectionId).map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+            courseSel.disabled = false;
+        };
+
+        window.updateSchedParallels = () => {
+            const courseId = document.getElementById('sched-course-select').value;
+            const parSel = document.getElementById('sched-parallel-select');
+            parSel.innerHTML = '<option value="">Selecciona Paralelo...</option>';
+            document.getElementById('schedule-matrix-container').classList.add('hidden');
+
+            if (!courseId) { parSel.disabled = true; return; }
+            const course = globalData.courses.find(c => c.id === courseId);
+            if (course) {
+                parSel.innerHTML += course.parallels.map(p => `<option value="${p}">${p}</option>`).join('');
+                parSel.disabled = false;
+            }
+        };
+
+        window.loadScheduleMatrix = async () => {
+            const courseId = document.getElementById('sched-course-select').value;
+            const parallel = document.getElementById('sched-parallel-select').value;
+            
+            if (!courseId || !parallel) return;
+            document.getElementById('schedule-matrix-container').classList.remove('hidden');
+            
+            // 1. Cargar Periodos (Filas)
+            const qPeriods = query(collection(db, "course_periods"), where("courseId", "==", courseId), where("parallel", "==", parallel));
+            const snapP = await getDocs(qPeriods);
+            globalData.currentPeriods = [];
+            snapP.forEach(d => globalData.currentPeriods.push({id: d.id, ...d.data()}));
+            globalData.currentPeriods.sort((a,b) => a.start.localeCompare(b.start));
+
+            // 2. Cargar Asignaciones (Celdas)
+            const qAssign = query(collection(db, "schedules"), where("courseId", "==", courseId), where("parallel", "==", parallel));
+            const snapA = await getDocs(qAssign);
+            globalData.currentAssignments = [];
+            snapA.forEach(d => globalData.currentAssignments.push({id: d.id, ...d.data()}));
+
+            renderMatrix();
+        };
+
+        function renderMatrix() {
+            const tbody = document.getElementById('matrix-body');
+            tbody.innerHTML = '';
+
+            globalData.currentPeriods.forEach(period => {
+                const tr = document.createElement('tr');
+                
+                // Columna de Hora
+                const tdTime = document.createElement('td');
+                tdTime.className = 'matrix-time-cell';
+                tdTime.innerHTML = `<div>${period.start}<br><span class="text-xs text-blue-300">|</span><br>${period.end}</div>`;
+                tr.appendChild(tdTime);
+
+                // Columnas de Días
+                const days = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes"];
+                days.forEach(day => {
+                    const td = document.createElement('td');
+                    td.className = 'matrix-cell';
+                    
+                    // Buscar asignación existente
+                    const assign = globalData.currentAssignments.find(a => a.periodId === period.id && a.day === day);
+                    
+                    if (assign) {
+                        const subjectName = globalData.subjects.find(s => s.id === assign.subjectId)?.name || '???';
+                        td.innerHTML = `
+                            <div class="matrix-cell-content">
+                                <span class="matrix-subject">${subjectName}</span>
+                            </div>`;
+                        td.onclick = () => openAssignModal(period.id, day, period.start, period.end, assign.subjectId, assign.id);
+                    } else {
+                        td.innerHTML = `<div class="matrix-cell-content"><i class="fa-solid fa-plus matrix-add-icon"></i></div>`;
+                        td.onclick = () => openAssignModal(period.id, day, period.start, period.end, null, null);
+                    }
+                    tr.appendChild(td);
                 });
 
-                msg.textContent = "Cuenta creada. Ingresando...";
-                msg.className = "mt-4 text-xs font-bold text-center p-2 rounded-lg bg-green-100 text-green-600 block";
-                msg.classList.remove('hidden');
+                // Botón Borrar Fila
+                const tdAction = document.createElement('td');
+                tdAction.className = 'text-center align-middle';
+                tdAction.innerHTML = `<button onclick="deletePeriod('${period.id}')" class="text-slate-300 hover:text-red-500"><i class="fa-solid fa-trash"></i></button>`;
+                tr.appendChild(tdAction);
 
-            } catch (error) {
-                msg.textContent = "Error: " + error.code;
-                msg.className = "mt-4 text-xs font-bold text-center p-2 rounded-lg bg-red-100 text-red-600 block";
-                msg.classList.remove('hidden');
-            }
-        });
+                tbody.appendChild(tr);
+            });
+        }
 
-        // UTILS
-        const toBase64 = file => new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.readAsDataURL(file);
-            reader.onload = () => resolve(reader.result);
-            reader.onerror = error => reject(error);
-        });
+        window.addPeriod = async (e) => {
+            e.preventDefault();
+            const start = document.getElementById('period-start').value;
+            const end = document.getElementById('period-end').value;
+            const courseId = document.getElementById('sched-course-select').value;
+            const parallel = document.getElementById('sched-parallel-select').value;
 
+            try {
+                await addDoc(collection(db, "course_periods"), { courseId, parallel, start, end });
+                showToast("Hora añadida");
+                loadScheduleMatrix();
+            } catch(e) { showToast("Error", 'error'); }
+        };
+
+        window.deletePeriod = async (id) => {
+            if(!confirm("¿Borrar esta franja horaria?")) return;
+            await deleteDoc(doc(db, "course_periods", id));
+            loadScheduleMatrix();
+        };
+
+        // --- LÓGICA DEL MODAL DE ASIGNACIÓN (ADMIN) ---
+        let currentAssignContext = null;
+
+        window.openAssignModal = (periodId, day, start, end, currentSubjectId, assignId) => {
+            currentAssignContext = { periodId, day, assignId };
+            
+            document.getElementById('assign-modal-subtitle').textContent = `${day} | ${start} - ${end}`;
+            document.getElementById('assign-subject-select').value = currentSubjectId || "";
+            
+            // Llenar select de materias
+            const select = document.getElementById('assign-subject-select');
+            select.innerHTML = '<option value="">-- Seleccionar Materia --</option>';
+            globalData.subjects.forEach(s => {
+                const opt = document.createElement('option');
+                opt.value = s.id;
+                opt.textContent = s.name;
+                if(s.id === currentSubjectId) opt.selected = true;
+                select.appendChild(opt);
+            });
+
+            window.openModal('modal-assign-subject');
+        };
+
+        window.saveAssignment = async () => {
+            const subjectId = document.getElementById('assign-subject-select').value;
+            const courseId = document.getElementById('sched-course-select').value;
+            const parallel = document.getElementById('sched-parallel-select').value;
+
+            if (!subjectId) return showToast("Selecciona una materia", 'error');
+            
+            try {
+                if (currentAssignContext.assignId) {
+                    // Actualizar existente
+                    await updateDoc(doc(db, "schedules", currentAssignContext.assignId), { subjectId });
+                } else {
+                    // Crear nuevo
+                    await addDoc(collection(db, "schedules"), {
+                        courseId, parallel,
+                        periodId: currentAssignContext.periodId,
+                        day: currentAssignContext.day,
+                        subjectId
+                    });
+                }
+                showToast("Materia Asignada");
+                window.closeModal('modal-assign-subject');
+                loadScheduleMatrix();
+            } catch (e) { showToast("Error al guardar", 'error'); }
+        };
+
+        window.removeAssignment = async () => {
+            if (!currentAssignContext.assignId) return;
+            if(!confirm("¿Quitar materia de este horario?")) return;
+            
+            try {
+                await deleteDoc(doc(db, "schedules", currentAssignContext.assignId));
+                showToast("Asignación eliminada");
+                window.closeModal('modal-assign-subject');
+                loadScheduleMatrix();
+            } catch(e) { showToast("Error", 'error'); }
+        };
+
+
+        // --- UI HELPERS & COMMON ---
+        function updateDropdowns() {
+            const areaSel = document.getElementById('subject-area-select');
+            areaSel.innerHTML = '<option value="">Seleccione Área...</option>' + globalData.areas.map(a => `<option value="${a.id}">${a.name}</option>`).join('');
+            
+            const secOpts = globalData.sections.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+            document.getElementById('course-section-select').innerHTML = '<option value="">Seleccione Sección...</option>' + secOpts;
+            document.getElementById('sched-section-select').innerHTML = '<option value="">Selecciona Sección...</option>' + secOpts;
+            document.getElementById('rep-section-select').innerHTML = '<option value="">Selecciona Sección...</option>' + secOpts; // Nuevo
+
+            const teachers = globalData.users.filter(u => u.rol === 'Docente' || u.rol === 'Admin');
+            document.getElementById('dist-teacher-select').innerHTML = '<option value="">Sel. Docente...</option>' + teachers.map(t => `<option value="${t.id}">${t.nombre || t.email}</option>`).join('');
+
+            const subjOpts = globalData.subjects.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+            document.getElementById('dist-subject-select').innerHTML = '<option value="">Sel. Materia...</option>' + subjOpts;
+            
+            document.getElementById('dist-course-select').innerHTML = '<option value="">Sel. Curso...</option>' + globalData.courses.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+        }
+        
+        // Window Functions
+        window.deleteItem = async (colName, id) => { if(!confirm("¿Eliminar?")) return; try { await deleteDoc(doc(db, colName, id)); showToast("Eliminado"); loadAllAcademicData(); } catch(e) { showToast("Error", 'error'); } }
+        window.switchTab = (btn, tabId) => { document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active')); btn.classList.add('active'); document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden')); document.getElementById(tabId).classList.remove('hidden'); };
+        window.switchAuth = (mode) => { document.getElementById('login-form').classList.toggle('hidden', mode !== 'login'); document.getElementById('register-form').classList.toggle('hidden', mode !== 'register'); document.getElementById('tab-login').className = mode === 'login' ? 'flex-1 pb-3 text-sm font-bold text-blue-600 border-b-2 border-blue-600' : 'flex-1 pb-3 text-sm font-bold text-slate-400 hover:text-slate-600'; document.getElementById('tab-register').className = mode === 'register' ? 'flex-1 pb-3 text-sm font-bold text-blue-600 border-b-2 border-blue-600' : 'flex-1 pb-3 text-sm font-bold text-slate-400 hover:text-slate-600'; };
+        window.showSection = (sectionId) => { document.querySelectorAll('main > div').forEach(el => el.classList.add('hidden')); const target = document.getElementById('section-'+sectionId); if(target) target.classList.remove('hidden'); };
+        window.openModal = (id) => document.getElementById(id).classList.replace('hidden', 'flex');
+        window.closeModal = (id) => document.getElementById(id).classList.replace('flex', 'hidden');
+        window.handleLogout = async () => { await signOut(auth); currentUser = null; window.showAuthView(); };
+        window.showToast = (message, type = 'success') => { const container = document.getElementById('toast-container'); const toast = document.createElement('div'); toast.className = `toast ${type === 'success' ? 'toast-success' : 'toast-error'}`; toast.innerHTML = `<i class="fa-solid ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'}"></i> <span>${message}</span>`; container.appendChild(toast); setTimeout(() => { toast.style.opacity = '0'; toast.style.transform = 'translateX(100%)'; setTimeout(() => toast.remove(), 300); }, 3000); };
+        window.editUser = (uid) => { const user = globalData.users.find(u => u.id === uid); if (!user) return; document.getElementById('edit-uid').value = user.id; document.getElementById('edit-name').value = user.nombre || ""; document.getElementById('edit-email').value = user.email || ""; document.getElementById('edit-rol').value = user.rol || "Docente"; document.getElementById('edit-is-super').checked = !!user.isSuperAdmin; window.openModal('modal-user-edit'); };
+        window.updateDistParallels = () => { const courseId = document.getElementById('dist-course-select').value; const parSel = document.getElementById('dist-parallel-select'); parSel.innerHTML = ''; const course = globalData.courses.find(c => c.id === courseId); if(course) parSel.innerHTML = course.parallels.map(p => `<option value="${p}">${p}</option>`).join(''); };
+        window.resetEditForm = () => { document.getElementById('edit-uid').value = ""; document.getElementById('form-user-edit').reset(); }
+
+        // Generic Event Listeners
+        document.getElementById('form-user-edit').addEventListener('submit', async (e) => { e.preventDefault(); const uid = document.getElementById('edit-uid').value; const updates = { nombre: document.getElementById('edit-name').value, rol: document.getElementById('edit-rol').value, isSuperAdmin: document.getElementById('edit-is-super').checked }; const sigFile = document.getElementById('edit-signature').files[0]; if (sigFile) updates.firma = await toBase64(sigFile); try { if (uid) { await updateDoc(doc(db, "users", uid), updates); showToast("Actualizado"); } loadUsers(); window.closeModal('modal-user-edit'); } catch(error) { showToast("Error", 'error'); } });
+        document.getElementById('form-section').addEventListener('submit', (e) => { e.preventDefault(); addItem('sections', { name: document.getElementById('section-name').value }, loadSections); e.target.reset(); });
+        document.getElementById('form-area').addEventListener('submit', (e) => { e.preventDefault(); addItem('areas', { name: document.getElementById('area-name').value }, loadAreas); e.target.reset(); });
+        document.getElementById('form-subject').addEventListener('submit', (e) => { e.preventDefault(); const name = document.getElementById('subject-name').value; const areaId = document.getElementById('subject-area-select').value; if(!areaId) return showToast("Seleccione un Área", 'error'); addItem('subjects', { name, areaId }, loadSubjects); e.target.reset(); });
+        document.getElementById('form-course').addEventListener('submit', (e) => { e.preventDefault(); const name = document.getElementById('course-name').value; const sectionId = document.getElementById('course-section-select').value; const parallelsStr = document.getElementById('course-parallels').value; if(!sectionId) return showToast("Seleccione una Sección", 'error'); const parallels = parallelsStr.split(',').map(p => p.trim().toUpperCase()).filter(p => p !== ""); addItem('courses', { name, sectionId, parallels }, loadCourses); e.target.reset(); });
+        document.getElementById('form-distributive').addEventListener('submit', (e) => { e.preventDefault(); const teacherId = document.getElementById('dist-teacher-select').value; const courseId = document.getElementById('dist-course-select').value; const parallel = document.getElementById('dist-parallel-select').value; const subjectId = document.getElementById('dist-subject-select').value; if(!teacherId || !courseId || !parallel || !subjectId) return showToast("Faltan datos", 'error'); addItem('distributive', { teacherId, courseId, parallel, subjectId }, loadDistributive); });
+        document.getElementById('login-form').addEventListener('submit', async (e) => { e.preventDefault(); const email = document.getElementById('login-email').value; const pass = document.getElementById('login-pass').value; try { await signInWithEmailAndPassword(auth, email, pass); } catch (error) { showToast(error.code, 'error'); } });
+        document.getElementById('register-form').addEventListener('submit', async (e) => { e.preventDefault(); const email = document.getElementById('reg-email').value; const pass = document.getElementById('reg-pass').value; const name = document.getElementById('reg-name').value; const sigFile = document.getElementById('reg-signature').files[0]; try { const cred = await createUserWithEmailAndPassword(auth, email, pass); let signatureBase64 = null; if (sigFile) signatureBase64 = await toBase64(sigFile); await setDoc(doc(db, "users", cred.user.uid), { email: email, nombre: name, rol: "Docente", firma: signatureBase64, createdAt: new Date().toISOString() }); showToast("Cuenta creada", 'success'); } catch (error) { showToast(error.code, 'error'); } });
+
+        async function addItem(collectionName, data, loadFn) { try { await addDoc(collection(db, collectionName), data); showToast("Guardado"); await loadFn(); } catch (e) { showToast("Error", 'error'); } }
+        const toBase64 = file => new Promise((resolve, reject) => { const reader = new FileReader(); reader.readAsDataURL(file); reader.onload = () => resolve(reader.result); reader.onerror = error => reject(error); });
     </script>
 </body>
 </html>
