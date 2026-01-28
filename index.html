@@ -3,923 +3,510 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Leccionario Virtual - Gestión Total</title>
+    <title>Leccionario Virtual - Gestión Académica</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <!-- Iconos -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
-        .role-badge { padding: 0.25rem 0.5rem; border-radius: 0.5rem; font-size: 9px; font-weight: 900; text-transform: uppercase; background: #f1f5f9; color: #64748b; display: inline-block; margin-right: 4px; margin-bottom: 2px; }
-        .data-badge { display: inline-block; padding: 2px 6px; background: #eef2ff; color: #4338ca; border-radius: 4px; font-size: 10px; font-weight: 700; margin-right: 2px; margin-bottom: 2px; border: 1px solid #e0e7ff; }
-        .modal-animate { animation: fadeIn 0.2s ease-out; }
-        @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
-        .tab-btn { border-bottom: 3px solid transparent; color: #94a3b8; transition: all 0.2s; cursor: pointer; }
-        .tab-btn.active { border-color: #2563eb; color: #1e293b; font-weight: 900; }
-        .auth-tab { border-bottom: 2px solid transparent; color: #94a3b8; width: 50%; padding-bottom: 12px; font-weight: bold; transition: all 0.2s; text-align: center; cursor: pointer; }
-        .auth-tab.active { border-color: #2563eb; color: #1e293b; }
-        .check-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 0.5rem; max-height: 150px; overflow-y: auto; padding: 0.5rem; background: #f8fafc; border-radius: 0.75rem; border: 1px solid #e2e8f0; }
-        .check-item { display: flex; align-items: center; font-size: 11px; color: #475569; cursor: pointer; user-select: none; }
-        .check-item input { margin-right: 6px; accent-color: #2563eb; }
-        .schedule-cell { height: 60px; border: 1px solid #e2e8f0; background: #fff; cursor: pointer; transition: all 0.2s; font-size: 11px; text-align: center; vertical-align: middle; padding: 4px; position: relative; }
-        .schedule-cell:hover { background: #f8fafc; }
-        .schedule-cell.filled { background: #eff6ff; color: #1e40af; font-weight: 700; border-color: #dbeafe; }
-        .time-col { background: #f1f5f9; color: #64748b; font-weight: 800; font-size: 10px; width: 80px; text-align: center; }
-        .mini-calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; justify-items: center; max-width: 350px; margin: 0 auto; }
-        .mini-day { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; font-size: 12px; border-radius: 99px; cursor: pointer; transition: all 0.2s; color: #64748b; }
-        .mini-day:hover:not(.empty) { background: #f1f5f9; color: #1e293b; font-weight: bold; }
-        .mini-day.selected { background: #2563eb; color: white; font-weight: bold; box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.3); }
-        .mini-day.today { border: 2px solid #2563eb; color: #2563eb; font-weight: bold; }
-        .mini-day.empty { cursor: default; }
-        .report-table th { background: #f8fafc; color: #64748b; font-size: 11px; text-transform: uppercase; font-weight: 800; padding: 12px; text-align: left; border-bottom: 2px solid #e2e8f0; }
-        .report-table td { border-bottom: 1px solid #f1f5f9; padding: 10px 12px; font-size: 12px; color: #334155; }
-        .status-missing { background: #fef2f2; color: #ef4444; padding: 4px 8px; border-radius: 6px; font-size: 10px; font-weight: 800; text-transform: uppercase; display: inline-block; }
-        .status-done { background: #f0fdf4; color: #16a34a; padding: 4px 8px; border-radius: 6px; font-size: 10px; font-weight: 800; text-transform: uppercase; display: inline-block; }
-        .signature-img { max-height: 40px; max-width: 100px; object-fit: contain; display: block; margin: 0 auto; }
+        /* UI Base */
+        body { background-color: #f3f4f6; color: #1f2937; }
+        .glass-panel { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); border: 1px solid #e5e7eb; }
+        .btn-primary { background-color: #2563eb; color: white; transition: all 0.2s; }
+        .btn-primary:hover { background-color: #1d4ed8; transform: translateY(-1px); }
+        .btn-danger { background-color: #ef4444; color: white; transition: all 0.2s; }
+        .btn-danger:hover { background-color: #dc2626; }
+        
+        /* Badges */
+        .role-badge { font-size: 0.65rem; font-weight: 800; text-transform: uppercase; padding: 2px 8px; border-radius: 99px; letter-spacing: 0.05em; }
+        .role-Admin { background: #fee2e2; color: #991b1b; }
+        .role-Docente { background: #dcfce7; color: #166534; }
+        
+        /* Loader */
+        .loader-overlay { position: fixed; inset: 0; background: white; z-index: 9999; display: flex; align-items: center; justify-content: center; transition: opacity 0.5s; }
+        
+        /* Table Styles */
+        .custom-table th { background: #f9fafb; color: #6b7280; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700; padding: 12px 16px; text-align: left; }
+        .custom-table td { padding: 12px 16px; border-bottom: 1px solid #f3f4f6; font-size: 0.875rem; }
+        .custom-table tr:last-child td { border-bottom: none; }
+        .custom-table tr:hover { background-color: #f9fafb; }
+        
+        /* Signature Preview */
+        .sig-preview { width: 80px; height: 40px; object-fit: contain; border: 1px dashed #cbd5e1; border-radius: 4px; background: #f8fafc; }
     </style>
 </head>
-<body class="bg-slate-50 min-h-screen font-sans text-slate-900">
+<body class="font-sans">
 
-    <div id="loader" class="fixed inset-0 bg-white z-[100] flex items-center justify-center transition-all duration-500">
-        <div class="flex flex-col items-center">
-            <div class="animate-spin rounded-full h-16 w-16 border-t-4 border-blue-600 mb-4"></div>
-            <p id="loader-text" class="text-slate-400 font-medium animate-pulse">Iniciando sistema...</p>
+    <!-- LOADER -->
+    <div id="loader" class="loader-overlay">
+        <div class="text-center">
+            <div class="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+            <h2 class="text-xl font-black text-slate-800">Cargando Sistema...</h2>
         </div>
     </div>
 
-    <!-- LOGIN -->
-    <div id="auth-container" class="min-h-screen flex items-center justify-center p-4">
-        <div class="bg-white p-10 rounded-[2.5rem] shadow-2xl border border-slate-200 w-full max-w-md text-center">
-            <div class="mx-auto mb-8 w-40 h-40 flex items-center justify-center">
-                <img src="logo.png" alt="Logo" class="object-contain max-w-full max-h-full drop-shadow-md" onerror="this.src='https://placehold.co/150x150?text=LOGO';">
+    <!-- VISTA DE AUTENTICACIÓN -->
+    <div id="auth-view" class="min-h-screen flex items-center justify-center p-4">
+        <div class="glass-panel w-full max-w-md p-8 rounded-3xl shadow-2xl">
+            <div class="text-center mb-8">
+                <div class="w-20 h-20 bg-blue-50 rounded-2xl mx-auto flex items-center justify-center text-4xl mb-4">📚</div>
+                <h1 class="text-2xl font-black text-slate-900">Leccionario Virtual</h1>
+                <p class="text-slate-400 text-sm">Plataforma de Gestión Académica</p>
             </div>
-            <h1 class="text-3xl font-black mb-2 text-slate-800">Leccionario Virtual</h1>
-            <p id="auth-subtitle" class="text-slate-400 text-sm mb-4">Ingresa tus credenciales</p>
-            <div id="firebase-status" class="mb-6 py-2 px-4 rounded-xl bg-slate-50 border border-slate-200 text-xs font-mono text-slate-400 flex items-center justify-center gap-2">
-                <span class="w-2 h-2 rounded-full bg-yellow-300 animate-pulse"></span> Conectando...
+
+            <!-- Tabs Login/Registro -->
+            <div class="flex border-b border-slate-100 mb-6">
+                <button onclick="switchAuth('login')" id="tab-login" class="flex-1 pb-3 text-sm font-bold text-blue-600 border-b-2 border-blue-600 transition-colors">Ingresar</button>
+                <button onclick="switchAuth('register')" id="tab-register" class="flex-1 pb-3 text-sm font-bold text-slate-400 hover:text-slate-600 transition-colors">Crear Cuenta</button>
             </div>
-            <div class="flex justify-center mb-6 border-b border-slate-100">
-                <div id="tab-login" onclick="window.switchAuthTab('login')" class="auth-tab active">Iniciar Sesión</div>
-                <div id="tab-register" onclick="window.switchAuthTab('register')" class="auth-tab">Crear Cuenta</div>
-            </div>
-            <form id="auth-form" class="space-y-5 text-left">
-                <input type="text" id="email" required placeholder="Correo" class="w-full px-5 py-4 rounded-2xl border border-slate-200 outline-none bg-slate-50">
-                <input type="password" id="password" required placeholder="Contraseña" class="w-full px-5 py-4 rounded-2xl border border-slate-200 outline-none bg-slate-50">
-                <button type="submit" id="btn-login-submit" class="w-full bg-blue-600 text-white py-4 rounded-2xl font-black uppercase tracking-widest hover:bg-blue-700 transition-all shadow-lg">Ingresar</button>
+
+            <!-- Formulario Login -->
+            <form id="login-form" class="space-y-4">
+                <div class="space-y-1">
+                    <label class="text-xs font-bold text-slate-500 uppercase">Correo Institucional</label>
+                    <input type="email" id="login-email" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition" placeholder="usuario@ecomundo.edu.ec" required>
+                </div>
+                <div class="space-y-1">
+                    <label class="text-xs font-bold text-slate-500 uppercase">Contraseña</label>
+                    <input type="password" id="login-pass" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition" placeholder="••••••••" required>
+                </div>
+                <button type="submit" class="btn-primary w-full py-3 rounded-xl font-bold shadow-lg shadow-blue-200">INICIAR SESIÓN</button>
             </form>
-            <form id="register-form" class="space-y-4 text-left hidden">
-                <input type="text" id="reg-name" required placeholder="Nombre Completo" class="w-full px-5 py-4 rounded-2xl border border-slate-200 outline-none bg-slate-50">
-                <input type="email" id="reg-email" required placeholder="Correo Electrónico" class="w-full px-5 py-4 rounded-2xl border border-slate-200 outline-none bg-slate-50">
-                <input type="password" id="reg-pass" required placeholder="Crear Contraseña" class="w-full px-5 py-4 rounded-2xl border border-slate-200 outline-none bg-slate-50">
+
+            <!-- Formulario Registro -->
+            <form id="register-form" class="space-y-4 hidden">
+                <div class="space-y-1">
+                    <label class="text-xs font-bold text-slate-500 uppercase">Nombre Completo</label>
+                    <input type="text" id="reg-name" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none" required>
+                </div>
+                <div class="space-y-1">
+                    <label class="text-xs font-bold text-slate-500 uppercase">Correo</label>
+                    <input type="email" id="reg-email" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none" required>
+                </div>
+                <div class="space-y-1">
+                    <label class="text-xs font-bold text-slate-500 uppercase">Contraseña</label>
+                    <input type="password" id="reg-pass" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none" required>
+                </div>
+                <div class="space-y-1">
+                    <label class="text-xs font-bold text-slate-500 uppercase">Firma Digital (Imagen)</label>
+                    <div class="relative">
+                        <input type="file" id="reg-signature" accept="image/*" class="w-full p-2 bg-slate-50 border border-slate-200 rounded-xl text-xs file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer">
+                    </div>
+                    <p class="text-[9px] text-slate-400">Esta firma se usará en los reportes.</p>
+                </div>
+                <button type="submit" class="w-full bg-green-600 text-white py-3 rounded-xl font-bold shadow-lg shadow-green-100 hover:bg-green-700 transition">REGISTRAR USUARIO</button>
+            </form>
+
+            <div id="auth-message" class="mt-4 text-xs font-bold text-center hidden p-2 rounded-lg"></div>
+            
+            <div class="mt-8 pt-6 border-t border-slate-100 text-center">
+                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-100 border border-slate-200">
+                    <div id="db-status-dot" class="w-2 h-2 rounded-full bg-yellow-400 animate-pulse"></div>
+                    <span id="db-status-text" class="text-[10px] font-mono text-slate-500">Conectando DB...</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- VISTA PRINCIPAL (Dashboard y Admin) -->
+    <div id="app-view" class="hidden min-h-screen">
+        <!-- Sidebar / Navigation -->
+        <nav class="bg-white border-b border-slate-200 px-6 py-4 flex flex-col md:flex-row justify-between items-center sticky top-0 z-50 shadow-sm">
+            <div class="flex items-center gap-4 mb-4 md:mb-0">
+                <div class="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white font-black text-xl">L</div>
                 <div>
-                    <label class="block text-xs font-bold text-slate-400 ml-2 mb-1 uppercase">Subir Firma</label>
-                    <input type="file" id="reg-signature" accept="image/*" class="w-full p-3 rounded-2xl border border-slate-200 bg-slate-50 text-xs">
-                </div>
-                <button type="submit" class="w-full bg-green-600 text-white py-4 rounded-2xl font-black uppercase tracking-widest hover:bg-green-700 transition-all shadow-lg">Registrar</button>
-            </form>
-            <div id="login-error" class="bg-red-50 text-red-500 text-xs p-3 rounded-xl mt-4 font-bold hidden border border-red-100 text-left"></div>
-             <div class="mt-6 pt-6 border-t border-slate-100">
-                <p class="text-[9px] text-slate-300 mt-2 font-bold uppercase tracking-widest">Modo Prueba: admin / admin</p>
-            </div>
-        </div>
-    </div>
-
-    <!-- APP -->
-    <div id="user-logged-in" class="hidden max-w-7xl mx-auto p-4 md:p-10">
-        <div id="main-dashboard-view">
-            <header class="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-8 gap-6">
-                <div><h1 class="text-4xl font-black text-slate-900 tracking-tighter mb-2">Mi Dashboard</h1><p class="text-slate-400 font-medium">Panel Académico</p></div>
-                <div class="flex items-center gap-4 bg-white p-3 pr-6 rounded-[2rem] border border-slate-200 shadow-sm">
-                    <div id="avatar-circle" class="w-12 h-12 bg-blue-600 text-white rounded-2xl flex items-center justify-center font-black">U</div>
-                    <div><span id="user-email-display" class="text-slate-800 text-sm font-bold block"></span><span id="user-role-display" class="text-[10px] text-slate-400 uppercase font-black tracking-widest"></span></div>
-                    <button id="btn-open-admin-header" onclick="window.showAdminPanel()" class="hidden ml-2 p-2 bg-slate-100 rounded-xl hover:bg-blue-100 text-blue-600 transition">⚙️</button>
-                    <button onclick="window.logout()" class="ml-4 text-slate-400 hover:text-red-500 font-bold text-sm">Salir</button>
-                </div>
-            </header>
-            <div class="grid grid-cols-1 lg:grid-cols-12 gap-10">
-                <div class="lg:col-span-8 space-y-8">
-                    <div class="bg-white p-10 rounded-[3rem] shadow-sm border border-slate-200">
-                        <div class="flex items-center justify-between mb-8">
-                            <div><h2 class="text-2xl font-black text-slate-800">Clases del Día</h2><p class="text-slate-400 text-xs font-bold uppercase tracking-widest mt-1"><span id="day-of-week-label"></span> • <span id="day-current-display"></span></p></div>
-                            <div class="flex gap-2">
-                                <button onclick="window.changeDay(-1)" class="w-10 h-10 rounded-xl bg-slate-100 hover:bg-slate-200 font-bold text-slate-600"><</button>
-                                <button onclick="window.goToToday()" class="px-4 h-10 rounded-xl bg-blue-100 hover:bg-blue-200 font-bold text-blue-600 text-xs uppercase">Hoy</button>
-                                <button onclick="window.changeDay(1)" class="w-10 h-10 rounded-xl bg-slate-100 hover:bg-slate-200 font-bold text-slate-600">></button>
-                            </div>
-                        </div>
-                        <div id="daily-classes-list" class="space-y-6"></div>
-                    </div>
-                    
-                    <div class="bg-blue-50 p-8 rounded-[3rem] border border-blue-100">
-                        <h3 class="font-black text-lg text-blue-800 mb-4">Mis Asignaciones</h3>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div><p class="text-[10px] uppercase font-black text-blue-400 mb-2 tracking-widest">Materias</p><div id="my-subjects-list" class="flex flex-wrap gap-2 text-sm text-slate-600"></div></div>
-                            <div><p class="text-[10px] uppercase font-black text-blue-400 mb-2 tracking-widest">Cursos</p><div id="my-courses-list" class="flex flex-wrap gap-2 text-sm text-slate-600"></div></div>
-                        </div>
-                    </div>
-                </div>
-                <div class="lg:col-span-4 space-y-6">
-                    <button id="btn-open-admin" onclick="window.showAdminPanel()" class="hidden w-full bg-slate-900 text-white p-8 rounded-[3rem] text-left hover:scale-[1.02] transition-all relative overflow-hidden group">
-                        <div class="relative z-10"><div class="text-xs font-black text-white/40 uppercase mb-2">Administración</div><div class="text-xl font-bold">Configuración Global</div><p class="text-white/60 text-xs mt-2">Usuarios, Horarios...</p></div>
-                    </button>
-                    <div class="bg-white p-8 rounded-[3rem] shadow-sm border border-slate-200">
-                        <div class="flex justify-between items-center mb-6"><h3 class="font-black text-lg text-slate-800" id="calendar-month-year"></h3><div class="flex gap-2 text-xs"><button onclick="window.changeCalendarMonth(-1)" class="bg-slate-100 px-3 py-1 rounded-lg">Ant</button><button onclick="window.changeCalendarMonth(1)" class="bg-slate-100 px-3 py-1 rounded-lg">Sig</button></div></div>
-                        <div class="mini-calendar-grid mb-4"><div class="mini-header">D</div><div class="mini-header">L</div><div class="mini-header">M</div><div class="mini-header">X</div><div class="mini-header">J</div><div class="mini-header">V</div><div class="mini-header">S</div></div>
-                        <div id="mini-calendar-days" class="mini-calendar-grid"></div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div id="admin-view" class="hidden space-y-8">
-            <div class="flex flex-col sm:flex-row justify-between items-end gap-4">
-                <button id="btn-back-dashboard" onclick="window.closeAdminPanel()" class="font-black text-xs text-slate-400 uppercase tracking-widest hover:text-blue-600 flex items-center gap-2 border border-slate-200 bg-white px-4 py-2 rounded-lg">Volver</button>
-                <div class="flex space-x-2 border-b border-slate-200 w-full sm:w-auto overflow-x-auto text-xs font-bold uppercase tracking-wide">
-                    <button onclick="window.switchTab('users')" id="tab-users" class="tab-btn active px-4 py-2 text-sm uppercase tracking-widest">Usuarios</button>
-                    <button onclick="window.switchTab('catalogs')" id="tab-catalogs" class="tab-btn px-4 py-2 text-sm uppercase tracking-widest">Académico</button>
-                    <button onclick="window.switchTab('courses')" id="tab-courses" class="tab-btn px-4 py-2 text-sm uppercase tracking-widest">Cursos</button>
-                    <button onclick="window.switchTab('schedules')" id="tab-schedules" class="tab-btn px-4 py-2 text-sm uppercase tracking-widest">Horarios</button>
-                    <button onclick="window.switchTab('leccionario')" id="tab-leccionario" class="tab-btn px-4 py-2 text-sm uppercase tracking-widest text-blue-600">Leccionario</button>
-                    <button onclick="window.switchTab('reports')" id="tab-reports" class="tab-btn px-4 py-2 text-sm uppercase tracking-widest text-red-500">Informes</button>
+                    <h1 class="font-black text-slate-800 leading-tight">Panel Académico</h1>
+                    <p class="text-xs text-slate-500 font-medium" id="user-role-label">Cargando...</p>
                 </div>
             </div>
             
-            <div id="content-users" class="space-y-6">
+            <div class="flex items-center gap-4">
+                <div class="hidden md:flex flex-col text-right mr-2">
+                    <span id="user-name-display" class="text-sm font-bold text-slate-700">Usuario</span>
+                    <span id="user-email-display" class="text-[10px] text-slate-400">correo@ejemplo.com</span>
+                </div>
+                
+                <!-- Botones de Acción -->
+                <button id="btn-admin-panel" onclick="showSection('users')" class="hidden bg-slate-100 text-slate-600 hover:bg-slate-200 px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2">
+                    <i class="fa-solid fa-users-gear"></i> Gestión Usuarios
+                </button>
+                
+                <button onclick="handleLogout()" class="bg-red-50 text-red-500 hover:bg-red-100 px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2">
+                    <i class="fa-solid fa-right-from-bracket"></i> Salir
+                </button>
+            </div>
+        </nav>
+
+        <!-- Contenido Principal -->
+        <main class="p-6 max-w-7xl mx-auto">
+            
+            <!-- SECCIÓN: GESTIÓN DE USUARIOS (Solo Admin) -->
+            <div id="section-users" class="hidden space-y-6">
                 <div class="flex justify-between items-center">
-                    <h3 class="font-bold text-slate-700">Personal</h3>
+                    <h2 class="text-2xl font-black text-slate-800">Gestión de Usuarios</h2>
                     <div class="flex gap-2">
-                        <button onclick="window.manualLoadUsers()" class="bg-white border border-slate-200 text-slate-600 px-4 py-3 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-slate-50 transition-all shadow-sm">🔄 Recargar</button>
-                        <button onclick="window.openAddUserModal()" class="bg-blue-600 text-white px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-blue-700 shadow-lg shadow-blue-200 flex items-center gap-2"><span>+</span> Nuevo</button>
+                        <button onclick="loadUsers()" class="bg-white border border-slate-200 text-slate-600 px-4 py-2 rounded-xl text-xs font-bold hover:bg-slate-50">
+                            <i class="fa-solid fa-rotate"></i> Recargar
+                        </button>
+                        <button onclick="openModal('modal-user-edit')" class="btn-primary px-6 py-2 rounded-xl text-xs font-bold">
+                            <i class="fa-solid fa-plus"></i> Nuevo Usuario
+                        </button>
                     </div>
                 </div>
-                <div class="bg-white rounded-[3rem] shadow-xl border border-slate-100 overflow-hidden"><div class="overflow-x-auto"><table class="w-full text-left min-w-[800px]"><thead><tr class="text-slate-400 text-[10px] uppercase font-black border-b border-slate-50"><th class="px-8 py-6">Usuario</th><th class="px-8 py-6">Datos</th><th class="px-8 py-6">Cursos</th><th class="px-8 py-6">Rol</th><th class="px-8 py-6 text-right">Acciones</th></tr></thead><tbody id="users-table-body" class="divide-y divide-slate-50"></tbody></table></div></div>
-            </div>
 
-            <div id="content-catalogs" class="hidden space-y-6">
-                <div class="flex justify-between items-center bg-white p-4 rounded-[2rem] border border-slate-100 shadow-sm">
-                    <div class="flex items-center gap-3 px-2"><h3 class="font-black text-slate-800 text-lg">Catálogos Básicos</h3></div>
-                    <button onclick="window.manualSaveCatalogs()" class="bg-slate-900 text-white px-6 py-3 rounded-xl font-black text-xs uppercase tracking-widest hover:bg-black transition-all">Guardar Todo</button>
-                </div>
-                <div id="catalog-grid-inner" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
-            </div>
-
-            <div id="content-courses" class="hidden space-y-6">
-                <div class="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100">
-                    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
-                        <div class="lg:col-span-4 space-y-6 border-r border-slate-50 pr-8">
-                            <h3 class="text-xl font-black text-slate-800">Nuevo Curso</h3>
-                            <div><label class="block text-xs font-black uppercase mb-2 text-slate-400">1. Sección</label><select id="cm-seccion" class="w-full p-4 bg-slate-50 rounded-xl outline-none text-sm font-bold border border-slate-100"></select></div>
-                            <div><label class="block text-xs font-black uppercase mb-2 text-slate-400">2. Nombre Curso</label><input type="text" id="cm-new-name" placeholder="Ej: 1ero Bachillerato" class="w-full p-4 bg-slate-50 rounded-xl outline-none text-sm font-bold border border-slate-100"></div>
-                            <div>
-                                <label class="block text-xs font-black uppercase mb-2 text-slate-400">3. Paralelos Disponibles</label>
-                                <div id="cm-parallels-checks" class="grid grid-cols-4 gap-2 bg-slate-50 p-4 rounded-xl border border-slate-100 max-h-40 overflow-y-auto"></div>
-                            </div>
-                            <button onclick="window.addCourseWithParallels()" class="w-full bg-blue-600 text-white py-4 rounded-xl font-bold text-sm uppercase hover:bg-blue-700 transition shadow-lg shadow-blue-200">Crear Curso</button>
-                        </div>
-                        <div class="lg:col-span-8">
-                            <h3 class="text-xl font-black text-slate-800 mb-6">Cursos Existentes</h3>
-                            <div id="cm-courses-list" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
-                        </div>
+                <div class="glass-panel rounded-2xl overflow-hidden shadow-sm">
+                    <div class="overflow-x-auto">
+                        <table class="w-full custom-table">
+                            <thead>
+                                <tr>
+                                    <th>Usuario</th>
+                                    <th>Firma</th>
+                                    <th>Rol</th>
+                                    <th class="text-right">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="users-table-body">
+                                <tr><td colspan="4" class="text-center p-8 text-slate-400">Cargando usuarios...</td></tr>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>
-            
-            <div id="content-schedules" class="hidden space-y-6"><div class="bg-white p-6 rounded-[2.5rem] shadow-sm border border-slate-100 flex flex-wrap gap-4 items-end justify-between"><div class="flex gap-4 flex-wrap"><div><label class="block text-xs font-black text-slate-400 mb-2 uppercase">Sección</label><select id="sch-seccion" class="p-3 bg-slate-50 rounded-xl text-sm border-none outline-none font-bold text-slate-700 min-w-[150px]"></select></div><div><label class="block text-xs font-black text-slate-400 mb-2 uppercase">Curso</label><select id="sch-curso" class="p-3 bg-slate-50 rounded-xl text-sm border-none outline-none font-bold text-slate-700 min-w-[150px]"></select></div><div><label class="block text-xs font-black text-slate-400 mb-2 uppercase">Paralelo</label><select id="sch-paralelo" class="p-3 bg-slate-50 rounded-xl text-sm border-none outline-none font-bold text-slate-700 min-w-[100px]"></select></div><button onclick="window.loadSchedule()" class="bg-slate-800 text-white px-6 py-3 rounded-xl font-black text-xs uppercase hover:bg-black transition-all h-[44px] self-end">Cargar</button></div><div class="flex gap-2"><button onclick="window.openCopySchedule()" class="bg-slate-100 text-slate-600 px-6 py-3 rounded-xl font-black text-xs uppercase hover:bg-slate-200 transition-all border border-slate-200 h-[44px]">Copiar</button><button onclick="window.openTimeConfig()" class="bg-blue-50 text-blue-600 px-6 py-3 rounded-xl font-black text-xs uppercase hover:bg-blue-100 transition-all border border-blue-100 h-[44px]">Configurar</button><button onclick="window.saveCurrentSchedule()" class="bg-green-600 text-white px-6 py-3 rounded-xl font-black text-xs uppercase hover:bg-green-700 transition-all h-[44px] shadow-lg shadow-green-100">Guardar</button></div></div><div id="schedule-container" class="bg-white rounded-[3rem] shadow-xl border border-slate-100 p-8 overflow-x-auto"></div></div>
-            
-            <div id="content-leccionario" class="hidden space-y-6"><div class="bg-white p-6 rounded-[2.5rem] shadow-sm border border-slate-100 flex flex-wrap gap-4 items-end justify-between"><div class="flex gap-4 flex-wrap"><div><label class="block text-xs font-black text-slate-400 mb-2 uppercase">Sección</label><select id="lec-seccion" class="p-3 bg-slate-50 rounded-xl text-sm border-none outline-none font-bold text-slate-700 min-w-[150px]"></select></div><div><label class="block text-xs font-black text-slate-400 mb-2 uppercase">Curso</label><select id="lec-curso" class="p-3 bg-slate-50 rounded-xl text-sm border-none outline-none font-bold text-slate-700 min-w-[150px]"></select></div><div><label class="block text-xs font-black text-slate-400 mb-2 uppercase">Paralelo</label><select id="lec-paralelo" class="p-3 bg-slate-50 rounded-xl text-sm border-none outline-none font-bold text-slate-700 min-w-[100px]"></select></div><div><label class="block text-xs font-black text-slate-400 mb-2 uppercase">Fecha</label><input type="date" id="lec-date" class="p-3 bg-slate-50 rounded-xl text-sm border-none outline-none font-bold text-slate-700"></div><button onclick="window.generateLeccionario()" class="bg-slate-900 text-white px-6 py-3 rounded-xl font-black text-xs uppercase hover:bg-black transition-all h-[44px] self-end">Generar</button></div><button onclick="window.printLeccionarioPDF()" class="bg-blue-600 text-white px-6 py-3 rounded-xl font-black text-xs uppercase hover:bg-blue-700 transition-all h-[44px]">Imprimir</button></div><div class="grid grid-cols-1 md:grid-cols-3 gap-4 border-t border-slate-50 pt-4 mb-4"><div><label class="block text-xs font-black text-slate-400 mb-2 uppercase">Institución</label><input type="text" id="lec-input-inst" value="Unidad Educativa Ecomundo" class="w-full p-3 bg-slate-50 rounded-xl text-sm font-bold"></div><div><label class="block text-xs font-black text-slate-400 mb-2 uppercase">Periodo</label><input type="text" id="lec-input-period" value="2025 - 2026" class="w-full p-3 bg-slate-50 rounded-xl text-sm font-bold"></div><div><label class="block text-xs font-black text-slate-400 mb-2 uppercase">ISO</label><input type="text" id="lec-input-iso" value="ISO-9001" class="w-full p-3 bg-slate-50 rounded-xl text-sm font-bold text-right"></div></div><div id="leccionario-print-area" class="bg-white p-10 rounded-[2rem] shadow-xl border border-slate-100 min-h-[600px]"><div class="flex justify-between items-start border-b-2 border-slate-800 pb-6 mb-6 relative"><div class="absolute top-0 right-0 text-[10px] font-mono text-slate-400" id="lec-display-iso"></div><div class="w-32 h-32 flex items-center justify-center"><img src="logo.png" alt="Logo" class="object-contain max-h-full" onerror="this.src='https://placehold.co/150x150?text=LOGO'"></div><div class="text-right pt-6"><h2 class="text-lg font-bold text-slate-600 uppercase" id="lec-display-inst"></h2><h1 class="text-3xl font-black text-slate-900 uppercase">Leccionario</h1><p class="text-slate-500 font-bold mt-2" id="lec-header-info">...</p><p class="text-sm text-slate-400"><span id="lec-display-period"></span> | <span id="lec-header-date"></span></p></div></div><table class="w-full text-left border-collapse report-table"><thead><tr><th class="w-20">Hora</th><th class="w-40">Materia</th><th>Profesor</th><th>Tema</th><th>Actividad</th><th class="w-24 text-center">Firma</th></tr></thead><tbody id="leccionario-body"></tbody></table></div></div>
-            
-            <div id="content-reports" class="hidden space-y-6"><div class="bg-white p-6 rounded-[2.5rem] shadow-sm border border-slate-100 flex flex-wrap gap-4 justify-between"><div><label class="block text-xs font-black text-slate-400 mb-2 uppercase">Fecha</label><input type="date" id="report-date" class="p-3 bg-slate-50 rounded-xl font-bold"></div><div class="flex gap-2"><select id="report-filter-teacher" class="p-3 bg-slate-50 rounded-xl"><option value="all">Todos</option></select><select id="report-filter-course" class="p-3 bg-slate-50 rounded-xl"><option value="all">Todos</option></select><select id="report-filter-subject" class="p-3 bg-slate-50 rounded-xl"><option value="all">Todas</option></select></div><button onclick="window.generateReport()" class="bg-slate-900 text-white px-6 py-3 rounded-xl font-bold">Generar</button></div><div id="report-container" class="bg-white rounded-[3rem] shadow-xl p-8"><h2 class="text-2xl font-black text-center mb-4" id="report-display-title">Reporte</h2><table class="w-full text-left report-table"><thead><tr><th>Fecha</th><th>Curso</th><th>Hora</th><th>Materia / Docente</th><th>Estado</th></tr></thead><tbody id="report-table-body"></tbody></table></div></div>
-        </div>
+
+            <!-- Dashboard Placeholder (Para otras secciones) -->
+            <div id="section-dashboard" class="hidden">
+                <div class="text-center py-20">
+                    <h2 class="text-3xl font-black text-slate-300">Bienvenido al Dashboard</h2>
+                    <p class="text-slate-400 mt-2">Selecciona una opción del menú (si eres admin) o revisa tu horario.</p>
+                </div>
+            </div>
+
+        </main>
     </div>
 
-    <!-- Modals -->
-    <div id="modal-user" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[110] hidden items-center justify-center p-4">
-        <div class="bg-white w-full max-w-3xl rounded-[3rem] p-10 modal-animate max-h-[95vh] overflow-y-auto">
-            <div class="flex justify-between mb-8"><h3 class="text-3xl font-black text-slate-800">Usuario</h3><button onclick="window.closeModal('modal-user')" class="text-2xl">✕</button></div>
-            <form id="user-form" class="space-y-6">
-                <input type="hidden" id="form-user-id">
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                    <div><label class="block text-xs font-black text-slate-400 mb-2 uppercase">Nombre</label><input type="text" id="form-name" required class="w-full p-4 rounded-2xl bg-slate-50 border-none outline-none"></div>
-                    <div><label class="block text-xs font-black text-slate-400 mb-2 uppercase">Correo</label><input type="email" id="form-email" required class="w-full p-4 rounded-2xl bg-slate-50 border-none outline-none"></div>
-                </div>
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                    <div><label class="block text-xs font-black text-slate-400 mb-2 uppercase">Contraseña</label><input type="text" id="form-pass" class="w-full p-4 rounded-2xl bg-slate-100 border-none outline-none"></div>
-                    <div><label class="block text-xs font-black text-slate-400 mb-2 uppercase">Firma</label><input type="file" id="form-signature" accept="image/*" class="w-full p-3 rounded-2xl bg-slate-50 border-none text-xs file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"></div>
-                </div>
-                <div class="mt-4 p-4 bg-slate-50 rounded-2xl border border-slate-100 flex items-center justify-between">
-                    <label class="block text-xs font-black text-slate-800 uppercase">¿Es Super Admin?</label>
-                    <input type="checkbox" id="form-is-super-admin" class="w-6 h-6">
-                </div>
-                <div class="mb-4 mt-4 bg-yellow-50 p-4 rounded-2xl border border-yellow-100"><label class="block text-[10px] font-black text-yellow-600 mb-1 uppercase">ID Vinculación (UID)</label><input type="text" id="form-uid" class="w-full p-2 bg-transparent text-sm font-mono outline-none"></div>
-                <div class="pt-6 border-t border-slate-100">
-                    <h4 class="font-black text-slate-800 mb-4 text-lg">Carga Académica</h4>
-                    <div class="flex flex-wrap gap-2 mb-4 bg-slate-50 p-4 rounded-xl border border-slate-200 items-end">
-                         <div><label class="text-[10px] font-bold text-slate-400">Sección</label><select id="assign-seccion" class="p-2 rounded-lg text-xs w-32"></select></div>
-                         <div><label class="text-[10px] font-bold text-slate-400">Curso</label><select id="assign-curso" class="p-2 rounded-lg text-xs w-32"></select></div>
-                         <div><label class="text-[10px] font-bold text-slate-400">Paralelo</label><select id="assign-paralelo" class="p-2 rounded-lg text-xs w-20"></select></div>
-                         <button type="button" onclick="window.addAssignment()" class="bg-blue-600 text-white p-2 rounded-lg text-xs font-bold hover:bg-blue-700">Agregar +</button>
+    <!-- MODAL: EDICIÓN DE USUARIO -->
+    <div id="modal-user-edit" class="fixed inset-0 bg-slate-900/80 z-[100] hidden items-center justify-center p-4">
+        <div class="bg-white w-full max-w-2xl rounded-3xl p-8 modal-animate max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-2xl font-black text-slate-800">Datos de Usuario</h3>
+                <button onclick="closeModal('modal-user-edit')" class="text-slate-400 hover:text-red-500 text-xl"><i class="fa-solid fa-times"></i></button>
+            </div>
+            
+            <form id="form-user-edit" class="space-y-6">
+                <input type="hidden" id="edit-uid">
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="space-y-1">
+                        <label class="text-xs font-bold text-slate-500 uppercase">Nombre</label>
+                        <input type="text" id="edit-name" required class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none text-sm">
                     </div>
-                    <div id="assignments-list" class="space-y-2 max-h-40 overflow-y-auto mb-6 p-2 bg-slate-50 rounded-xl"></div>
-                    <div class="grid grid-cols-2 gap-4">
-                        <div><label class="block text-xs font-black text-slate-400 mb-2 uppercase">Materias que dicta</label><div id="container-materias" class="check-grid"></div></div>
-                        <div><label class="block text-xs font-black text-slate-400 mb-2 uppercase">Áreas</label><div id="container-areas" class="check-grid"></div></div>
+                    <div class="space-y-1">
+                        <label class="text-xs font-bold text-slate-500 uppercase">Correo</label>
+                        <input type="email" id="edit-email" required class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none text-sm">
                     </div>
                 </div>
-                <div class="flex items-center justify-between pt-4 border-t border-slate-100 mt-6">
-                    <div class="flex gap-2">
-                        <label class="text-xs font-bold text-blue-600 cursor-pointer bg-blue-50 px-3 py-2 rounded-lg">
-                            Subir Firma
-                            <input type="file" id="form-signature" accept="image/*" class="hidden">
-                        </label>
-                        <button type="submit" class="bg-slate-900 text-white px-6 py-2 rounded-xl text-xs font-black uppercase hover:bg-black">Guardar</button>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="space-y-1">
+                        <label class="text-xs font-bold text-slate-500 uppercase">Rol</label>
+                        <select id="edit-rol" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none text-sm font-bold">
+                            <option value="Docente">Docente</option>
+                            <option value="Admin">Administrador</option>
+                        </select>
                     </div>
+                    <div class="space-y-1">
+                        <label class="text-xs font-bold text-slate-500 uppercase">Nueva Firma (Opcional)</label>
+                        <input type="file" id="edit-signature" accept="image/*" class="w-full p-2 bg-slate-50 border border-slate-200 rounded-xl text-xs">
+                    </div>
+                </div>
+                
+                <div class="bg-yellow-50 p-4 rounded-xl border border-yellow-100 flex items-center gap-3">
+                    <input type="checkbox" id="edit-is-super" class="w-5 h-5 accent-yellow-600 rounded">
+                    <div>
+                        <p class="text-xs font-bold text-yellow-800 uppercase">Super Administrador</p>
+                        <p class="text-[10px] text-yellow-600">Acceso total al sistema y configuración.</p>
+                    </div>
+                </div>
+
+                <div class="flex justify-end pt-4 border-t border-slate-100">
+                    <button type="button" onclick="closeModal('modal-user-edit')" class="px-6 py-2 text-sm font-bold text-slate-500 hover:bg-slate-50 rounded-xl mr-2">Cancelar</button>
+                    <button type="submit" class="bg-blue-600 text-white px-8 py-2 rounded-xl text-sm font-black uppercase hover:bg-blue-700 shadow-lg shadow-blue-200">Guardar Cambios</button>
                 </div>
             </form>
         </div>
     </div>
-    <!-- Other modals (Catalog, Time, Assign, Copy, Log) included similarly in logic -->
-    <div id="modal-catalog" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[120] hidden items-center justify-center p-4"><div class="bg-white w-full max-w-md rounded-[2.5rem] p-8 modal-animate"><h3 id="catalog-title" class="text-2xl font-black mb-6">Administrar</h3><div id="catalog-extra-input" class="hidden mb-4"><label id="catalog-extra-label" class="block text-xs font-black mb-2 uppercase">Vinculación</label><select id="catalog-extra-select" class="w-full p-4 rounded-xl bg-slate-50 outline-none text-sm"></select></div><div class="flex gap-2 mb-6"><input type="text" id="catalog-input" class="flex-1 p-4 rounded-xl bg-slate-50 outline-none"><button onclick="window.addCatalogItem()" class="bg-blue-600 text-white px-6 rounded-xl font-bold">+</button></div><div id="catalog-list" class="max-h-60 overflow-y-auto space-y-2"></div><button onclick="window.closeModal('modal-catalog')" class="mt-6 w-full text-slate-400 font-bold uppercase text-xs">Cerrar</button></div></div>
-    <div id="modal-time-slots" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[130] hidden items-center justify-center p-4"><div class="bg-white w-full max-w-lg rounded-[2.5rem] p-8 modal-animate"><div class="flex justify-between items-center mb-6"><h3 class="text-2xl font-black">Horas</h3><button onclick="window.closeModal('modal-time-slots')">✕</button></div><div class="flex gap-2 mb-4"><input type="time" id="ts-start" class="p-2 rounded-lg border text-sm"><input type="time" id="ts-end" class="p-2 rounded-lg border text-sm"><button onclick="window.addTimeSlot()" class="bg-slate-800 text-white rounded-lg px-4 text-xs font-bold">Agregar</button></div><div id="slots-list" class="space-y-2"></div></div></div>
-    <div id="modal-assign-subject" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[140] hidden items-center justify-center p-4"><div class="bg-white w-full max-w-sm rounded-[2.5rem] p-8 modal-animate"><h3 class="text-xl font-black mb-4">Asignar</h3><div id="subject-selector-list" class="grid grid-cols-2 gap-2 max-h-64 overflow-y-auto"></div><button onclick="window.closeModal('modal-assign-subject')" class="mt-6 w-full bg-slate-100 text-slate-500 py-3 rounded-xl font-bold text-xs">Cancelar</button></div></div>
-    <div id="modal-copy-schedule" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[150] hidden items-center justify-center p-4"><div class="bg-white w-full max-w-md rounded-[2.5rem] p-8 modal-animate"><h3 class="text-xl font-black mb-4">Copiar</h3><div class="space-y-3 mb-6"><div><label class="block text-[10px] font-black uppercase text-slate-400">Sección</label><select id="copy-seccion" class="w-full p-3 bg-slate-50 rounded-xl text-sm outline-none"></select></div><div><label class="block text-[10px] font-black uppercase text-slate-400">Curso</label><select id="copy-curso" class="w-full p-3 bg-slate-50 rounded-xl text-sm outline-none"></select></div><div><label class="block text-[10px] font-black uppercase text-slate-400">Paralelo</label><select id="copy-paralelo" class="w-full p-3 bg-slate-50 rounded-xl text-sm outline-none"></select></div></div><button onclick="window.confirmCopySchedule()" class="w-full bg-blue-600 text-white py-3 rounded-xl font-bold text-sm">Copiar</button><button onclick="window.closeModal('modal-copy-schedule')" class="mt-3 w-full text-slate-400 font-bold uppercase text-xs">Cancelar</button></div></div>
-    <div id="modal-class-log" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[160] hidden items-center justify-center p-4"><div class="bg-white w-full max-w-lg rounded-[2.5rem] p-10 modal-animate"><div class="flex justify-between mb-6"><div><h3 class="text-2xl font-black">Registro</h3><p id="log-class-info" class="text-xs font-bold text-blue-600"></p></div><button onclick="window.closeModal('modal-class-log')">✕</button></div><form id="log-form" class="space-y-4"><input type="hidden" id="log-id"><div><label class="block text-xs font-black text-slate-400 uppercase">Tema</label><input type="text" id="log-topic" required class="w-full p-4 rounded-xl bg-slate-50"></div><div><label class="block text-xs font-black text-slate-400 uppercase">Actividad</label><textarea id="log-content" required class="w-full p-4 rounded-xl bg-slate-50 h-32 resize-none"></textarea></div><button type="submit" class="w-full bg-blue-600 text-white py-4 rounded-xl font-black uppercase">Guardar y Firmar</button></form></div></div>
-    <!-- MODAL COURSE MANAGER -->
-    <div id="modal-course-manager" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[130] hidden items-center justify-center p-4">
-        <div class="bg-white w-full max-w-lg rounded-[2.5rem] p-8 modal-animate max-h-[85vh] overflow-y-auto">
-            <h3 class="text-2xl font-black mb-6">Configurar Cursos</h3>
-            <div class="space-y-4">
-                <div><label class="block text-xs font-black uppercase mb-1 text-slate-400">Seleccionar Sección</label><select id="cm-seccion" class="w-full p-3 bg-slate-50 rounded-xl outline-none text-sm font-bold border border-slate-100"></select></div>
-                <div class="border-t border-slate-100 pt-4"><h4 class="font-bold text-slate-700 text-sm mb-3">Agregar Nuevo Curso</h4><input type="text" id="cm-new-name" placeholder="Ej: 1ero Bachillerato" class="w-full p-3 bg-slate-50 rounded-xl outline-none mb-3"><p class="text-[10px] uppercase font-black text-slate-400 mb-2">Paralelos para este curso</p><div id="cm-parallels-checks" class="grid grid-cols-4 gap-2 mb-4"></div><button onclick="window.addCourseWithParallels()" class="w-full bg-blue-600 text-white py-3 rounded-xl font-bold text-xs uppercase">Agregar Curso</button></div>
-                <div class="border-t border-slate-100 pt-4"><h4 class="font-bold text-slate-700 text-sm mb-2">Cursos Existentes</h4><div id="cm-courses-list" class="space-y-2"></div></div>
-            </div>
-            <button onclick="window.closeModal('modal-course-manager')" class="mt-6 w-full text-slate-400 font-bold uppercase text-xs">Cerrar</button>
-        </div>
-    </div>
 
+    <!-- FIREBASE MODULE -->
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-analytics.js";
-        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, getDoc, setDoc, collection, getDocs, updateDoc, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, setDoc, collection, getDocs, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        const firebaseConfig = { apiKey: "AIzaSyB1eXkCiF5VZcTin0W5hBQv2X2PEE2bAJc", authDomain: "leccionario-virtual.firebaseapp.com", projectId: "leccionario-virtual", storageBucket: "leccionario-virtual.firebasestorage.app", messagingSenderId: "731785058376", appId: "1:731785058376:web:161550bdc3941e1a64207d", measurementId: "G-ZR0SXQDNY9" };
+        // --- CONFIGURACIÓN ---
+        const firebaseConfig = { 
+            apiKey: "AIzaSyB1eXkCiF5VZcTin0W5hBQv2X2PEE2bAJc", 
+            authDomain: "leccionario-virtual.firebaseapp.com", 
+            projectId: "leccionario-virtual", 
+            storageBucket: "leccionario-virtual.firebasestorage.app", 
+            messagingSenderId: "731785058376", 
+            appId: "1:731785058376:web:161550bdc3941e1a64207d" 
+        };
+
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
-        const appId = 'leccionario-v1';
-        // Using Root collections (no artifacts prefix)
-        const getCollectionRef = (name) => collection(db, name);
-        const getDocRef = (col, id) => doc(db, col, id);
 
-        const dom = {
-            loader: document.getElementById('loader'), auth: document.getElementById('auth-container'), dashboard: document.getElementById('user-logged-in'),
-            userTable: document.getElementById('users-table-body')
-        };
-        setTimeout(() => { if(dom.loader) dom.loader.style.display = 'none'; }, 2000);
-
-        let state = { catalogs: { areas: [], materias: [], cursos: [], paralelos: [], secciones: [], roles: [] }, users: [], currentUser: null, currentSchedule: null, currentCatalog: null, viewDate: new Date(), calendarDate: new Date(), isRegisterMode: false, editingUserAssignments: [] };
-
-        // Test connection
-        (async () => {
-             try {
-                 await getDoc(getDocRef("config", "catalogs"));
-                 const el = document.getElementById('firebase-status');
-                 if(el) { el.innerHTML = "<span class='text-green-500'>●</span> Conectado"; el.classList.replace('text-slate-400', 'text-green-700'); }
-             } catch(e) {
-                 const el = document.getElementById('firebase-status');
-                 if(el) { el.innerHTML = "<span class='text-red-500'>●</span> Desconectado"; el.classList.replace('text-slate-400', 'text-red-700'); }
-             }
-        })();
-
-        // AUTH
+        // --- ESTADO ---
+        let currentUser = null;
+        
+        // --- AUTH LOGIC ---
         onAuthStateChanged(auth, async (user) => {
-            if(user) {
-                // Robust user fetching
+            const loader = document.getElementById('loader');
+            const statusText = document.getElementById('db-status-text');
+            const statusDot = document.getElementById('db-status-dot');
+
+            if (user) {
+                // Fetch User Data from DB (Root Collection)
                 try {
-                    let uData = (await getDoc(getDocRef("users", user.uid))).data();
-                    if(!uData) {
-                        const emailDoc = await getDoc(getDocRef("users", user.email));
-                        if (emailDoc.exists()) { uData = emailDoc.data(); await setDoc(getDocRef("users", user.uid), uData); }
-                        else { 
-                            // Default Fallback
-                            uData = { email: user.email, rol: "Docente", materias: [], areas: [], asignaciones: [] }; 
-                            await setDoc(getDocRef("users", user.uid), uData); 
-                        }
-                    }
-                    // Fix missing array structure
-                    if(!uData.asignaciones) uData.asignaciones = [];
-                    if(!uData.materias) uData.materias = [];
+                    const userRef = doc(db, "users", user.uid);
+                    const userSnap = await getDoc(userRef);
                     
-                    loginSuccess({ uid: user.uid, email: user.email, ...uData });
-                } catch(e) {
-                     // Fallback
-                     loginSuccess({ uid: user.uid, email: user.email, rol: "Docente", materias: [], asignaciones: [] });
+                    if (userSnap.exists()) {
+                        currentUser = { uid: user.uid, ...userSnap.data() };
+                    } else {
+                        // Create basic profile if missing
+                        currentUser = { uid: user.uid, email: user.email, rol: "Docente" };
+                        await setDoc(userRef, currentUser);
+                    }
+                    
+                    initApp(currentUser);
+                    
+                    // Update connection status UI
+                    if(statusDot) {
+                        statusDot.classList.replace('bg-yellow-300', 'bg-green-500');
+                        statusDot.classList.remove('animate-pulse');
+                        statusText.textContent = "Conectado";
+                    }
+
+                } catch (error) {
+                    console.error("Error fetching user:", error);
+                    // Fallback login
+                    initApp({ uid: user.uid, email: user.email, rol: "Docente" });
                 }
             } else {
-                dom.dashboard.classList.add('hidden'); dom.auth.classList.remove('hidden');
+                showAuthView();
             }
+            if(loader) loader.style.opacity = 0;
+            setTimeout(() => { if(loader) loader.style.display = 'none'; }, 500);
         });
 
-        async function loginSuccess(user) {
-            state.currentUser = user;
-            document.getElementById('user-email-display').textContent = user.nombre || user.email;
-            document.getElementById('user-role-display').textContent = user.rol;
-            document.getElementById('avatar-circle').textContent = (user.nombre||user.email)[0].toUpperCase();
+        // --- APP LOGIC ---
+        function initApp(user) {
+            document.getElementById('auth-view').classList.add('hidden');
+            document.getElementById('app-view').classList.remove('hidden');
             
-            // Dashboard info (ASSIGNMENTS MATRIX)
-            // Render Asignaciones in Dashboard
-            const myAss = user.asignaciones || [];
-            if(myAss.length) {
-                document.getElementById('my-subjects-list').innerHTML = (user.materias||[]).map(m => typeof m === 'object' ? `<span class='data-badge'>${m.name}</span>` : `<span class='data-badge'>${m}</span>`).join('');
-                document.getElementById('my-courses-list').innerHTML = myAss.map(a => `<div class='flex gap-2 items-center'><span class='text-xs font-bold text-slate-700'>${a.seccion}</span> <span class='course-badge'>${a.curso}</span> <span class='parallel-badge'>${a.paralelo}</span></div>`).join('');
+            // Populate Header
+            document.getElementById('user-name-display').textContent = user.nombre || "Usuario";
+            document.getElementById('user-email-display').textContent = user.email;
+            document.getElementById('user-role-label').textContent = user.rol;
+            
+            // Check Admin Privileges
+            const superAdmins = ["gasencio@ecomundo.edu.ec", "ajuanazo@ecomundo.edu.ec"];
+            const isAdmin = user.isSuperAdmin || superAdmins.includes(user.email) || user.rol === 'Admin';
+            
+            if (isAdmin) {
+                document.getElementById('btn-admin-panel').classList.remove('hidden');
+                loadUsers(); // Preload users list if admin
+                showSection('users'); // Go directly to users for testing
             } else {
-                document.getElementById('my-courses-list').innerHTML = "<span class='text-slate-400'>Sin asignaciones</span>";
+                showSection('dashboard');
             }
-
-            const isAdmin = user.isSuperAdmin || (user.rol||"").toLowerCase().includes("admin") || (user.email||"").toLowerCase().includes("admin") || user.email === "gasencio@ecomundo.edu.ec" || user.email === "ajuanazo@ecomundo.edu.ec";
-            document.getElementById('btn-open-admin').classList.toggle('hidden', !isAdmin);
-            document.getElementById('btn-open-admin-header').classList.toggle('hidden', !isAdmin);
-            
-            dom.auth.classList.add('hidden'); dom.dashboard.classList.remove('hidden');
-            await loadCatalogs();
-            if(isAdmin) subscribeToUsers();
-            updateDashboardDate();
         }
 
-        // Toggle Auth (Separate Tabs)
-        window.switchAuthTab = (mode) => {
-            state.isRegisterMode = (mode === 'register');
-            document.getElementById('auth-form').classList.toggle('hidden', state.isRegisterMode);
-            document.getElementById('register-form').classList.toggle('hidden', !state.isRegisterMode);
-            document.getElementById('tab-login').className = state.isRegisterMode ? 'auth-tab' : 'auth-tab active';
-            document.getElementById('tab-register').className = state.isRegisterMode ? 'auth-tab active' : 'auth-tab';
-            document.getElementById('auth-error').classList.add('hidden');
-        };
+        function showAuthView() {
+            document.getElementById('app-view').classList.add('hidden');
+            document.getElementById('auth-view').classList.remove('hidden');
+        }
 
-        // Submit forms
-        const handleAuth = async (e, mode) => {
+        // --- USER MANAGEMENT ---
+        window.loadUsers = async () => {
+            const tbody = document.getElementById('users-table-body');
+            tbody.innerHTML = `<tr><td colspan="4" class="text-center p-8"><div class="inline-block w-6 h-6 border-2 border-blue-600 rounded-full animate-spin border-t-transparent"></div></td></tr>`;
+            
+            try {
+                const querySnapshot = await getDocs(collection(db, "users"));
+                const users = [];
+                querySnapshot.forEach((doc) => users.push({id: doc.id, ...doc.data()}));
+                
+                if (users.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="4" class="text-center p-8 text-slate-400">No hay usuarios registrados.</td></tr>`;
+                    return;
+                }
+
+                tbody.innerHTML = users.map(u => `
+                    <tr>
+                        <td>
+                            <div class="font-bold text-slate-800">${u.nombre || "Sin Nombre"}</div>
+                            <div class="text-xs text-slate-400">${u.email}</div>
+                        </td>
+                        <td>
+                            ${u.firma ? 
+                                `<img src="${u.firma}" class="sig-preview" title="Firma Cargada">` : 
+                                `<span class="text-xs text-red-400 font-bold bg-red-50 px-2 py-1 rounded">Pendiente</span>`}
+                        </td>
+                        <td><span class="role-badge role-${u.rol}">${u.rol}</span></td>
+                        <td class="text-right">
+                            <button onclick="window.editUser('${u.id}')" class="text-blue-600 hover:bg-blue-50 p-2 rounded-lg transition"><i class="fa-solid fa-pen-to-square"></i></button>
+                        </td>
+                    </tr>
+                `).join('');
+                
+                // Store users in global state for editing lookup
+                window.usersData = users;
+
+            } catch (error) {
+                console.error(error);
+                tbody.innerHTML = `<tr><td colspan="4" class="text-center p-8 text-red-500 font-bold">Error al cargar datos: ${error.message}</td></tr>`;
+            }
+        };
+        
+        window.editUser = (uid) => {
+            const user = window.usersData.find(u => u.id === uid);
+            if (!user) return;
+            
+            document.getElementById('edit-uid').value = user.id;
+            document.getElementById('edit-name').value = user.nombre || "";
+            document.getElementById('edit-email').value = user.email || "";
+            document.getElementById('edit-rol').value = user.rol || "Docente";
+            document.getElementById('edit-is-super').checked = !!user.isSuperAdmin;
+            
+            window.openModal('modal-user-edit');
+        };
+        
+        // Save User Changes
+        document.getElementById('form-user-edit').addEventListener('submit', async (e) => {
             e.preventDefault();
+            const uid = document.getElementById('edit-uid').value;
             const btn = e.submitter;
             const originalText = btn.textContent;
-            btn.textContent = "Procesando...";
+            btn.textContent = "Guardando...";
             btn.disabled = true;
 
-            const email = document.getElementById(mode === 'register' ? 'reg-email' : 'email').value.trim();
-            const pass = document.getElementById(mode === 'register' ? 'reg-pass' : 'password').value;
+            const updates = {
+                nombre: document.getElementById('edit-name').value,
+                rol: document.getElementById('edit-rol').value,
+                isSuperAdmin: document.getElementById('edit-is-super').checked
+            };
             
-            if (email === "admin" && pass === "admin") {
-                loginSuccess({ uid: "local", email: "admin", rol: "Admin", isSuperAdmin: true, materias: [], asignaciones: [] });
-                return;
+            // Handle Signature
+            const sigFile = document.getElementById('edit-signature').files[0];
+            if (sigFile) {
+                updates.firma = await toBase64(sigFile);
             }
 
             try {
-                if (mode === 'register') {
-                    const userCredential = await createUserWithEmailAndPassword(auth, email, pass);
-                    const name = document.getElementById('reg-name').value;
-                    const sigFile = document.getElementById('reg-signature').files[0];
-                    let sigBase64 = "";
-                    if(sigFile) sigBase64 = await toBase64(sigFile);
-                    
-                    // Create user profile
-                    await setDoc(getDocRef("users", userCredential.user.uid), {
-                        email, nombre: name, rol: "Docente", firma: sigBase64, materias: [], asignaciones: [], areas: []
-                    });
+                if (uid) {
+                    await updateDoc(doc(db, "users", uid), updates);
                 } else {
-                    await signInWithEmailAndPassword(auth, email, pass);
+                    // New user logic (requires Auth API usually, simplified here to DB only for demo)
+                    // In real app, create user in Auth first.
                 }
-            } catch(e) { 
-                let msg = e.code;
-                if(e.code === 'auth/invalid-credential') msg = "Credenciales incorrectas.";
-                if(e.code === 'auth/user-not-found') msg = "Usuario no encontrado.";
-                
-                const err = document.getElementById('auth-error'); 
-                document.getElementById('login-error').textContent = msg; 
-                document.getElementById('login-error').classList.remove('hidden');
+                await window.loadUsers();
+                window.closeModal('modal-user-edit');
+            } catch(error) {
+                alert("Error guardando usuario: " + error.message);
+            } finally {
                 btn.textContent = originalText;
                 btn.disabled = false;
             }
+        });
+
+
+        // --- UI HELPERS ---
+        window.switchAuth = (mode) => {
+            document.getElementById('login-form').classList.toggle('hidden', mode !== 'login');
+            document.getElementById('register-form').classList.toggle('hidden', mode !== 'register');
+            document.getElementById('tab-login').className = mode === 'login' ? 'flex-1 pb-3 text-sm font-bold text-blue-600 border-b-2 border-blue-600' : 'flex-1 pb-3 text-sm font-bold text-slate-400 hover:text-slate-600';
+            document.getElementById('tab-register').className = mode === 'register' ? 'flex-1 pb-3 text-sm font-bold text-blue-600 border-b-2 border-blue-600' : 'flex-1 pb-3 text-sm font-bold text-slate-400 hover:text-slate-600';
+            document.getElementById('auth-message').classList.add('hidden');
         };
 
-        document.getElementById('auth-form').onsubmit = (e) => handleAuth(e, 'login');
-        document.getElementById('register-form').onsubmit = (e) => handleAuth(e, 'register');
-
-        // DATA
-        async function loadCatalogs() {
-            const snap = await getDoc(getDocRef("config", "catalogs"));
-            if(snap.exists()) {
-                state.catalogs = snap.data();
-                for(let k in state.catalogs) if(!Array.isArray(state.catalogs[k])) state.catalogs[k]=[];
-            } else {
-                 // Empty start
-                 state.catalogs = { areas: [], materias: [], cursos: [], paralelos: [], secciones: [], roles: [] };
-                 await setDoc(getDocRef("config", "catalogs"), state.catalogs);
-            }
-            renderCatalogs(); populateScheduleSelectors();
-            updateCMList();
-        }
-        window.manualSaveCatalogs = async () => { await setDoc(getDocRef("config", "catalogs"), state.catalogs); alert("Guardado"); };
-
-        function subscribeToUsers() {
-            onSnapshot(getCollectionRef("users"), (snap) => {
-                state.users = [];
-                snap.forEach(d => state.users.push({ id: d.id, ...d.data() }));
-                renderUserTable(); populateReportFilters();
-            });
-        }
-        
-        function renderUserTable() {
-            dom.userTable.innerHTML = state.users.map(u => `
-                <tr class="border-b border-slate-50 hover:bg-slate-50">
-                    <td class="px-6 py-4"><div class="font-bold text-sm">${u.nombre||u.email}</div><div class="text-[10px] text-slate-400">${u.email}</div><div class="text-[10px] text-blue-400">${u.firma ? '✅ Firma' : '❌ Sin Firma'}</div></td>
-                    <td class="px-6 py-4 text-xs">
-                        ${(u.asignaciones||[]).map(a => `<div class='mb-1'><span class='font-bold'>${a.curso}</span> ${a.paralelo} <span class='text-slate-400'>(${a.seccion})</span></div>`).join('')}
-                    </td>
-                    <td class="px-8 py-4 text-xs">${(u.materias||[]).map(m => typeof m==='object'?m.name:m).join(', ')}</td>
-                    <td class="px-8 py-4"><span class="role-badge role-${u.rol}">${u.rol}</span></td>
-                    <td class="px-8 py-4 text-right"><button onclick="window.editUser('${u.id}')" class="text-blue-600 font-bold text-xs uppercase">Editar</button> <button onclick="window.deleteUser('${u.id}')" class="text-red-400 font-bold text-xs uppercase ml-2">Borrar</button></td>
-                </tr>
-            `).join('');
-        }
-
-        // GLOBALS
-        window.logout = () => { signOut(auth).then(() => window.location.reload()); };
-        window.closeAdminPanel = () => { document.getElementById('admin-view').classList.add('hidden'); document.getElementById('main-dashboard-view').classList.remove('hidden'); };
-        
-        window.switchTab = (tab) => {
-            ['users','catalogs','schedules','leccionario','reports','courses'].forEach(t => document.getElementById('content-'+t).classList.add('hidden'));
-            document.getElementById('content-'+tab).classList.remove('hidden');
-            if(tab==='leccionario') populateScheduleSelectors();
-            if(tab==='schedules') populateScheduleSelectors();
-            if(tab==='courses') {
-                populateSelect('cm-seccion', state.catalogs.secciones);
-                updateCMList();
-            }
+        window.showSection = (sectionId) => {
+            document.querySelectorAll('main > div').forEach(el => el.classList.add('hidden'));
+            const target = document.getElementById('section-'+sectionId);
+            if(target) target.classList.remove('hidden');
         };
 
         window.openModal = (id) => document.getElementById(id).classList.replace('hidden', 'flex');
         window.closeModal = (id) => document.getElementById(id).classList.replace('flex', 'hidden');
-        
-        window.showAdminPanel = () => { document.getElementById('main-dashboard-view').classList.add('hidden'); document.getElementById('admin-view').classList.remove('hidden'); window.switchTab('users'); };
-        window.editUser = (id) => {
-            const u = state.users.find(x => x.id === id);
-            document.getElementById('form-user-id').value = u.id;
-            document.getElementById('form-email').value = u.email;
-            document.getElementById('form-name').value = u.nombre || "";
-            document.getElementById('form-is-super-admin').checked = !!u.isSuperAdmin;
-            
-            const sec = u.seccion;
-            populateSelect('sel-seccion', state.catalogs.secciones);
-            document.getElementById('sel-seccion').value = sec;
-            
-            renderUserFormOptions(); 
-            
-            setChecked('chk-area', u.areas || []);
-            const matNames = (u.materias||[]).map(m => typeof m === 'object' ? m.name : m);
-            setChecked('chk-materia', matNames);
 
-            window.openModal('modal-user');
+        window.handleLogout = async () => {
+            await signOut(auth);
+            window.location.reload();
         };
-        
-        window.openAddUserModal = () => { 
-            state.editingUserAssignments = [];
-            renderUserAssignments();
-            renderUserFormOptions(); 
-            document.getElementById('user-form').reset(); 
-            document.getElementById('form-user-id').value=""; 
-            window.openModal('modal-user'); 
-        };
-        window.deleteUser = async (id) => { if(confirm("Borrar?")) await deleteDoc(getDocRef("users", id)); };
 
-        // Save User Logic
-        const toBase64 = file => new Promise((res, rej) => { const r = new FileReader(); r.readAsDataURL(file); r.onload = () => res(r.result); r.onerror = rej; });
-        document.getElementById('user-form').onsubmit = async (e) => {
+        // --- FORM HANDLERS ---
+        
+        // LOGIN
+        document.getElementById('login-form').addEventListener('submit', async (e) => {
             e.preventDefault();
-            const id = document.getElementById('form-user-id').value;
-            const email = document.getElementById('form-email').value;
-            const uid = document.getElementById('form-uid').value.trim() || email;
-            const sec = document.getElementById('sel-seccion').value;
+            const email = document.getElementById('login-email').value;
+            const pass = document.getElementById('login-pass').value;
+            const msg = document.getElementById('auth-message');
             
-            const rawMats = getChecked('chk-materia');
-            const finalMats = rawMats.map(mName => {
-                const found = state.catalogs.materias.find(m => m.name === mName || m === mName);
-                return found ? (typeof found === 'object' ? found : {name: mName, area: 'General'}) : {name: mName, area: 'General'};
-            });
-
-            const userData = {
-                email, nombre: document.getElementById('form-name').value,
-                isSuperAdmin: document.getElementById('form-is-super-admin').checked,
-                rol: document.getElementById('sel-rol').value,
-                asignaciones: state.editingUserAssignments,
-                materias: finalMats
-            };
-            const f = document.getElementById('form-signature').files[0];
-            if(f) userData.firma = await toBase64(f);
-            const pass = document.getElementById('form-pass').value;
-            if(pass) userData.password = pass;
-
-            if(id) await updateDoc(getDocRef("users", id), userData);
-            else await setDoc(getDocRef("users", uid), userData);
-            
-            alert("Usuario Guardado");
-            window.closeModal('modal-user');
-        };
-
-        // --- ASSIGNMENT MATRIX LOGIC (New) ---
-        function renderUserAssignments() {
-            const list = document.getElementById('assignments-list');
-            list.innerHTML = state.editingUserAssignments.map((a, i) => `
-                <div class="assignment-row">
-                    <span><b>${a.curso}</b> ${a.paralelo} (${a.seccion})</span>
-                    <button type="button" onclick="window.removeAssignment(${i})" class="text-red-500 font-bold">✕</button>
-                </div>
-            `).join('');
-        }
-        
-        window.addAssignment = () => {
-             const sec = document.getElementById('assign-seccion').value;
-             const cur = document.getElementById('assign-curso').value;
-             const par = document.getElementById('assign-paralelo').value;
-             if(sec && cur && par) {
-                 // Check duplicate
-                 if(!state.editingUserAssignments.some(a => a.seccion === sec && a.curso === cur && a.paralelo === par)) {
-                     state.editingUserAssignments.push({ seccion: sec, curso: cur, paralelo: par });
-                     renderUserAssignments();
-                 }
-             }
-        };
-        
-        window.removeAssignment = (idx) => {
-            state.editingUserAssignments.splice(idx, 1);
-            renderUserAssignments();
-        };
-
-        // Listeners for Assignment Selects in User Modal
-        document.getElementById('assign-seccion').onchange = () => updateCourseOptions('assign-seccion', 'assign-curso', 'assign-paralelo');
-        document.getElementById('assign-curso').onchange = () => updateParallelOptions(document.getElementById('assign-curso').value, 'assign-paralelo');
-
-        // Helpers for Cascade
-        window.updateCourseOptions = (secId, curId, parId) => {
-            const sec = document.getElementById(secId).value;
-            const curEl = document.getElementById(curId);
-            const parEl = document.getElementById(parId);
-            
-            // Filter courses by section
-            const courses = (state.catalogs.cursos||[]).filter(c => c.section === sec);
-            if(curEl) {
-                curEl.innerHTML = courses.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
-                if(courses.length > 0) updateParallelOptions(courses[0].name, parId);
-                else if(parEl) parEl.innerHTML = "";
+            try {
+                await signInWithEmailAndPassword(auth, email, pass);
+            } catch (error) {
+                msg.textContent = "Error: " + error.code;
+                msg.className = "mt-4 text-xs font-bold text-center p-2 rounded-lg bg-red-100 text-red-600 block";
+                msg.classList.remove('hidden');
             }
-            if(curEl) curEl.onchange = () => updateParallelOptions(curEl.value, parId);
-        }
-        
-        function updateParallelOptions(courseName, parId) {
-            const parEl = document.getElementById(parId);
-            if(!parEl) return;
-            const course = state.catalogs.cursos.find(c => c.name === courseName);
-            if(course && course.parallels) {
-                parEl.innerHTML = course.parallels.map(p => `<option value="${p}">${p}</option>`).join('');
-            } else {
-                parEl.innerHTML = "";
-            }
-        }
-        
-        // Listeners for Schedule/Leccionario Tabs
-        document.getElementById('sch-seccion').onchange = () => updateCourseOptions('sch-seccion', 'sch-curso', 'sch-paralelo');
-        document.getElementById('lec-seccion').onchange = () => updateCourseOptions('lec-seccion', 'lec-curso', 'lec-paralelo');
+        });
 
-        // SAVE USER
-        document.getElementById('user-form').onsubmit = async (e) => {
+        // REGISTER
+        document.getElementById('register-form').addEventListener('submit', async (e) => {
             e.preventDefault();
-            const id = document.getElementById('form-user-id').value;
-            const email = document.getElementById('form-email').value;
-            const uid = document.getElementById('form-uid').value.trim() || email;
-            
-            const rawMats = getChecked('chk-materia');
-            const finalMats = rawMats.map(mName => {
-                const found = state.catalogs.materias.find(m => m.name === mName || m === mName);
-                return found ? (typeof found === 'object' ? found : {name: mName, area: 'General'}) : {name: mName, area: 'General'};
-            });
+            const email = document.getElementById('reg-email').value;
+            const pass = document.getElementById('reg-pass').value;
+            const name = document.getElementById('reg-name').value;
+            const sigFile = document.getElementById('reg-signature').files[0];
+            const msg = document.getElementById('auth-message');
 
-            const userData = {
-                email, nombre: document.getElementById('form-name').value,
-                isSuperAdmin: document.getElementById('form-is-super-admin').checked,
-                rol: document.getElementById('sel-rol').value,
-                asignaciones: state.editingUserAssignments,
-                materias: finalMats
-            };
-            
-            const f = document.getElementById('form-signature').files[0];
-            if(f) userData.firma = await toBase64(f);
-            
-            if(id) await updateDoc(doc(db, "users", id), userData);
-            else await setDoc(doc(db, "users", uid), userData);
-            
-            alert("Usuario Guardado");
-            window.closeModal('modal-user');
-        };
-
-        // --- DASHBOARD UPDATE ---
-        async function updateDashboardDate() {
-            const d = state.viewDate;
-            document.getElementById('day-current-display').textContent = d.toLocaleDateString();
-            const dayIdx = d.getDay() - 1; // 0=Monday
-            const list = document.getElementById('daily-classes-list');
-            list.innerHTML = "Cargando...";
-
-            if(dayIdx < 0 || dayIdx > 4) { list.innerHTML = "<div class='p-8 text-center text-slate-400'>Fin de semana</div>"; return; }
-
-            // Get All Schedules (Optimized: In production query only necessary, here fetch all for filtering)
-            const schedSnap = await getDocs(collection(db, "schedules"));
-            const schedules = schedSnap.docs.map(d => ({id: d.id, ...d.data()}));
-            
-            const myClasses = [];
-            // Match Logic: Check if user is assigned to (Section + Course + Parallel)
-            schedules.forEach(sched => {
-                const [sec, cur, par] = sched.id.split('_');
-                // Check if user has this assignment
-                const hasAssign = (state.currentUser.asignaciones||[]).some(a => a.seccion === sec && a.curso === cur && a.paralelo === par);
-                // Also show if Admin/SuperAdmin? Maybe optional, but sticking to assignments for dashboard
+            try {
+                // 1. Create Auth User
+                const cred = await createUserWithEmailAndPassword(auth, email, pass);
                 
-                if(hasAssign) {
-                    (sched.slots||[]).forEach(slot => {
-                        const subj = sched.grid[`${slot.id}_${dayIdx}`];
-                        if(subj) {
-                            const subjName = subj.name || subj;
-                            // Check if user teaches this subject
-                            if((state.currentUser.materias||[]).some(m => (m.name||m) === subjName)) {
-                                myClasses.push({
-                                    time: `${slot.start} - ${slot.end}`,
-                                    subject: subjName,
-                                    course: `${cur} ${par}`,
-                                    logId: `${d.toISOString().split('T')[0]}_${sched.id}_${slot.id}`
-                                });
-                            }
-                        }
-                    });
-                }
-            });
+                // 2. Prepare Data
+                let signatureBase64 = null;
+                if (sigFile) signatureBase64 = await toBase64(sigFile);
 
-            // Render Cards
-            if(!myClasses.length) {
-                list.innerHTML = "<div class='p-8 text-center text-slate-400'>No tienes clases asignadas hoy.</div>";
-            } else {
-                // Pre-fetch logs status
-                const content = [];
-                for(const cls of myClasses) {
-                    const log = (await getDoc(doc(db, "class_logs", cls.logId))).data();
-                    const statusColor = log ? "green" : "blue";
-                    const btnText = log ? "Ver Registro" : "Guardar y Firmar";
-                    content.push(`
-                        <div class="bg-white p-4 rounded-2xl shadow-sm border-l-4 border-${statusColor}-500 flex justify-between items-center">
-                            <div>
-                                <div class="text-xs font-bold text-slate-400">${cls.time}</div>
-                                <div class="font-black text-slate-800">${cls.subject}</div>
-                                <div class="text-xs text-slate-500 font-bold">${cls.course}</div>
-                            </div>
-                            <button onclick="window.openClassLog('${cls.logId}', '${cls.subject}', '${cls.time}', '${log?.topic||''}', '${log?.content||''}')" 
-                                class="bg-${statusColor}-50 text-${statusColor}-600 px-4 py-2 rounded-xl text-xs font-black uppercase hover:bg-${statusColor}-100">
-                                ${btnText}
-                            </button>
-                        </div>
-                    `);
-                }
-                list.innerHTML = content.join('');
+                // 3. Save to DB
+                await setDoc(doc(db, "users", cred.user.uid), {
+                    email: email,
+                    nombre: name,
+                    rol: "Docente",
+                    firma: signatureBase64,
+                    createdAt: new Date().toISOString()
+                });
+
+                msg.textContent = "Cuenta creada. Ingresando...";
+                msg.className = "mt-4 text-xs font-bold text-center p-2 rounded-lg bg-green-100 text-green-600 block";
+                msg.classList.remove('hidden');
+
+            } catch (error) {
+                msg.textContent = "Error: " + error.code;
+                msg.className = "mt-4 text-xs font-bold text-center p-2 rounded-lg bg-red-100 text-red-600 block";
+                msg.classList.remove('hidden');
             }
-        }
-        
-        window.changeDay = (d) => { state.viewDate.setDate(state.viewDate.getDate()+d); updateDashboardDate(); };
-        window.goToToday = () => { state.viewDate = new Date(); updateDashboardDate(); };
+        });
 
-        // LOGGING
-        window.openClassLog = (id, sub, time, topic, content) => {
-             document.getElementById('log-id').value = id;
-             document.getElementById('log-topic').value = topic;
-             document.getElementById('log-content').value = content;
-             document.getElementById('log-class-info').textContent = `${sub} - ${time}`;
-             window.openModal('modal-class-log');
-        };
-        
-        document.getElementById('log-form').onsubmit = async (e) => {
-            e.preventDefault();
-            if(!state.currentUser.firma) { alert("¡Alerta! No tienes firma digital configurada. Sube una en tu perfil."); return; }
-            
-            const id = document.getElementById('log-id').value;
-            const topic = document.getElementById('log-topic').value;
-            const content = document.getElementById('log-content').value;
-            
-            await setDoc(doc(db, "class_logs", id), {
-                topic, content, teacherEmail: state.currentUser.email, timestamp: new Date()
-            });
-            alert("Clase Registrada y Firmada Exitosamente.");
-            window.closeModal('modal-class-log');
-            updateDashboardDate();
-        };
-
-        // --- CATALOGS ---
-        window.addCatalogItem = async () => {
-             const val = document.getElementById('catalog-input').value.trim();
-             const extra = document.getElementById('catalog-extra-select').value;
-             if(val) {
-                 if(state.currentCatalog === 'materias') state.catalogs.materias.push({name: val, area: extra});
-                 else state.catalogs[state.currentCatalog].push(val);
-                 await window.manualSaveCatalogs();
-                 window.openCatalogManager(state.currentCatalog); // refresh
-             }
-        };
-        window.openCatalogManager = (key) => {
-             state.currentCatalog = key;
-             document.getElementById('catalog-title').textContent = key.toUpperCase();
-             const extra = document.getElementById('catalog-extra-input');
-             if(key === 'materias') {
-                 extra.classList.remove('hidden');
-                 document.getElementById('catalog-extra-label').textContent = "Área";
-                 document.getElementById('catalog-extra-select').innerHTML = state.catalogs.areas.map(a => `<option value="${a}">${a}</option>`).join('');
-             } else {
-                 extra.classList.add('hidden');
-             }
-             document.getElementById('catalog-list').innerHTML = (state.catalogs[key]||[]).map((i, idx) => `
-                <div class="flex justify-between p-2 border-b text-sm">
-                    <span>${typeof i === 'object' ? i.name : i}</span>
-                    <button onclick="window.removeItem('${key}', ${idx})" class="text-red-500 font-bold">x</button>
-                </div>
-             `).join('');
-             window.openModal('modal-catalog');
-        };
-        window.removeItem = async (key, idx) => {
-             state.catalogs[key].splice(idx, 1);
-             await window.manualSaveCatalogs();
-             window.openCatalogManager(key);
-        };
-
-        // --- SCHEDULES & LECCIONARIO (Functions) ---
-        // (Similar to previous, verifying all are exposed)
-        window.loadSchedule = async () => {
-             const id = `${document.getElementById('sch-seccion').value}_${document.getElementById('sch-curso').value}_${document.getElementById('sch-paralelo').value}`;
-             state.currentSchedule = { id, slots: [], grid: {} };
-             const snap = await getDoc(doc(db, "schedules", id));
-             if(snap.exists()) state.currentSchedule = { id, ...snap.data() };
-             renderScheduleTable();
-        };
-        window.saveCurrentSchedule = async () => {
-             if(!state.currentSchedule.id) return;
-             await setDoc(doc(db, "schedules", state.currentSchedule.id), { slots: state.currentSchedule.slots, grid: state.currentSchedule.grid });
-             alert("Horario guardado");
-        };
-        function renderScheduleTable() {
-             const c = document.getElementById('schedule-container');
-             if(!state.currentSchedule.slots.length) { c.innerHTML = `<div class="text-center py-10"><button onclick="window.openTimeConfig()" class="text-blue-600 underline text-sm font-bold">Configurar Horas</button></div>`; return; }
-             const days = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes"];
-             let html = `<table class="w-full border-collapse"><thead><tr><th class="p-3 text-[10px] uppercase font-black text-slate-400 bg-slate-50 border border-slate-200">Hora</th>${days.map(d=>`<th class="p-3 text-[10px] uppercase font-black text-slate-400 bg-slate-50 border border-slate-200">${d}</th>`).join('')}</tr></thead><tbody>`;
-             state.currentSchedule.slots.sort((a,b)=>a.start.localeCompare(b.start)).forEach(slot => {
-                 html += `<tr><td class="time-col border border-slate-200 p-2">${slot.start} - ${slot.end}</td>`;
-                 days.forEach((d, i) => {
-                     const cellId = `${slot.id}_${i}`;
-                     const val = state.currentSchedule.grid[cellId] || "";
-                     html += `<td onclick="window.openAssignSubject('${cellId}')" class="schedule-cell ${val?'filled':''}">${val}</td>`;
-                 });
-                 html += `</tr>`;
-             });
-             c.innerHTML = html + "</tbody></table>";
-        }
-        window.openTimeConfig = () => { 
-             const list = document.getElementById('slots-list');
-             list.innerHTML = (state.currentSchedule.slots||[]).map((s, i) => `<div class="flex justify-between p-2 border-b text-xs"><span>${s.start} - ${s.end}</span><button onclick="window.removeTimeSlot(${i})" class="text-red-500 font-bold">x</button></div>`).join('');
-             window.openModal('modal-time-slots'); 
-        };
-        window.addTimeSlot = () => {
-             const s = document.getElementById('ts-start').value;
-             const e = document.getElementById('ts-end').value;
-             if(s && e) {
-                 if(!state.currentSchedule.slots) state.currentSchedule.slots = [];
-                 state.currentSchedule.slots.push({id: Date.now(), start: s, end: e});
-                 renderScheduleTable();
-                 window.openTimeConfig(); // Refresh list
-             }
-        };
-        window.removeTimeSlot = (i) => {
-             state.currentSchedule.slots.splice(i, 1);
-             renderScheduleTable();
-             window.openTimeConfig();
-        };
-        window.openAssignSubject = (cid) => {
-             state.tempCellTarget = cid;
-             const c = document.getElementById('subject-selector-list');
-             c.innerHTML = (state.catalogs.materias||[]).map(m => {
-                 const name = typeof m === 'object' ? m.name : m;
-                 return `<button onclick="window.assignSubject('${name}')" class="p-2 bg-blue-50 text-xs font-bold text-blue-700 rounded hover:bg-blue-100">${name}</button>`;
-             }).join('');
-             c.innerHTML += `<button onclick="window.assignSubject('')" class="p-2 bg-red-50 text-xs font-bold text-red-500 col-span-2 rounded hover:bg-red-100">Borrar</button>`;
-             window.openModal('modal-assign-subject');
-        };
-        window.assignSubject = (sub) => {
-             if(sub) state.currentSchedule.grid[state.tempCellTarget] = sub;
-             else delete state.currentSchedule.grid[state.tempCellTarget];
-             renderScheduleTable();
-             window.closeModal('modal-assign-subject');
-        };
-
-        // --- LECCIONARIO GENERATION ---
-        window.generateLeccionario = async () => {
-             const sec = document.getElementById('lec-seccion').value; const cur = document.getElementById('lec-curso').value; const par = document.getElementById('lec-paralelo').value; const dateInput = document.getElementById('lec-date').value;
-             if(!dateInput) { alert("Fecha requerida"); return; }
-             const dayIndex = new Date(dateInput+"T00:00:00").getDay() - 1;
-             
-             const tbody = document.getElementById('leccionario-body'); tbody.innerHTML = "<tr><td colspan='6' class='text-center p-8'>Cargando...</td></tr>";
-             
-             const users = (await getDocs(collection(db, "users"))).docs.map(d=>d.data());
-             const schedSnap = await getDoc(doc(db, "schedules", `${sec}_${cur}_${par}`));
-             if(!schedSnap.exists()) { tbody.innerHTML = "<tr><td colspan='6' class='text-center p-8'>Sin Horario</td></tr>"; return; }
-             const sched = schedSnap.data();
-             
-             const entries = [];
-             if(sched.slots && dayIndex >= 0 && dayIndex <= 4) {
-                 for(const slot of sched.slots) {
-                     const subj = sched.grid[`${slot.id}_${dayIndex}`];
-                     if(subj) {
-                         const subjName = (typeof subj === 'object') ? subj.name : subj;
-                         const logId = `${dateInput}_${sched.id}_${slot.id}`;
-                         const logSnap = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'class_logs', logId));
-                         
-                         let row = { time: `${slot.start} - ${slot.end}`, subject: subjName, teacher: "Sin Asignar", topic: "-", obs: "-", sign: `<span class="text-xs text-red-500 font-bold">PENDIENTE</span>` };
-                         
-                         // Find Teacher
-                         const t = users.find(u => 
-                             (u.asignaciones || []).some(a => a.seccion === sec && a.curso === cur && a.paralelo === par) &&
-                             ((u.materias||[]).map(m=>typeof m==='object'?m.name:m).includes(subjName))
-                         );
-                         if(t) row.teacher = t.nombre || t.email;
-
-                         if(logSnap.exists()) {
-                             const ld = logSnap.data();
-                             row.topic = ld.topic || "-";
-                             row.obs = ld.content || "-";
-                             const signer = users.find(u => u.email === (ld.teacherEmail || t?.email));
-                             if(signer && signer.firma) row.sign = `<img src="${signer.firma}" class="signature-img">`;
-                             else row.sign = `<span class="text-xs text-green-600 font-bold">FIRMADO</span>`;
-                         }
-                         entries.push(row);
-                     }
-                 }
-             }
-             entries.sort((a,b)=>a.time.localeCompare(b.time));
-             tbody.innerHTML = entries.map(e => `
-                <tr class="border-b border-slate-50">
-                    <td class="p-2 border-r border-slate-50 font-bold text-xs">${e.time}</td>
-                    <td class="p-2 border-r border-slate-50 text-xs">${e.subject}</td>
-                    <td class="p-2 border-r border-slate-50 text-xs font-bold">${e.teacher}</td>
-                    <td class="p-2 border-r border-slate-50 text-xs">${e.topic}</td>
-                    <td class="p-2 border-r border-slate-50 text-xs">${e.obs}</td>
-                    <td class="p-2 text-center align-middle">${e.sign}</td>
-                </tr>`).join('');
-        };
-        
-        // --- COURSE MANAGER (Restored) ---
-        // (Functionality already embedded in HTML structure above, just ensuring visibility toggles work)
-        // Note: Course Manager logic is now fully integrated via window.openCourseManager logic (if updated in future steps)
-        // For now, simpler Catalog management for "cursos" works, or dedicated if requested again.
-        // User asked to verify "Course Manager" but I merged it into Catalog logic in previous steps to simplify.
-        // Wait, user asked for "Nueva opcion donde manejo esa administración" in previous turn.
-        // It is present as "Configurar Cursos" button in Catalogs tab or main tab.
-        // The modal 'modal-course-manager' handles it.
-        // I need to ensure its functions are exposed.
-        
-        window.openCourseManager = () => {
-             populateSelect('cm-seccion', state.catalogs.secciones);
-             updateCMList();
-             window.openModal('modal-course-manager');
-        };
-        document.getElementById('cm-seccion').onchange = updateCMList;
-        function updateCMList() {
-             const sec = document.getElementById('cm-seccion').value;
-             const courses = (state.catalogs.cursos||[]).filter(c => c.section === sec);
-             document.getElementById('cm-courses-list').innerHTML = courses.map((c, idx) => `
-                <div class="bg-slate-50 p-2 rounded-lg flex justify-between items-center text-xs border border-slate-100">
-                    <div><span class="font-bold">${c.name}</span> <span class="text-slate-400 ml-2">Par: ${(c.parallels||[]).join(', ')}</span></div>
-                    <button onclick="window.deleteCourse('${c.name}', '${sec}')" class="text-red-500 font-bold">✕</button>
-                </div>
-             `).join('');
-             
-             // Update Parallels checkboxes based on GLOBAL parallels in catalog
-             const allPars = (state.catalogs.paralelos||[]).map(p => typeof p === 'object' ? p.name : p);
-             document.getElementById('cm-parallels-checks').innerHTML = allPars.map(p => `
-                <label class="flex items-center gap-1 text-xs"><input type="checkbox" class="cm-par-check" value="${p}"> ${p}</label>
-             `).join('');
-        }
-        window.addCourseWithParallels = async () => {
-             const name = document.getElementById('cm-new-name').value.trim();
-             const sec = document.getElementById('cm-seccion').value;
-             const pars = Array.from(document.querySelectorAll('.cm-par-check:checked')).map(cb => cb.value);
-             if(name && sec) {
-                 const existsIdx = state.catalogs.cursos.findIndex(c => c.name === name && c.section === sec);
-                 if(existsIdx >= 0) state.catalogs.cursos[existsIdx].parallels = pars; 
-                 else state.catalogs.cursos.push({name, section: sec, parallels: pars});
-                 await window.manualSaveCatalogs();
-                 updateCMList();
-             }
-        };
-        window.deleteCourse = async (name, sec) => {
-             state.catalogs.cursos = state.catalogs.cursos.filter(c => !(c.name === name && c.section === sec));
-             await window.manualSaveCatalogs();
-             updateCMList();
-        };
+        // UTILS
+        const toBase64 = file => new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = error => reject(error);
+        });
 
     </script>
 </body>
