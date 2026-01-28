@@ -46,8 +46,13 @@
         }
 
         /* Tabs Styling */
-        .tab-btn { @apply px-4 py-2 text-sm font-bold text-slate-500 border-b-2 border-transparent hover:text-blue-600 transition-colors; }
+        .tab-btn { @apply px-4 py-2 text-sm font-bold text-slate-500 border-b-2 border-transparent hover:text-slate-700 transition-colors; }
+        
+        /* Diferenciación visual de pestañas de reporte */
         .tab-btn.active { @apply text-blue-600 border-blue-600; }
+        
+        .tab-btn-individual.active { @apply text-blue-600 border-blue-600 bg-blue-50/50; }
+        .tab-btn-mass.active { @apply text-indigo-600 border-indigo-600 bg-indigo-50/50; }
         
         /* Dropdown */
         .dropdown:hover .dropdown-menu { display: block; }
@@ -62,6 +67,16 @@
         .matrix-add-icon { color: #cbd5e1; font-size: 1.5rem; }
         .matrix-cell:hover .matrix-add-icon { color: #3b82f6; }
         .matrix-subject { font-weight: bold; color: #1e293b; font-size: 0.8rem; line-height: 1.2; }
+
+        /* Print Styles - Improved */
+        @media print {
+            .no-print, nav, #btn-admin-panel, .btn-primary, .fixed { display: none !important; }
+            .print-break-after { break-after: page; page-break-after: always; }
+            #report-container { display: block !important; box-shadow: none; border: none; padding: 0; margin: 0; position: absolute; top: 0; left: 0; width: 100%; }
+            body { background: white; padding: 0; margin: 0; }
+            main { padding: 0; margin: 0; max-width: none; }
+            .glass-panel { border: none; }
+        }
     </style>
 </head>
 <body class="font-sans text-slate-800">
@@ -143,7 +158,7 @@
     <!-- VISTA PRINCIPAL -->
     <div id="app-view" class="hidden min-h-screen">
         <!-- Navbar -->
-        <nav class="bg-white border-b border-slate-200 px-6 py-4 flex flex-col md:flex-row justify-between items-center sticky top-0 z-50 shadow-sm">
+        <nav class="bg-white border-b border-slate-200 px-6 py-4 flex flex-col md:flex-row justify-between items-center sticky top-0 z-50 shadow-sm no-print">
             <div class="flex items-center gap-4 mb-4 md:mb-0 cursor-pointer" onclick="showSection('dashboard')">
                 <div class="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white font-black text-xl">L</div>
                 <div>
@@ -174,7 +189,7 @@
                     </div>
                 </div>
 
-                <!-- Menu Reportes (Nuevo) -->
+                <!-- Menu Reportes -->
                 <div id="nav-reports" class="hidden relative dropdown group ml-2">
                     <button class="flex items-center gap-2 text-sm font-bold text-slate-600 hover:text-blue-600 py-2">
                         <i class="fa-solid fa-print"></i> Reportes <i class="fa-solid fa-chevron-down text-xs"></i>
@@ -212,7 +227,10 @@
                         <p class="text-slate-500" id="current-date-label">Cargando fecha...</p>
                     </div>
                     <div class="text-right hidden md:block">
-                        <span class="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">Ciclo Escolar 2024-2025</span>
+                        <div class="flex items-center gap-2">
+                            <span id="school-cycle-display" class="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">Ciclo Escolar 2024-2025</span>
+                            <button onclick="editSchoolCycle()" class="text-blue-400 hover:text-blue-600"><i class="fa-solid fa-pen-to-square text-xs"></i></button>
+                        </div>
                     </div>
                 </div>
                 
@@ -235,6 +253,7 @@
 
             <!-- 2. GESTIÓN DE USUARIOS -->
             <div id="section-users" class="hidden space-y-6">
+                <!-- ... Contenido Usuarios (Sin Cambios) ... -->
                 <div class="flex justify-between items-center">
                     <h2 class="text-2xl font-black text-slate-800">Gestión de Usuarios</h2>
                     <div class="flex gap-2">
@@ -267,20 +286,16 @@
 
             <!-- 3. ADMINISTRACIÓN ACADÉMICA -->
             <div id="section-academic-admin" class="hidden space-y-6">
+                 <!-- ... Contenido Admin Académica (Sin Cambios) ... -->
                  <div class="flex justify-between items-center">
                     <h2 class="text-2xl font-black text-slate-800">Administración Académica</h2>
                 </div>
-
-                <!-- Tabs -->
                 <div class="border-b border-slate-200 mb-6 flex gap-2">
                     <button class="tab-btn active" onclick="switchTab(this, 'tab-sections')">Secciones</button>
                     <button class="tab-btn" onclick="switchTab(this, 'tab-areas')">Áreas</button>
                     <button class="tab-btn" onclick="switchTab(this, 'tab-subjects')">Materias</button>
                 </div>
-
-                <!-- Tab Content: SECCIONES -->
                 <div id="tab-sections" class="tab-content grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    <!-- Formulario -->
                     <div class="glass-panel p-6 rounded-2xl h-fit">
                         <h3 class="font-bold text-lg mb-4">Nueva Sección</h3>
                         <form id="form-section" class="space-y-4">
@@ -291,7 +306,6 @@
                             <button type="submit" class="btn-primary w-full py-2 rounded-xl text-sm font-bold">Guardar Sección</button>
                         </form>
                     </div>
-                    <!-- Lista -->
                     <div class="glass-panel rounded-2xl overflow-hidden lg:col-span-2">
                         <table class="w-full custom-table">
                             <thead><tr><th>Nombre Sección</th><th class="text-right">Acciones</th></tr></thead>
@@ -299,8 +313,6 @@
                         </table>
                     </div>
                 </div>
-
-                <!-- Tab Content: ÁREAS -->
                 <div id="tab-areas" class="tab-content hidden grid grid-cols-1 lg:grid-cols-3 gap-6">
                     <div class="glass-panel p-6 rounded-2xl h-fit">
                         <h3 class="font-bold text-lg mb-4">Nueva Área</h3>
@@ -319,8 +331,6 @@
                         </table>
                     </div>
                 </div>
-
-                <!-- Tab Content: MATERIAS -->
                 <div id="tab-subjects" class="tab-content hidden grid grid-cols-1 lg:grid-cols-3 gap-6">
                     <div class="glass-panel p-6 rounded-2xl h-fit">
                         <h3 class="font-bold text-lg mb-4">Nueva Materia</h3>
@@ -349,11 +359,11 @@
 
             <!-- 4. GESTIÓN DE CURSOS Y PARALELOS -->
             <div id="section-courses" class="hidden space-y-6">
+                <!-- ... Contenido Cursos (Sin Cambios) ... -->
                 <div class="flex justify-between items-center">
                     <h2 class="text-2xl font-black text-slate-800">Cursos y Paralelos</h2>
                 </div>
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    <!-- Formulario Curso -->
                     <div class="glass-panel p-6 rounded-2xl h-fit">
                         <h3 class="font-bold text-lg mb-4">Crear Curso</h3>
                         <form id="form-course" class="space-y-4">
@@ -375,7 +385,6 @@
                             <button type="submit" class="btn-primary w-full py-2 rounded-xl text-sm font-bold">Guardar Curso</button>
                         </form>
                     </div>
-                    <!-- Lista Cursos -->
                     <div class="glass-panel rounded-2xl overflow-hidden lg:col-span-2">
                         <table class="w-full custom-table">
                             <thead><tr><th>Curso</th><th>Sección</th><th>Paralelos</th><th class="text-right">Acciones</th></tr></thead>
@@ -387,10 +396,10 @@
 
             <!-- 5. DISTRIBUTIVO -->
             <div id="section-distributive" class="hidden space-y-6">
+                <!-- ... Contenido Distributivo (Sin Cambios) ... -->
                 <div class="flex justify-between items-center">
                     <h2 class="text-2xl font-black text-slate-800">Distributivo de Materias</h2>
                 </div>
-                
                 <div class="glass-panel p-6 rounded-2xl">
                     <h3 class="font-bold text-sm text-slate-500 uppercase mb-4">Asignar Materia a Docente</h3>
                     <form id="form-distributive" class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
@@ -415,7 +424,6 @@
                         <button type="submit" form="form-distributive" class="btn-primary px-6 py-2 rounded-xl text-sm font-bold">Asignar Carga</button>
                     </div>
                 </div>
-
                 <div class="glass-panel rounded-2xl overflow-hidden">
                     <table class="w-full custom-table">
                         <thead><tr><th>Docente</th><th>Curso / Paralelo</th><th>Materia</th><th class="text-right">Acciones</th></tr></thead>
@@ -428,10 +436,10 @@
 
             <!-- 6. HORARIOS (MATRIZ INTERACTIVA) -->
             <div id="section-schedules" class="hidden space-y-6">
+                <!-- ... Contenido Horarios (Sin Cambios) ... -->
                 <div class="flex justify-between items-center">
                     <h2 class="text-2xl font-black text-slate-800">Matriz de Horarios</h2>
                 </div>
-                
                 <div class="glass-panel p-6 rounded-2xl">
                     <h3 class="font-bold text-sm text-slate-500 uppercase mb-4">1. Selección de Curso</h3>
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -452,7 +460,6 @@
                         </div>
                     </div>
                 </div>
-
                 <div id="schedule-matrix-container" class="hidden animate-fade-in space-y-4">
                     <div class="flex flex-col md:flex-row justify-between items-center gap-4 bg-blue-50 p-4 rounded-xl border border-blue-100">
                         <div>
@@ -468,7 +475,6 @@
                             </button>
                         </form>
                     </div>
-
                     <div class="glass-panel p-4 rounded-2xl overflow-x-auto">
                         <table class="matrix-table">
                             <thead>
@@ -482,48 +488,27 @@
                                     <th class="w-[50px]"></th>
                                 </tr>
                             </thead>
-                            <tbody id="matrix-body">
-                                <!-- JS Generated -->
-                            </tbody>
+                            <tbody id="matrix-body"></tbody>
                         </table>
                     </div>
                 </div>
             </div>
 
-            <!-- 7. REPORTE LECCIONARIO (NUEVO) -->
+            <!-- 7. REPORTES DE LECCIONARIO -->
             <div id="section-leccionario-report" class="hidden space-y-6">
-                <div class="flex justify-between items-center">
-                    <h2 class="text-2xl font-black text-slate-800">Reporte de Leccionario</h2>
+                <div class="flex justify-between items-center no-print">
+                    <h2 class="text-2xl font-black text-slate-800">Reportes de Leccionario</h2>
                 </div>
 
-                <div class="glass-panel p-6 rounded-2xl">
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-                        <!-- Filtros Cascada -->
-                        <div class="space-y-1">
-                            <label class="text-xs font-bold text-slate-500 uppercase">Sección</label>
-                            <select id="rep-section-select" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none text-sm" onchange="updateRepCourses()">
-                                <option value="">Seleccione...</option>
-                            </select>
-                        </div>
-                        <div class="space-y-1">
-                            <label class="text-xs font-bold text-slate-500 uppercase">Curso</label>
-                            <select id="rep-course-select" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none text-sm" onchange="updateRepParallels()" disabled>
-                                <option value="">Seleccione...</option>
-                            </select>
-                        </div>
-                        <div class="space-y-1">
-                            <label class="text-xs font-bold text-slate-500 uppercase">Paralelo</label>
-                            <select id="rep-parallel-select" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none text-sm" disabled>
-                                <option value="">Seleccione...</option>
-                            </select>
-                        </div>
-                         <div class="space-y-1">
-                            <label class="text-xs font-bold text-slate-500 uppercase">Fecha del Reporte</label>
-                            <input type="date" id="rep-date" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none text-sm">
-                        </div>
+                <div class="glass-panel p-6 rounded-2xl no-print">
+                    <!-- Tabs de Reporte -->
+                    <div class="border-b border-slate-200 mb-6 flex gap-2">
+                        <button class="tab-btn tab-btn-individual active" onclick="switchTab(this, 'rep-tab-individual')">Por Curso</button>
+                        <button class="tab-btn tab-btn-mass" onclick="switchTab(this, 'rep-tab-section')">Por Sección (Masivo)</button>
                     </div>
-                    
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6 border-t border-slate-100 pt-4">
+
+                    <!-- Datos Generales (Comunes) -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6 border-b border-slate-100 pb-4">
                         <div class="space-y-1">
                             <label class="text-xs font-bold text-slate-500 uppercase">Institución</label>
                             <input type="text" id="rep-institution" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none text-sm" placeholder="Nombre de la Institución">
@@ -534,60 +519,72 @@
                         </div>
                     </div>
 
-                    <div class="flex justify-end gap-2">
-                        <button onclick="generateLeccionarioReport()" class="bg-blue-600 text-white px-6 py-3 rounded-xl font-bold shadow-lg shadow-blue-200 hover:bg-blue-700 transition">
-                            <i class="fa-solid fa-file-invoice mr-2"></i> Generar Reporte
-                        </button>
+                    <!-- Tab Individual -->
+                    <div id="rep-tab-individual" class="tab-content">
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                            <div class="space-y-1">
+                                <label class="text-xs font-bold text-slate-500 uppercase">Sección</label>
+                                <select id="rep-section-select" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none text-sm" onchange="updateRepCourses()">
+                                    <option value="">Seleccione...</option>
+                                </select>
+                            </div>
+                            <div class="space-y-1">
+                                <label class="text-xs font-bold text-slate-500 uppercase">Curso</label>
+                                <select id="rep-course-select" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none text-sm" onchange="updateRepParallels()" disabled>
+                                    <option value="">Seleccione...</option>
+                                </select>
+                            </div>
+                            <div class="space-y-1">
+                                <label class="text-xs font-bold text-slate-500 uppercase">Paralelo</label>
+                                <select id="rep-parallel-select" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none text-sm" disabled>
+                                    <option value="">Seleccione...</option>
+                                </select>
+                            </div>
+                             <div class="space-y-1">
+                                <label class="text-xs font-bold text-slate-500 uppercase">Fecha</label>
+                                <input type="date" id="rep-date" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none text-sm">
+                            </div>
+                        </div>
+                        <div class="flex justify-end gap-2">
+                            <button onclick="generateLeccionarioReport()" class="bg-blue-600 text-white px-6 py-3 rounded-xl font-bold shadow-lg shadow-blue-200 hover:bg-blue-700 transition">
+                                <i class="fa-solid fa-file-invoice mr-2"></i> Generar Reporte Individual
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Tab Por Sección -->
+                    <div id="rep-tab-section" class="tab-content hidden">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                            <div class="space-y-1">
+                                <label class="text-xs font-bold text-slate-500 uppercase">Sección a Imprimir</label>
+                                <select id="rep-mass-section-select" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none text-sm">
+                                    <option value="">Seleccione Sección...</option>
+                                </select>
+                            </div>
+                             <div class="space-y-1">
+                                <label class="text-xs font-bold text-slate-500 uppercase">Fecha del Reporte</label>
+                                <input type="date" id="rep-mass-date" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none text-sm">
+                            </div>
+                        </div>
+                        <div class="flex justify-end gap-2">
+                            <button onclick="generateSectionReport()" class="bg-indigo-600 text-white px-6 py-3 rounded-xl font-bold shadow-lg shadow-indigo-200 hover:bg-indigo-700 transition">
+                                <i class="fa-solid fa-layer-group mr-2"></i> Generar Reporte Masivo
+                            </button>
+                        </div>
                     </div>
                 </div>
 
-                <!-- Contenedor del Reporte -->
-                <div id="report-container" class="hidden bg-white p-8 rounded-2xl shadow-xl border border-slate-200">
-                    <!-- Cabecera del Reporte -->
-                    <div class="border-b-2 border-slate-800 pb-4 mb-6">
-                        <div class="flex justify-between items-start">
-                            <div>
-                                <h1 class="text-2xl font-black text-slate-900 uppercase tracking-widest" id="print-institution">INSTITUCIÓN EDUCATIVA</h1>
-                                <p class="text-sm font-bold text-slate-600">REPORTE DE LECCIONARIO DIARIO</p>
-                            </div>
-                            <div class="text-right">
-                                <p class="text-xs font-bold text-slate-500">CÓDIGO: <span id="print-code" class="text-slate-900">---</span></p>
-                                <p class="text-xs font-bold text-slate-500">FECHA: <span id="print-date" class="text-slate-900">---</span></p>
-                            </div>
-                        </div>
-                        <div class="mt-4 flex gap-8 text-sm">
-                            <p><span class="font-bold text-slate-500">CURSO:</span> <span id="print-course" class="font-bold">---</span></p>
-                            <p><span class="font-bold text-slate-500">PARALELO:</span> <span id="print-parallel" class="font-bold">---</span></p>
-                        </div>
-                    </div>
-
-                    <!-- Tabla del Reporte -->
-                    <div class="overflow-hidden border border-slate-200 rounded-lg">
-                        <table class="w-full text-sm">
-                            <thead class="bg-slate-100 text-slate-700">
-                                <tr>
-                                    <th class="border-b border-r border-slate-200 p-3 text-left w-24">HORA</th>
-                                    <th class="border-b border-r border-slate-200 p-3 text-left">MATERIA / DOCENTE</th>
-                                    <th class="border-b border-r border-slate-200 p-3 text-left">TEMA TRATADO</th>
-                                    <th class="border-b border-r border-slate-200 p-3 text-left">OBSERVACIÓN</th>
-                                    <th class="border-b border-slate-200 p-3 text-center w-32">FIRMA</th>
-                                </tr>
-                            </thead>
-                            <tbody id="report-body">
-                                <!-- Filas generadas -->
-                            </tbody>
-                        </table>
-                    </div>
-
-                    <div class="mt-8 pt-8 border-t border-slate-200 text-center">
-                        <p class="text-xs text-slate-400">Generado automáticamente por Leccionario Virtual</p>
-                    </div>
-                    
-                    <div class="mt-6 flex justify-end no-print">
+                <!-- Contenedor del Reporte (Vista Previa / Impresión) -->
+                <div id="report-container" class="hidden">
+                    <div class="bg-white p-4 rounded-xl shadow mb-4 flex justify-between items-center no-print">
+                        <h3 class="font-bold text-slate-700">Vista Previa</h3>
                         <button onclick="window.print()" class="bg-slate-800 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-slate-700">
-                            <i class="fa-solid fa-print mr-2"></i> Imprimir / PDF
+                            <i class="fa-solid fa-print mr-2"></i> Imprimir Reporte
                         </button>
                     </div>
+                    
+                    <!-- Aquí se inyectarán las páginas del reporte -->
+                    <div id="report-content-area" class="space-y-8 print:space-y-0"></div>
                 </div>
             </div>
 
@@ -596,15 +593,14 @@
 
     <!-- MODAL: EDICIÓN DE USUARIO -->
     <div id="modal-user-edit" class="fixed inset-0 bg-slate-900/80 z-[100] hidden items-center justify-center p-4">
+        <!-- ... (Sin Cambios) ... -->
         <div class="bg-white w-full max-w-2xl rounded-3xl p-8 modal-animate max-h-[90vh] overflow-y-auto">
             <div class="flex justify-between items-center mb-6">
                 <h3 class="text-2xl font-black text-slate-800">Datos de Usuario</h3>
                 <button onclick="closeModal('modal-user-edit')" class="text-slate-400 hover:text-red-500 text-xl"><i class="fa-solid fa-times"></i></button>
             </div>
-            
             <form id="form-user-edit" class="space-y-6">
                 <input type="hidden" id="edit-uid">
-                
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div class="space-y-1">
                         <label class="text-xs font-bold text-slate-500 uppercase">Nombre</label>
@@ -615,7 +611,6 @@
                         <input type="email" id="edit-email" required class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none text-sm">
                     </div>
                 </div>
-
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div class="space-y-1">
                         <label class="text-xs font-bold text-slate-500 uppercase">Rol</label>
@@ -629,7 +624,6 @@
                         <input type="file" id="edit-signature" accept="image/*" class="w-full p-2 bg-slate-50 border border-slate-200 rounded-xl text-xs">
                     </div>
                 </div>
-                
                 <div class="bg-yellow-50 p-4 rounded-xl border border-yellow-100 flex items-center gap-3">
                     <input type="checkbox" id="edit-is-super" class="w-5 h-5 accent-yellow-600 rounded">
                     <div>
@@ -637,7 +631,6 @@
                         <p class="text-[10px] text-yellow-600">Acceso total al sistema y configuración.</p>
                     </div>
                 </div>
-
                 <div class="flex justify-end pt-4 border-t border-slate-100">
                     <button type="button" onclick="closeModal('modal-user-edit')" class="px-6 py-2 text-sm font-bold text-slate-500 hover:bg-slate-50 rounded-xl mr-2">Cancelar</button>
                     <button type="submit" class="bg-blue-600 text-white px-8 py-2 rounded-xl text-sm font-black uppercase hover:bg-blue-700 shadow-lg shadow-blue-200">Guardar Cambios</button>
@@ -648,18 +641,16 @@
 
     <!-- MODAL: ASIGNAR MATERIA (HORARIO) -->
     <div id="modal-assign-subject" class="fixed inset-0 bg-slate-900/80 z-[100] hidden items-center justify-center p-4">
+        <!-- ... (Sin Cambios) ... -->
         <div class="bg-white w-full max-w-sm rounded-3xl p-6 modal-animate shadow-2xl">
             <h3 class="text-lg font-black text-slate-800 mb-1">Asignar Materia</h3>
             <p class="text-xs text-slate-400 mb-4" id="assign-modal-subtitle">Lunes 07:00 - 07:40</p>
-            
             <input type="hidden" id="assign-period-id">
             <input type="hidden" id="assign-day">
-            
             <div class="space-y-4">
                 <select id="assign-subject-select" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none font-bold text-slate-700">
                     <option value="">-- Seleccionar --</option>
                 </select>
-                
                 <div class="flex gap-2 pt-2">
                     <button onclick="removeAssignment()" class="flex-1 bg-red-50 text-red-500 py-2 rounded-xl text-xs font-bold hover:bg-red-100">
                         <i class="fa-solid fa-trash mr-1"></i> Borrar
@@ -685,6 +676,7 @@
             </div>
 
             <form id="form-sign-leccionario" class="space-y-4">
+                <input type="hidden" id="sign-entry-id"> <!-- ID para edición -->
                 <input type="hidden" id="sign-schedule-id">
                 <input type="hidden" id="sign-course-id">
                 <input type="hidden" id="sign-subject-id">
@@ -750,7 +742,8 @@
             schedules: [], // All schedules needed for day view
             course_periods: [],
             currentPeriods: [], // Filas del horario
-            currentAssignments: [] // Celdas del horario
+            currentAssignments: [], // Celdas del horario
+            dailyClasses: [] // Cache for dashboard interactions
         };
         
         // --- AUTH LOGIC ---
@@ -797,7 +790,15 @@
             const superAdmins = ["gasencio@ecomundo.edu.ec", "ajuanazo@ecomundo.edu.ec"];
             const isAdmin = user.isSuperAdmin || superAdmins.includes(user.email) || user.rol === 'Admin';
             
-            await loadAllAcademicData();
+            // Cargar datos - CON MANEJO DE ERRORES ROBUSTO
+            try {
+                await loadAllAcademicData(isAdmin); 
+            } catch (e) {
+                console.error("Error loading academic data", e);
+            }
+
+            loadSavedReportConfig();
+            loadSchoolCycle(); // Load saved cycle name
 
             if (isAdmin) {
                 document.getElementById('btn-admin-panel').classList.remove('hidden');
@@ -808,9 +809,7 @@
                 showSection('dashboard');
             }
             
-            // Cargar Dashboard Diario
             renderDailyDashboard();
-            // Cargar resumen de cargas (el anterior)
             loadTeacherAssignments(user.uid);
         }
 
@@ -819,59 +818,233 @@
             document.getElementById('auth-view').classList.remove('hidden');
         }
 
-        // --- FUNCIONES PARA REPORTE DE LECCIONARIO ---
-        window.updateRepCourses = () => {
-             const sectionId = document.getElementById('rep-section-select').value;
-             const courseSel = document.getElementById('rep-course-select');
-             const parSel = document.getElementById('rep-parallel-select');
-             
-             courseSel.innerHTML = '<option value="">Seleccione...</option>';
-             parSel.innerHTML = '<option value="">Seleccione...</option>';
-             parSel.disabled = true;
-             courseSel.disabled = true;
-
-             if (!sectionId) return;
-
-             const courses = globalData.courses.filter(c => c.sectionId === sectionId);
-             courseSel.innerHTML += courses.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
-             courseSel.disabled = false;
+        // --- PERSISTENCIA Y UTILIDADES DE UI ---
+        window.loadSavedReportConfig = () => {
+            const inst = localStorage.getItem('rep_institution');
+            const code = localStorage.getItem('rep_audit_code');
+            if(inst) document.getElementById('rep-institution').value = inst;
+            if(code) document.getElementById('rep-audit-code').value = code;
         };
 
-        window.updateRepParallels = () => {
-             const courseId = document.getElementById('rep-course-select').value;
-             const parSel = document.getElementById('rep-parallel-select');
-             parSel.innerHTML = '<option value="">Seleccione...</option>';
-             parSel.disabled = true;
-
-             if (!courseId) return;
-
-             const course = globalData.courses.find(c => c.id === courseId);
-             if (course) {
-                 parSel.innerHTML += course.parallels.map(p => `<option value="${p}">${p}</option>`).join('');
-                 parSel.disabled = false;
-             }
+        window.saveReportConfig = () => {
+            const inst = document.getElementById('rep-institution').value;
+            const code = document.getElementById('rep-audit-code').value;
+            localStorage.setItem('rep_institution', inst);
+            localStorage.setItem('rep_audit_code', code);
         };
 
-        window.generateLeccionarioReport = async () => {
-            const sectionId = document.getElementById('rep-section-select').value;
-            const courseId = document.getElementById('rep-course-select').value;
-            const parallel = document.getElementById('rep-parallel-select').value;
-            const dateStr = document.getElementById('rep-date').value;
-            const institution = document.getElementById('rep-institution').value;
-            const auditCode = document.getElementById('rep-audit-code').value;
+        window.loadSchoolCycle = () => {
+            const cycle = localStorage.getItem('school_cycle') || "Ciclo Escolar 2024-2025";
+            document.getElementById('school-cycle-display').textContent = cycle;
+        };
 
-            if(!sectionId || !courseId || !parallel || !dateStr || !institution || !auditCode) {
-                showToast("Por favor complete todos los campos del reporte.", 'error');
+        window.editSchoolCycle = () => {
+            const current = document.getElementById('school-cycle-display').textContent;
+            const newCycle = prompt("Ingrese el nombre del Ciclo Escolar:", current);
+            if (newCycle) {
+                localStorage.setItem('school_cycle', newCycle);
+                document.getElementById('school-cycle-display').textContent = newCycle;
+                showToast("Ciclo escolar actualizado");
+            }
+        };
+
+        // --- DASHBOARD: AGENDA DIARIA ---
+        window.renderDailyDashboard = async () => {
+            const container = document.getElementById('dashboard-daily-schedule');
+            const dateLabel = document.getElementById('current-date-label');
+            
+            // 1. Determinar Día
+            const days = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
+            const now = new Date();
+            const todayName = days[now.getDay()];
+            const todayStr = now.toISOString().split('T')[0]; // YYYY-MM-DD
+            const fullDate = now.toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+            
+            dateLabel.textContent = fullDate.charAt(0).toUpperCase() + fullDate.slice(1);
+
+            const myDistributive = globalData.distributive.filter(d => d.teacherId === currentUser.uid);
+            
+            if (myDistributive.length === 0) {
+                 container.innerHTML = `<div class="text-center py-10"><p class="text-slate-400">No tienes carga horaria asignada.</p></div>`;
+                 return;
+            }
+
+            // Fetch fresco de Entries de HOY para este profesor
+            const qEntries = query(collection(db, "leccionario_entries"), 
+                where("teacherId", "==", currentUser.uid),
+                where("date", "==", todayStr)
+            );
+            const snapEntries = await getDocs(qEntries);
+            const myEntries = [];
+            snapEntries.forEach(d => myEntries.push({id: d.id, ...d.data()})); // Include ID
+
+            // Fetch Schedules
+            const schedSnap = await getDocs(collection(db, "schedules"));
+            const allSchedules = [];
+            schedSnap.forEach(d => allSchedules.push({id: d.id, ...d.data()}));
+            
+            const perSnap = await getDocs(collection(db, "course_periods"));
+            const allPeriods = [];
+            perSnap.forEach(d => allPeriods.push({id: d.id, ...d.data()}));
+
+            let todaysClasses = [];
+
+            myDistributive.forEach(dist => {
+                const matches = allSchedules.filter(s => 
+                    s.courseId === dist.courseId && 
+                    s.parallel === dist.parallel && 
+                    s.subjectId === dist.subjectId &&
+                    s.day === todayName
+                );
+
+                matches.forEach(match => {
+                    const period = allPeriods.find(p => p.id === match.periodId);
+                    if (period) {
+                        // Check if registered
+                        const existingEntry = myEntries.find(e => e.scheduleId === match.id);
+
+                        todaysClasses.push({
+                            scheduleId: match.id,
+                            distributiveId: dist.id,
+                            subjectId: dist.subjectId,
+                            courseId: dist.courseId,
+                            parallel: dist.parallel,
+                            start: period.start,
+                            end: period.end,
+                            subjectName: globalData.subjects.find(s => s.id === dist.subjectId)?.name,
+                            courseName: globalData.courses.find(c => c.id === dist.courseId)?.name,
+                            isRegistered: !!existingEntry,
+                            entryId: existingEntry ? existingEntry.id : null,
+                            savedTopic: existingEntry ? existingEntry.topic : '',
+                            savedObs: existingEntry ? existingEntry.observation : ''
+                        });
+                    }
+                });
+            });
+
+            todaysClasses.sort((a,b) => a.start.localeCompare(b.start));
+            
+            // Store for easy access in modal
+            globalData.dailyClasses = todaysClasses;
+
+            if (todaysClasses.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-12 bg-white rounded-3xl border border-slate-100">
+                        <div class="inline-flex w-16 h-16 bg-green-50 rounded-full items-center justify-center text-2xl mb-4">☕</div>
+                        <h3 class="font-bold text-slate-700">¡Día Libre!</h3>
+                        <p class="text-slate-400 text-sm">No tienes clases programadas para hoy ${todayName}.</p>
+                    </div>`;
                 return;
             }
 
-            // 1. Calcular Día
-            const dateObj = new Date(dateStr + 'T00:00:00'); // Force local time
-            const days = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
-            const dayName = days[dateObj.getDay()];
+            container.innerHTML = todaysClasses.map((cls, index) => {
+                const statusColor = cls.isRegistered ? 'border-green-500' : 'border-blue-600';
+                const statusBg = cls.isRegistered ? 'bg-green-50' : 'bg-white';
+                const btnText = cls.isRegistered ? 'Ver / Editar' : 'Registrar Lección';
+                const btnColor = cls.isRegistered ? 'bg-green-600 hover:bg-green-700' : 'bg-slate-800 hover:bg-slate-700';
+                const badge = cls.isRegistered ? '<span class="bg-green-100 text-green-700 px-2 py-1 rounded text-[10px] font-bold uppercase ml-2">✅ Registrado</span>' : '';
 
-            // 2. Buscar Horario Teórico (Schedules para ese curso/paralelo/día)
-            // Necesitamos fetch fresco para asegurar datos
+                return `
+                <div class="${statusBg} p-5 rounded-2xl border-l-4 ${statusColor} shadow-sm flex flex-col md:flex-row items-center justify-between gap-4 transition hover:shadow-md">
+                    <div class="flex items-center gap-4 w-full md:w-auto">
+                        <div class="bg-white border border-slate-200 px-4 py-2 rounded-xl text-center min-w-[90px]">
+                            <span class="block text-lg font-black text-slate-700">${cls.start}</span>
+                            <span class="block text-xs font-bold text-slate-400">a ${cls.end}</span>
+                        </div>
+                        <div>
+                            <h4 class="text-lg font-black text-slate-800 flex items-center">
+                                ${cls.subjectName} ${badge}
+                            </h4>
+                            <p class="text-sm text-slate-500 font-medium">
+                                <i class="fa-solid fa-users text-xs mr-1"></i> ${cls.courseName} "<strong>${cls.parallel}</strong>"
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <button onclick="openSignModal('${index}')" 
+                        class="w-full md:w-auto ${btnColor} text-white px-6 py-3 rounded-xl font-bold text-sm transition flex items-center justify-center gap-2 shadow-lg shadow-slate-200">
+                        <i class="fa-solid fa-pen-nib"></i> ${btnText}
+                    </button>
+                </div>
+                `;
+            }).join('');
+        };
+
+        // --- FIRMA DE LECCIONARIO (CON MODO EDICIÓN) ---
+        window.openSignModal = (index) => {
+            // Validar Firma
+            if (!currentUser.firma) {
+                showToast("⚠️ ERROR: No tienes firma digital configurada. Ve a tu perfil.", 'error');
+                return;
+            }
+
+            const cls = globalData.dailyClasses[index];
+            if (!cls) return;
+
+            document.getElementById('sign-class-info').textContent = `${cls.subjectName} | ${cls.courseName} "${cls.parallel}"`;
+            
+            // Set hidden fields
+            document.getElementById('sign-schedule-id').value = cls.scheduleId;
+            document.getElementById('sign-course-id').value = cls.courseId;
+            document.getElementById('sign-subject-id').value = cls.subjectId;
+            document.getElementById('sign-period-start').value = cls.start;
+            document.getElementById('sign-period-end').value = cls.end;
+            
+            // Set data for Edit Mode
+            document.getElementById('sign-entry-id').value = cls.entryId || "";
+            document.getElementById('sign-topic').value = cls.savedTopic || "";
+            document.getElementById('sign-obs').value = cls.savedObs || "";
+            
+            window.openModal('modal-sign-leccionario');
+        };
+
+        document.getElementById('form-sign-leccionario').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = e.submitter;
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Guardando...';
+            btn.disabled = true;
+
+            const entryId = document.getElementById('sign-entry-id').value;
+            
+            const data = {
+                teacherId: currentUser.uid,
+                teacherName: currentUser.nombre,
+                scheduleId: document.getElementById('sign-schedule-id').value,
+                courseId: document.getElementById('sign-course-id').value,
+                subjectId: document.getElementById('sign-subject-id').value,
+                topic: document.getElementById('sign-topic').value,
+                observation: document.getElementById('sign-obs').value,
+                date: new Date().toISOString().split('T')[0], // YYYY-MM-DD
+                timestamp: new Date().toISOString(),
+                signatureSnapshot: currentUser.firma,
+                periodStart: document.getElementById('sign-period-start').value,
+                periodEnd: document.getElementById('sign-period-end').value
+            };
+
+            try {
+                if (entryId) {
+                    // Update
+                    await updateDoc(doc(db, "leccionario_entries", entryId), data);
+                    showToast("✅ Leccionario Actualizado");
+                } else {
+                    // Create
+                    await addDoc(collection(db, "leccionario_entries"), data);
+                    showToast("✅ Leccionario Firmado y Guardado");
+                }
+                window.closeModal('modal-sign-leccionario');
+                renderDailyDashboard();
+            } catch (error) {
+                showToast("Error al guardar: " + error.message, 'error');
+            } finally {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
+        });
+
+        // --- REPORTES ---
+        // Helper auxiliar HTML
+        async function buildReportHTML(courseId, parallel, dateStr, institution, auditCode, dayName) {
             const qSched = query(collection(db, "schedules"), 
                 where("courseId", "==", courseId), 
                 where("parallel", "==", parallel),
@@ -881,22 +1054,16 @@
             let schedules = [];
             snapSched.forEach(d => schedules.push({id: d.id, ...d.data()}));
 
-            if(schedules.length === 0) {
-                showToast(`No hay clases programadas para el ${dayName} en este curso.`, 'error');
-                document.getElementById('report-container').classList.add('hidden');
-                return;
-            }
+            if(schedules.length === 0) return null;
 
-            // 3. Buscar Entradas de Leccionario (Firmas)
             const qEntries = query(collection(db, "leccionario_entries"), 
                 where("courseId", "==", courseId), 
-                where("date", "==", dateStr)
+                where("date", "==", dateStr) 
             );
             const snapEntries = await getDocs(qEntries);
             let entries = [];
             snapEntries.forEach(d => entries.push({id: d.id, ...d.data()}));
 
-            // 4. Buscar Periodos de Tiempo
             const qPeriods = query(collection(db, "course_periods"), 
                 where("courseId", "==", courseId), 
                 where("parallel", "==", parallel)
@@ -905,13 +1072,11 @@
             let periods = [];
             snapPeriods.forEach(d => periods.push({id: d.id, ...d.data()}));
 
-            // 5. Cruzar Datos y Ordenar
             let reportRows = schedules.map(sched => {
                 const period = periods.find(p => p.id === sched.periodId);
-                const entry = entries.find(e => e.scheduleId === sched.id); // Match por scheduleId
+                const entry = entries.find(e => e.scheduleId === sched.id);
                 const subject = globalData.subjects.find(s => s.id === sched.subjectId);
                 
-                // Buscar Docente en Distributivo
                 const distItem = globalData.distributive.find(d => 
                     d.courseId === courseId && d.parallel === parallel && d.subjectId === sched.subjectId
                 );
@@ -929,223 +1094,172 @@
                 };
             });
 
-            // Ordenar por hora
             reportRows.sort((a,b) => a.start.localeCompare(b.start));
-
-            // 6. Renderizar Reporte
-            document.getElementById('print-institution').textContent = institution.toUpperCase();
-            document.getElementById('print-code').textContent = auditCode;
-            document.getElementById('print-date').textContent = dateStr;
-            
             const courseObj = globalData.courses.find(c => c.id === courseId);
-            document.getElementById('print-course').textContent = courseObj ? courseObj.name : "";
-            document.getElementById('print-parallel').textContent = parallel;
-
-            const tbody = document.getElementById('report-body');
-            tbody.innerHTML = reportRows.map(row => `
-                <tr class="border-b border-slate-200 hover:bg-slate-50">
-                    <td class="p-3 border-r border-slate-200">
-                        <div class="font-bold text-slate-800">${row.start}</div>
-                        <div class="text-xs text-slate-500">${row.end}</div>
-                    </td>
-                    <td class="p-3 border-r border-slate-200">
-                        <div class="font-bold text-slate-800">${row.subjectName}</div>
-                        <div class="text-xs text-slate-500 italic">${row.teacherName}</div>
-                    </td>
-                    <td class="p-3 border-r border-slate-200 ${!row.isSigned ? 'text-red-500 font-bold bg-red-50' : 'text-slate-700'}">
-                        ${row.topic}
-                    </td>
-                    <td class="p-3 border-r border-slate-200 ${!row.isSigned ? 'text-red-500 font-bold bg-red-50' : 'text-slate-600 italic'}">
-                        ${row.observation || '-'}
-                    </td>
-                    <td class="p-3 text-center">
-                        ${row.isSigned && row.signature 
-                            ? `<img src="${row.signature}" class="h-12 mx-auto object-contain">` 
-                            : `<span class="text-xs text-slate-300 font-bold">PENDIENTE</span>`}
-                    </td>
-                </tr>
-            `).join('');
-
-            document.getElementById('report-container').classList.remove('hidden');
-            // Scroll al reporte
-            document.getElementById('report-container').scrollIntoView({ behavior: 'smooth' });
-        };
-
-
-        // --- DASHBOARD: AGENDA DIARIA ---
-        window.renderDailyDashboard = async () => {
-            const container = document.getElementById('dashboard-daily-schedule');
-            const dateLabel = document.getElementById('current-date-label');
+            const cycleName = localStorage.getItem('school_cycle') || "Ciclo Escolar"; // Usar el ciclo guardado
             
-            // 1. Determinar Día
-            const days = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
-            const now = new Date();
-            const todayName = days[now.getDay()];
-            const fullDate = now.toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-            
-            dateLabel.textContent = fullDate.charAt(0).toUpperCase() + fullDate.slice(1);
-
-            // 2. Filtrar Distributivo del Docente
-            // Obtenemos qué materias da el docente actual
-            const myDistributive = globalData.distributive.filter(d => d.teacherId === currentUser.uid);
-            
-            if (myDistributive.length === 0) {
-                 container.innerHTML = `<div class="text-center py-10"><p class="text-slate-400">No tienes carga horaria asignada.</p></div>`;
-                 return;
-            }
-
-            // 3. Buscar en Schedules las clases de HOY para esas materias/cursos
-            // Esto requiere un cruce de datos: 
-            // Para cada entrada del distributivo, buscar si hay schedule hoy.
-            
-            let todaysClasses = [];
-
-            // Traemos todos los horarios (optimizacion: idealmente query filtrado, pero aqui filtramos en memoria por simplicidad del demo)
-            // Necesitamos 'schedules' y 'course_periods' cargados en globalData.
-            // Para asegurar integridad, hacemos fetch fresco de horarios si no existen
-            const schedSnap = await getDocs(collection(db, "schedules"));
-            const allSchedules = [];
-            schedSnap.forEach(d => allSchedules.push({id: d.id, ...d.data()}));
-            
-            const perSnap = await getDocs(collection(db, "course_periods"));
-            const allPeriods = [];
-            perSnap.forEach(d => allPeriods.push({id: d.id, ...d.data()}));
-
-            // Algoritmo de Cruce
-            myDistributive.forEach(dist => {
-                // Buscar horarios que coincidan con Curso + Paralelo + Materia + Día de Hoy
-                const matches = allSchedules.filter(s => 
-                    s.courseId === dist.courseId && 
-                    s.parallel === dist.parallel && 
-                    s.subjectId === dist.subjectId &&
-                    s.day === todayName
-                );
-
-                matches.forEach(match => {
-                    const period = allPeriods.find(p => p.id === match.periodId);
-                    if (period) {
-                        todaysClasses.push({
-                            scheduleId: match.id,
-                            distributiveId: dist.id,
-                            subjectId: dist.subjectId,
-                            courseId: dist.courseId,
-                            parallel: dist.parallel,
-                            start: period.start,
-                            end: period.end,
-                            // Datos UI
-                            subjectName: globalData.subjects.find(s => s.id === dist.subjectId)?.name,
-                            courseName: globalData.courses.find(c => c.id === dist.courseId)?.name
-                        });
-                    }
-                });
-            });
-
-            // 4. Ordenar por Hora
-            todaysClasses.sort((a,b) => a.start.localeCompare(b.start));
-
-            // 5. Renderizar
-            if (todaysClasses.length === 0) {
-                container.innerHTML = `
-                    <div class="text-center py-12 bg-white rounded-3xl border border-slate-100">
-                        <div class="inline-flex w-16 h-16 bg-green-50 rounded-full items-center justify-center text-2xl mb-4">☕</div>
-                        <h3 class="font-bold text-slate-700">¡Día Libre!</h3>
-                        <p class="text-slate-400 text-sm">No tienes clases programadas para hoy ${todayName}.</p>
-                    </div>`;
-                return;
-            }
-
-            container.innerHTML = todaysClasses.map(cls => {
-                // Verificar si ya firmó hoy (Simulado: chequeariamos collection leccionario_entries)
-                // Para demo, siempre mostramos botón habilitado
-                return `
-                <div class="bg-white p-5 rounded-2xl border-l-4 border-blue-600 shadow-sm flex flex-col md:flex-row items-center justify-between gap-4">
-                    <div class="flex items-center gap-4 w-full md:w-auto">
-                        <div class="bg-blue-50 px-4 py-2 rounded-xl text-center min-w-[90px]">
-                            <span class="block text-lg font-black text-blue-700">${cls.start}</span>
-                            <span class="block text-xs font-bold text-blue-400">a ${cls.end}</span>
-                        </div>
+            return `
+            <div class="bg-white p-8 rounded-2xl shadow-xl border border-slate-200 print:shadow-none print:border-none print-break-after">
+                <div class="border-b-2 border-slate-800 pb-4 mb-6">
+                    <div class="flex justify-between items-start">
                         <div>
-                            <h4 class="text-lg font-black text-slate-800">${cls.subjectName}</h4>
-                            <p class="text-sm text-slate-500 font-medium">
-                                <i class="fa-solid fa-users text-xs mr-1"></i> ${cls.courseName} "<strong>${cls.parallel}</strong>"
-                            </p>
+                            <h1 class="text-2xl font-black text-slate-900 uppercase tracking-widest">${institution.toUpperCase()}</h1>
+                            <p class="text-sm font-bold text-slate-600">REPORTE DE LECCIONARIO DIARIO - ${cycleName}</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-xs font-bold text-slate-500">CÓDIGO: <span class="text-slate-900">${auditCode}</span></p>
+                            <p class="text-xs font-bold text-slate-500">FECHA: <span class="text-slate-900">${dateStr}</span></p>
                         </div>
                     </div>
-                    
-                    <button onclick="openSignModal('${cls.scheduleId}', '${cls.courseName}', '${cls.parallel}', '${cls.subjectName}', '${cls.courseId}', '${cls.subjectId}', '${cls.start}', '${cls.end}')" 
-                        class="w-full md:w-auto bg-slate-800 text-white px-6 py-3 rounded-xl font-bold text-sm hover:bg-slate-700 transition flex items-center justify-center gap-2 shadow-lg shadow-slate-200">
-                        <i class="fa-solid fa-pen-nib"></i> Registrar Lección
-                    </button>
+                    <div class="mt-4 flex gap-8 text-sm">
+                        <p><span class="font-bold text-slate-500">CURSO:</span> <span class="font-bold">${courseObj ? courseObj.name : "---"}</span></p>
+                        <p><span class="font-bold text-slate-500">PARALELO:</span> <span class="font-bold">${parallel}</span></p>
+                    </div>
                 </div>
-                `;
-            }).join('');
-        };
 
-        // --- FIRMA DE LECCIONARIO ---
-        window.openSignModal = (schedId, courseName, parallel, subjectName, cId, sId, start, end) => {
-            // Validar Firma
-            if (!currentUser.firma) {
-                showToast("⚠️ ERROR: No tienes firma digital configurada. Ve a tu perfil.", 'error');
+                <div class="overflow-hidden border border-slate-200 rounded-lg">
+                    <table class="w-full text-sm">
+                        <thead class="bg-slate-100 text-slate-700">
+                            <tr>
+                                <th class="border-b border-r border-slate-200 p-3 text-left w-24">HORA</th>
+                                <th class="border-b border-r border-slate-200 p-3 text-left">MATERIA</th>
+                                <th class="border-b border-r border-slate-200 p-3 text-left">TEMA</th>
+                                <th class="border-b border-r border-slate-200 p-3 text-left">DOCENTE</th>
+                                <th class="border-b border-r border-slate-200 p-3 text-center w-24">FIRMA</th>
+                                <th class="border-b border-slate-200 p-3 text-left">OBSERVACIÓN</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${reportRows.map(row => `
+                                <tr class="border-b border-slate-200 hover:bg-slate-50">
+                                    <td class="p-3 border-r border-slate-200">
+                                        <div class="font-bold text-slate-800">${row.start}</div>
+                                        <div class="text-xs text-slate-500">${row.end}</div>
+                                    </td>
+                                    <td class="p-3 border-r border-slate-200 font-bold text-slate-800">
+                                        ${row.subjectName}
+                                    </td>
+                                    <td class="p-3 border-r border-slate-200 ${!row.isSigned ? 'text-red-500 font-bold bg-red-50' : 'text-slate-700'}">
+                                        ${row.topic}
+                                    </td>
+                                    <td class="p-3 border-r border-slate-200 text-xs text-slate-500 italic">
+                                        ${row.teacherName}
+                                    </td>
+                                    <td class="p-3 border-r border-slate-200 text-center">
+                                        ${row.isSigned && row.signature 
+                                            ? `<img src="${row.signature}" class="h-10 mx-auto object-contain">` 
+                                            : `<span class="text-xs text-slate-300 font-bold">PENDIENTE</span>`}
+                                    </td>
+                                    <td class="p-3 border-slate-200 ${!row.isSigned ? 'text-red-500 font-bold bg-red-50' : 'text-slate-600 italic'}">
+                                        ${row.observation || '-'}
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+                <div class="mt-4 pt-4 border-t border-slate-200 text-center">
+                    <p class="text-[10px] text-slate-400">Generado automáticamente por Leccionario Virtual</p>
+                </div>
+            </div>`;
+        }
+
+        window.generateLeccionarioReport = async () => {
+            saveReportConfig();
+            const sectionId = document.getElementById('rep-section-select').value;
+            const courseId = document.getElementById('rep-course-select').value;
+            const parallel = document.getElementById('rep-parallel-select').value;
+            const dateStr = document.getElementById('rep-date').value;
+            const institution = document.getElementById('rep-institution').value;
+            const auditCode = document.getElementById('rep-audit-code').value;
+
+            if(!sectionId || !courseId || !parallel || !dateStr || !institution || !auditCode) {
+                showToast("Por favor complete todos los campos.", 'error');
                 return;
             }
 
-            document.getElementById('sign-class-info').textContent = `${subjectName} | ${courseName} "${parallel}"`;
-            document.getElementById('sign-schedule-id').value = schedId;
-            document.getElementById('sign-course-id').value = cId;
-            document.getElementById('sign-subject-id').value = sId;
-            document.getElementById('sign-period-start').value = start;
-            document.getElementById('sign-period-end').value = end;
+            const dateObj = new Date(dateStr + 'T00:00:00');
+            const days = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
+            const dayName = days[dateObj.getDay()];
+
+            const html = await buildReportHTML(courseId, parallel, dateStr, institution, auditCode, dayName);
             
-            document.getElementById('form-sign-leccionario').reset();
-            window.openModal('modal-sign-leccionario');
+            if (!html) {
+                showToast(`No hay clases programadas para el ${dayName}.`, 'error');
+                return;
+            }
+
+            const area = document.getElementById('report-content-area');
+            area.innerHTML = html;
+            document.getElementById('report-container').classList.remove('hidden');
+            area.scrollIntoView({ behavior: 'smooth' });
         };
 
-        document.getElementById('form-sign-leccionario').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const btn = e.submitter;
-            const originalText = btn.innerHTML;
-            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Guardando...';
-            btn.disabled = true;
+        window.generateSectionReport = async () => {
+            saveReportConfig();
+            const sectionId = document.getElementById('rep-mass-section-select').value;
+            const dateStr = document.getElementById('rep-mass-date').value;
+            const institution = document.getElementById('rep-institution').value;
+            const auditCode = document.getElementById('rep-audit-code').value;
 
-            const data = {
-                teacherId: currentUser.uid,
-                teacherName: currentUser.nombre,
-                scheduleId: document.getElementById('sign-schedule-id').value,
-                courseId: document.getElementById('sign-course-id').value,
-                subjectId: document.getElementById('sign-subject-id').value,
-                topic: document.getElementById('sign-topic').value,
-                observation: document.getElementById('sign-obs').value,
-                date: new Date().toISOString().split('T')[0], // YYYY-MM-DD
-                timestamp: new Date().toISOString(),
-                signatureSnapshot: currentUser.firma, // Guardamos la firma tal cual estaba en ese momento
-                periodStart: document.getElementById('sign-period-start').value,
-                periodEnd: document.getElementById('sign-period-end').value
-            };
-
-            try {
-                await addDoc(collection(db, "leccionario_entries"), data);
-                showToast("✅ Leccionario Firmado y Guardado Correctamente");
-                window.closeModal('modal-sign-leccionario');
-            } catch (error) {
-                showToast("Error al firmar: " + error.message, 'error');
-            } finally {
-                btn.innerHTML = originalText;
-                btn.disabled = false;
+            if(!sectionId || !dateStr || !institution || !auditCode) {
+                showToast("Complete sección, fecha y datos institucionales.", 'error');
+                return;
             }
-        });
 
+            const dateObj = new Date(dateStr + 'T00:00:00');
+            const days = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
+            const dayName = days[dateObj.getDay()];
+
+            const courses = globalData.courses.filter(c => c.sectionId === sectionId);
+            if (courses.length === 0) return showToast("No hay cursos en esta sección.", 'error');
+
+            const area = document.getElementById('report-content-area');
+            area.innerHTML = '<div class="text-center p-10"><i class="fa-solid fa-spinner fa-spin text-3xl text-blue-500"></i><p>Generando reportes masivos...</p></div>';
+            document.getElementById('report-container').classList.remove('hidden');
+
+            let combinedHTML = "";
+            let count = 0;
+
+            for (const course of courses) {
+                for (const parallel of course.parallels) {
+                    const html = await buildReportHTML(course.id, parallel, dateStr, institution, auditCode, dayName);
+                    if (html) {
+                        combinedHTML += html;
+                        count++;
+                    }
+                }
+            }
+
+            if (count === 0) {
+                area.innerHTML = `<div class="text-center p-10 text-red-500">No se encontraron clases programadas para esta sección en ${dayName}.</div>`;
+            } else {
+                area.innerHTML = combinedHTML;
+                showToast(`Generados ${count} reportes.`);
+            }
+        };
 
         // --- CARGADORES DE DATOS ---
 
-        async function loadAllAcademicData() {
+        async function loadAllAcademicData(isAdmin) {
+            // Cargas esenciales para todos
             await Promise.all([
-                loadUsers(),
                 loadSections(),
                 loadAreas(),
                 loadSubjects(),
                 loadCourses(),
                 loadDistributive()
             ]);
+            
+            // Cargas solo para Admin (evitar error de permisos)
+            if (isAdmin) {
+                try {
+                    await loadUsers();
+                } catch(e) {
+                    console.warn("Could not load users list (Permission denied?):", e);
+                }
+            }
+            
             updateDropdowns();
         }
 
@@ -1173,7 +1287,11 @@
                             <button onclick="window.deleteUser('${u.id}')" class="text-red-500 p-2 hover:bg-red-50 rounded" title="Eliminar"><i class="fa-solid fa-trash"></i></button>
                         </td>
                     </tr>`).join('');
-            } catch (e) { console.error(e); }
+            } catch (e) { 
+                console.error("Error loading users:", e); 
+                tbody.innerHTML = `<tr><td colspan="4" class="text-center p-4 text-red-400">Error de permisos</td></tr>`;
+                throw e; // Re-throw to be caught in initApp
+            }
         };
 
         window.deleteUser = async (id) => {
@@ -1436,7 +1554,8 @@
             const secOpts = globalData.sections.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
             document.getElementById('course-section-select').innerHTML = '<option value="">Seleccione Sección...</option>' + secOpts;
             document.getElementById('sched-section-select').innerHTML = '<option value="">Selecciona Sección...</option>' + secOpts;
-            document.getElementById('rep-section-select').innerHTML = '<option value="">Selecciona Sección...</option>' + secOpts; // Nuevo
+            document.getElementById('rep-section-select').innerHTML = '<option value="">Seleccione...</option>' + secOpts; // Nuevo
+            document.getElementById('rep-mass-section-select').innerHTML = '<option value="">Seleccione Sección...</option>' + secOpts; // Nuevo Mass
 
             const teachers = globalData.users.filter(u => u.rol === 'Docente' || u.rol === 'Admin');
             document.getElementById('dist-teacher-select').innerHTML = '<option value="">Sel. Docente...</option>' + teachers.map(t => `<option value="${t.id}">${t.nombre || t.email}</option>`).join('');
