@@ -33,10 +33,6 @@
         .status-missing { background: #fef2f2; color: #ef4444; padding: 4px 8px; border-radius: 6px; font-size: 10px; font-weight: 800; text-transform: uppercase; display: inline-block; }
         .status-done { background: #f0fdf4; color: #16a34a; padding: 4px 8px; border-radius: 6px; font-size: 10px; font-weight: 800; text-transform: uppercase; display: inline-block; }
         .signature-img { max-height: 40px; max-width: 100px; object-fit: contain; display: block; margin: 0 auto; }
-        
-        /* Assignment Matrix Styles */
-        .assignment-row { display: flex; align-items: center; justify-content: space-between; background: #f8fafc; padding: 8px 12px; border-radius: 8px; margin-bottom: 4px; border: 1px solid #e2e8f0; font-size: 12px; }
-        .assignment-row:hover { background: #eff6ff; border-color: #bfdbfe; }
     </style>
 </head>
 <body class="bg-slate-50 min-h-screen font-sans text-slate-900">
@@ -66,7 +62,7 @@
             <form id="auth-form" class="space-y-5 text-left">
                 <input type="text" id="email" required placeholder="Correo" class="w-full px-5 py-4 rounded-2xl border border-slate-200 outline-none bg-slate-50">
                 <input type="password" id="password" required placeholder="Contraseña" class="w-full px-5 py-4 rounded-2xl border border-slate-200 outline-none bg-slate-50">
-                <button type="submit" id="btn-login-submit" class="w-full bg-blue-600 text-white py-4 rounded-2xl font-black uppercase tracking-widest hover:bg-blue-700 transition-all">Ingresar</button>
+                <button type="submit" id="btn-login-submit" class="w-full bg-blue-600 text-white py-4 rounded-2xl font-black uppercase tracking-widest hover:bg-blue-700 transition-all shadow-lg">Ingresar</button>
             </form>
             <form id="register-form" class="space-y-4 text-left hidden">
                 <input type="text" id="reg-name" required placeholder="Nombre Completo" class="w-full px-5 py-4 rounded-2xl border border-slate-200 outline-none bg-slate-50">
@@ -76,7 +72,7 @@
                     <label class="block text-xs font-bold text-slate-400 ml-2 mb-1 uppercase">Subir Firma</label>
                     <input type="file" id="reg-signature" accept="image/*" class="w-full p-3 rounded-2xl border border-slate-200 bg-slate-50 text-xs">
                 </div>
-                <button type="submit" class="w-full bg-green-600 text-white py-4 rounded-2xl font-black uppercase tracking-widest hover:bg-green-700 transition-all">Registrar</button>
+                <button type="submit" class="w-full bg-green-600 text-white py-4 rounded-2xl font-black uppercase tracking-widest hover:bg-green-700 transition-all shadow-lg">Registrar</button>
             </form>
             <div id="login-error" class="bg-red-50 text-red-500 text-xs p-3 rounded-xl mt-4 font-bold hidden border border-red-100 text-left"></div>
              <div class="mt-6 pt-6 border-t border-slate-100">
@@ -268,18 +264,15 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
         const appId = 'leccionario-v1';
-        const getCollectionRef = (name) => collection(db, 'artifacts', appId, 'public', 'data', name);
-        const getDocRef = (col, id) => doc(db, 'artifacts', appId, 'public', 'data', col, id);
-
-        // --- GLOBAL HELPERS (Hoisted) ---
-        const toBase64 = file => new Promise((res, rej) => { const r = new FileReader(); r.readAsDataURL(file); r.onload = () => res(r.result); r.onerror = rej; });
+        // Using Root collections (no artifacts prefix)
+        const getCollectionRef = (name) => collection(db, name);
+        const getDocRef = (col, id) => doc(db, col, id);
 
         const dom = {
             loader: document.getElementById('loader'), auth: document.getElementById('auth-container'), dashboard: document.getElementById('user-logged-in'),
             userTable: document.getElementById('users-table-body')
         };
-        // Auto-remove loader failsafe
-        setTimeout(() => { if(dom.loader) dom.loader.style.display = 'none'; }, 3000);
+        setTimeout(() => { if(dom.loader) dom.loader.style.display = 'none'; }, 2000);
 
         let state = { catalogs: { areas: [], materias: [], cursos: [], paralelos: [], secciones: [], roles: [] }, users: [], currentUser: null, currentSchedule: null, currentCatalog: null, viewDate: new Date(), calendarDate: new Date(), isRegisterMode: false, editingUserAssignments: [] };
 
@@ -302,17 +295,21 @@
                 try {
                     let uData = (await getDoc(getDocRef("users", user.uid))).data();
                     if(!uData) {
-                        // Just use basic data if doc missing
-                        uData = { email: user.email, rol: "Docente", materias: [], areas: [], asignaciones: [] };
+                        const emailDoc = await getDoc(getDocRef("users", user.email));
+                        if (emailDoc.exists()) { uData = emailDoc.data(); await setDoc(getDocRef("users", user.uid), uData); }
+                        else { 
+                            // Default Fallback
+                            uData = { email: user.email, rol: "Docente", materias: [], areas: [], asignaciones: [] }; 
+                            await setDoc(getDocRef("users", user.uid), uData); 
+                        }
                     }
-                    // Safety check for arrays
+                    // Fix missing array structure
                     if(!uData.asignaciones) uData.asignaciones = [];
                     if(!uData.materias) uData.materias = [];
                     
                     loginSuccess({ uid: user.uid, email: user.email, ...uData });
                 } catch(e) {
                      // Fallback
-                     console.warn("Auth Fallback active");
                      loginSuccess({ uid: user.uid, email: user.email, rol: "Docente", materias: [], asignaciones: [] });
                 }
             } else {
@@ -465,14 +462,13 @@
             document.getElementById('form-user-id').value = u.id;
             document.getElementById('form-email').value = u.email;
             document.getElementById('form-name').value = u.nombre || "";
-            document.getElementById('sel-rol').value = u.rol;
             document.getElementById('form-is-super-admin').checked = !!u.isSuperAdmin;
             
-            // Load Assignments
-            state.editingUserAssignments = u.asignaciones || [];
-            renderUserAssignments();
+            const sec = u.seccion;
+            populateSelect('sel-seccion', state.catalogs.secciones);
+            document.getElementById('sel-seccion').value = sec;
             
-            renderUserFormOptions();
+            renderUserFormOptions(); 
             
             setChecked('chk-area', u.areas || []);
             const matNames = (u.materias||[]).map(m => typeof m === 'object' ? m.name : m);
@@ -492,11 +488,13 @@
         window.deleteUser = async (id) => { if(confirm("Borrar?")) await deleteDoc(getDocRef("users", id)); };
 
         // Save User Logic
+        const toBase64 = file => new Promise((res, rej) => { const r = new FileReader(); r.readAsDataURL(file); r.onload = () => res(r.result); r.onerror = rej; });
         document.getElementById('user-form').onsubmit = async (e) => {
             e.preventDefault();
             const id = document.getElementById('form-user-id').value;
             const email = document.getElementById('form-email').value;
             const uid = document.getElementById('form-uid').value.trim() || email;
+            const sec = document.getElementById('sel-seccion').value;
             
             const rawMats = getChecked('chk-materia');
             const finalMats = rawMats.map(mName => {
@@ -511,10 +509,11 @@
                 asignaciones: state.editingUserAssignments,
                 materias: finalMats
             };
-            
             const f = document.getElementById('form-signature').files[0];
             if(f) userData.firma = await toBase64(f);
-            
+            const pass = document.getElementById('form-pass').value;
+            if(pass) userData.password = pass;
+
             if(id) await updateDoc(getDocRef("users", id), userData);
             else await setDoc(getDocRef("users", uid), userData);
             
