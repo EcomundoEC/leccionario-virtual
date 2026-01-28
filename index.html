@@ -8,7 +8,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
         .role-badge { padding: 0.25rem 0.5rem; border-radius: 0.5rem; font-size: 9px; font-weight: 900; text-transform: uppercase; background: #f1f5f9; color: #64748b; display: inline-block; margin-right: 4px; margin-bottom: 2px; }
-        .data-badge { display: inline-block; padding: 2px 6px; background: #eef2ff; color: #4338ca; border-radius: 12px; font-size: 10px; font-weight: 700; margin-right: 2px; margin-bottom: 2px; border: 1px solid #c7d2fe; }
+        .data-badge { display: inline-block; padding: 2px 6px; background: #eef2ff; color: #4338ca; border-radius: 4px; font-size: 10px; font-weight: 700; margin-right: 2px; margin-bottom: 2px; border: 1px solid #e0e7ff; }
         .modal-animate { animation: fadeIn 0.2s ease-out; }
         @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
         .tab-btn { border-bottom: 3px solid transparent; color: #94a3b8; transition: all 0.2s; cursor: pointer; }
@@ -33,6 +33,10 @@
         .status-missing { background: #fef2f2; color: #ef4444; padding: 4px 8px; border-radius: 6px; font-size: 10px; font-weight: 800; text-transform: uppercase; display: inline-block; }
         .status-done { background: #f0fdf4; color: #16a34a; padding: 4px 8px; border-radius: 6px; font-size: 10px; font-weight: 800; text-transform: uppercase; display: inline-block; }
         .signature-img { max-height: 40px; max-width: 100px; object-fit: contain; display: block; margin: 0 auto; }
+        
+        /* Assignment Matrix Styles */
+        .assignment-row { display: flex; align-items: center; justify-content: space-between; background: #f8fafc; padding: 8px 12px; border-radius: 8px; margin-bottom: 4px; border: 1px solid #e2e8f0; font-size: 12px; }
+        .assignment-row:hover { background: #eff6ff; border-color: #bfdbfe; }
     </style>
 </head>
 <body class="bg-slate-50 min-h-screen font-sans text-slate-900">
@@ -109,9 +113,8 @@
                     
                     <div class="bg-blue-50 p-8 rounded-[3rem] border border-blue-100">
                         <h3 class="font-black text-lg text-blue-800 mb-4">Mis Asignaciones</h3>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div><p class="text-[10px] uppercase font-black text-blue-400 mb-2 tracking-widest">Materias</p><div id="my-subjects-list" class="flex flex-wrap gap-2 text-sm text-slate-600"></div></div>
-                            <div><p class="text-[10px] uppercase font-black text-blue-400 mb-2 tracking-widest">Cursos</p><div id="my-courses-list" class="flex flex-wrap gap-2 text-sm text-slate-600"></div></div>
+                        <div class="grid grid-cols-1 gap-6">
+                             <div><p class="text-[10px] uppercase font-black text-blue-400 mb-2 tracking-widest">Carga Académica</p><div id="my-assignments-list" class="space-y-2 text-sm text-slate-600"></div></div>
                         </div>
                     </div>
                 </div>
@@ -149,7 +152,7 @@
                         <button onclick="window.openAddUserModal()" class="bg-blue-600 text-white px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-blue-700 shadow-lg shadow-blue-200 flex items-center gap-2"><span>+</span> Nuevo</button>
                     </div>
                 </div>
-                <div class="bg-white rounded-[3rem] shadow-xl border border-slate-100 overflow-hidden"><div class="overflow-x-auto"><table class="w-full text-left min-w-[800px]"><thead><tr class="text-slate-400 text-[10px] uppercase font-black border-b border-slate-50"><th class="px-8 py-6">Usuario</th><th class="px-8 py-6">Datos</th><th class="px-8 py-6">Cursos</th><th class="px-8 py-6">Rol</th><th class="px-8 py-6 text-right">Acciones</th></tr></thead><tbody id="users-table-body" class="divide-y divide-slate-50"></tbody></table></div></div>
+                <div class="bg-white rounded-[3rem] shadow-xl border border-slate-100 overflow-hidden"><div class="overflow-x-auto"><table class="w-full text-left min-w-[800px]"><thead><tr class="text-slate-400 text-[10px] uppercase font-black border-b border-slate-50"><th class="px-8 py-6">Usuario</th><th class="px-8 py-6">Carga Académica</th><th class="px-8 py-6">Firma</th><th class="px-8 py-6">Rol</th><th class="px-8 py-6 text-right">Acciones</th></tr></thead><tbody id="users-table-body" class="divide-y divide-slate-50"></tbody></table></div></div>
             </div>
 
             <div id="content-catalogs" class="hidden space-y-6">
@@ -208,15 +211,26 @@
                     <input type="checkbox" id="form-is-super-admin" class="w-6 h-6">
                 </div>
                 <div class="mb-4 mt-4 bg-yellow-50 p-4 rounded-2xl border border-yellow-100"><label class="block text-[10px] font-black text-yellow-600 mb-1 uppercase">ID Vinculación (UID)</label><input type="text" id="form-uid" class="w-full p-2 bg-transparent text-sm font-mono outline-none"></div>
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-6 border-t border-slate-100 pt-6">
-                    <div><label class="block text-xs font-black text-slate-400 mb-2 uppercase">Áreas</label><div id="container-areas" class="check-grid"></div></div>
-                    <div><label class="block text-xs font-black text-slate-400 mb-2 uppercase">Materias</label><div id="container-materias" class="check-grid"></div></div>
-                    <div><label class="block text-xs font-black text-slate-400 mb-2 uppercase">Cursos</label><div id="container-cursos" class="check-grid"></div></div>
-                    <div><label class="block text-xs font-black text-slate-400 mb-2 uppercase">Paralelos</label><div id="container-paralelos" class="check-grid"></div></div>
-                    <div><label class="block text-xs font-black text-slate-400 mb-2 uppercase">Sección</label><select id="sel-seccion" class="w-full p-3 rounded-xl bg-slate-50 outline-none"></select></div>
-                    <div><label class="block text-xs font-black text-slate-400 mb-2 uppercase">Rol</label><select id="sel-rol" class="w-full p-3 rounded-xl bg-slate-50 outline-none"></select></div>
+                <div class="pt-6 border-t border-slate-100">
+                    <h4 class="font-black text-slate-800 mb-4 text-lg">Carga Académica</h4>
+                    <!-- ASIGNACIÓN MEJORADA -->
+                    <div class="flex flex-wrap gap-2 mb-4 bg-slate-50 p-4 rounded-xl border border-slate-200 items-end">
+                         <div><label class="text-[10px] font-bold text-slate-400">Sección</label><select id="assign-seccion" class="p-2 rounded-lg text-xs w-32"></select></div>
+                         <div><label class="text-[10px] font-bold text-slate-400">Curso</label><select id="assign-curso" class="p-2 rounded-lg text-xs w-32"></select></div>
+                         <div><label class="text-[10px] font-bold text-slate-400">Paralelo</label><select id="assign-paralelo" class="p-2 rounded-lg text-xs w-20"></select></div>
+                         <button type="button" onclick="window.addAssignment()" class="bg-blue-600 text-white p-2 rounded-lg text-xs font-bold hover:bg-blue-700">Agregar +</button>
+                    </div>
+                    <div id="assignments-list" class="space-y-2 max-h-40 overflow-y-auto mb-6 p-2 bg-slate-50 rounded-xl"></div>
+                    
+                    <!-- MATERIAS Y AREAS (Simple checks) -->
+                    <div class="grid grid-cols-2 gap-4">
+                        <div><label class="block text-xs font-black text-slate-400 mb-2 uppercase">Materias que dicta</label><div id="container-materias" class="check-grid"></div></div>
+                        <div><label class="block text-xs font-black text-slate-400 mb-2 uppercase">Áreas</label><div id="container-areas" class="check-grid"></div></div>
+                    </div>
                 </div>
-                <button type="submit" class="w-full bg-slate-900 text-white py-5 rounded-[2rem] font-black uppercase hover:bg-black transition-all">Guardar</button>
+                <div class="mt-6"><label class="block text-xs font-black text-slate-400 mb-2 uppercase">Rol</label><select id="sel-rol" class="w-full p-3 rounded-xl bg-slate-50 outline-none"></select></div>
+                
+                <button type="submit" class="w-full bg-slate-900 text-white py-5 rounded-[2rem] font-black uppercase hover:bg-black transition-all mt-6">Guardar</button>
             </form>
         </div>
     </div>
@@ -225,7 +239,7 @@
     <div id="modal-time-slots" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[130] hidden items-center justify-center p-4"><div class="bg-white w-full max-w-lg rounded-[2.5rem] p-8 modal-animate"><div class="flex justify-between items-center mb-6"><h3 class="text-2xl font-black">Horas</h3><button onclick="window.closeModal('modal-time-slots')">✕</button></div><div class="flex gap-2 mb-4"><input type="time" id="ts-start" class="p-2 rounded-lg border text-sm"><input type="time" id="ts-end" class="p-2 rounded-lg border text-sm"><button onclick="window.addTimeSlot()" class="bg-slate-800 text-white rounded-lg px-4 text-xs font-bold">Agregar</button></div><div id="slots-list" class="space-y-2"></div></div></div>
     <div id="modal-assign-subject" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[140] hidden items-center justify-center p-4"><div class="bg-white w-full max-w-sm rounded-[2.5rem] p-8 modal-animate"><h3 class="text-xl font-black mb-4">Asignar</h3><div id="subject-selector-list" class="grid grid-cols-2 gap-2 max-h-64 overflow-y-auto"></div><button onclick="window.closeModal('modal-assign-subject')" class="mt-6 w-full bg-slate-100 text-slate-500 py-3 rounded-xl font-bold text-xs">Cancelar</button></div></div>
     <div id="modal-copy-schedule" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[150] hidden items-center justify-center p-4"><div class="bg-white w-full max-w-md rounded-[2.5rem] p-8 modal-animate"><h3 class="text-xl font-black mb-4">Copiar</h3><div class="space-y-3 mb-6"><div><label class="block text-[10px] font-black uppercase text-slate-400">Sección</label><select id="copy-seccion" class="w-full p-3 bg-slate-50 rounded-xl text-sm outline-none"></select></div><div><label class="block text-[10px] font-black uppercase text-slate-400">Curso</label><select id="copy-curso" class="w-full p-3 bg-slate-50 rounded-xl text-sm outline-none"></select></div><div><label class="block text-[10px] font-black uppercase text-slate-400">Paralelo</label><select id="copy-paralelo" class="w-full p-3 bg-slate-50 rounded-xl text-sm outline-none"></select></div></div><button onclick="window.confirmCopySchedule()" class="w-full bg-blue-600 text-white py-3 rounded-xl font-bold text-sm">Copiar</button><button onclick="window.closeModal('modal-copy-schedule')" class="mt-3 w-full text-slate-400 font-bold uppercase text-xs">Cancelar</button></div></div>
-    <div id="modal-class-log" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[160] hidden items-center justify-center p-4"><div class="bg-white w-full max-w-lg rounded-[2.5rem] p-10 modal-animate"><div class="flex justify-between mb-6"><div><h3 class="text-2xl font-black">Registro</h3><p id="log-class-info" class="text-xs font-bold text-blue-600"></p></div><button onclick="window.closeModal('modal-class-log')">✕</button></div><form id="log-form" class="space-y-4"><input type="hidden" id="log-id"><div><label class="block text-xs font-black text-slate-400 uppercase">Tema</label><input type="text" id="log-topic" required class="w-full p-4 rounded-xl bg-slate-50"></div><div><label class="block text-xs font-black text-slate-400 uppercase">Actividad</label><textarea id="log-content" required class="w-full p-4 rounded-xl bg-slate-50 h-32 resize-none"></textarea></div><button type="submit" class="w-full bg-blue-600 text-white py-4 rounded-xl font-black uppercase">Guardar</button></form></div></div>
+    <div id="modal-class-log" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[160] hidden items-center justify-center p-4"><div class="bg-white w-full max-w-lg rounded-[2.5rem] p-10 modal-animate"><div class="flex justify-between mb-6"><div><h3 class="text-2xl font-black">Registro</h3><p id="log-class-info" class="text-xs font-bold text-blue-600"></p></div><button onclick="window.closeModal('modal-class-log')">✕</button></div><form id="log-form" class="space-y-4"><input type="hidden" id="log-id"><div><label class="block text-xs font-black text-slate-400 uppercase">Tema</label><input type="text" id="log-topic" required class="w-full p-4 rounded-xl bg-slate-50"></div><div><label class="block text-xs font-black text-slate-400 uppercase">Actividad</label><textarea id="log-content" required class="w-full p-4 rounded-xl bg-slate-50 h-32 resize-none"></textarea></div><button type="submit" class="w-full bg-blue-600 text-white py-4 rounded-xl font-black uppercase">Guardar y Firmar</button></form></div></div>
     <!-- MODAL COURSE MANAGER -->
     <div id="modal-course-manager" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[130] hidden items-center justify-center p-4">
         <div class="bg-white w-full max-w-lg rounded-[2.5rem] p-8 modal-animate max-h-[85vh] overflow-y-auto">
@@ -259,7 +273,7 @@
         };
         setTimeout(() => { if(dom.loader) dom.loader.style.display = 'none'; }, 2000);
 
-        let state = { catalogs: { areas: [], materias: [], cursos: [], paralelos: [], secciones: [], roles: [] }, users: [], currentUser: null, currentSchedule: null, currentCatalog: null, viewDate: new Date(), calendarDate: new Date(), isRegisterMode: false };
+        let state = { catalogs: { areas: [], materias: [], cursos: [], paralelos: [], secciones: [], roles: [] }, users: [], currentUser: null, currentSchedule: null, currentCatalog: null, viewDate: new Date(), calendarDate: new Date(), isRegisterMode: false, editingUserAssignments: [] };
 
         // Test connection
         (async () => {
@@ -276,19 +290,12 @@
         // AUTH
         onAuthStateChanged(auth, async (user) => {
             if(user) {
-                // Robust user fetching
-                try {
-                    let uData = (await getDoc(getDocRef("users", user.uid))).data();
-                    if(!uData) {
-                        const emailDoc = await getDoc(getDocRef("users", user.email));
-                        if (emailDoc.exists()) { uData = emailDoc.data(); await setDoc(getDocRef("users", user.uid), uData); }
-                        else { uData = { email: user.email, rol: "Docente", materias: [], areas: [] }; await setDoc(getDocRef("users", user.uid), uData); }
-                    }
-                    loginSuccess({ uid: user.uid, email: user.email, ...uData });
-                } catch(e) {
-                     // Fallback
-                     loginSuccess({ uid: user.uid, email: user.email, rol: "Docente" });
+                let uData = (await getDoc(getDocRef("users", user.uid))).data();
+                if(!uData) { // Fallback creation
+                    uData = { email: user.email, rol: "Docente", materias: [], areas: [], asignaciones: [] };
+                    await setDoc(getDocRef("users", user.uid), uData);
                 }
+                loginSuccess({ uid: user.uid, email: user.email, ...uData });
             } else {
                 dom.dashboard.classList.add('hidden'); dom.auth.classList.remove('hidden');
             }
@@ -300,13 +307,17 @@
             document.getElementById('user-role-display').textContent = user.rol;
             document.getElementById('avatar-circle').textContent = (user.nombre||user.email)[0].toUpperCase();
             
-            // Dashboard info
-            if (user.materias) document.getElementById('my-subjects-list').innerHTML = (user.materias||[]).map(m => typeof m === 'object' ? `<span class='data-badge'>${m.name}</span>` : `<span class='data-badge'>${m}</span>`).join('');
-            if (user.cursos) document.getElementById('my-courses-list').innerHTML = (user.cursos||[]).map(c => typeof c === 'object' ? `<span class='text-xs font-bold mr-2'>${c.name}</span>` : `<span class='text-xs font-bold mr-2'>${c}</span>`).join('');
+            // Dashboard info (ASSIGNMENTS MATRIX)
+            // Render Asignaciones in Dashboard
+            const myAss = user.asignaciones || [];
+            if(myAss.length) {
+                document.getElementById('my-subjects-list').innerHTML = (user.materias||[]).map(m => typeof m === 'object' ? `<span class='data-badge'>${m.name}</span>` : `<span class='data-badge'>${m}</span>`).join('');
+                document.getElementById('my-courses-list').innerHTML = myAss.map(a => `<div class='flex gap-2 items-center'><span class='text-xs font-bold text-slate-700'>${a.seccion}</span> <span class='course-badge'>${a.curso}</span> <span class='parallel-badge'>${a.paralelo}</span></div>`).join('');
+            } else {
+                document.getElementById('my-courses-list').innerHTML = "<span class='text-slate-400'>Sin asignaciones</span>";
+            }
 
-            // CASE INSENSITIVE ADMIN CHECK
-            const userEmail = (user.email || "").toLowerCase();
-            const isAdmin = user.isSuperAdmin || (user.rol||"").toLowerCase().includes("admin") || userEmail.includes("admin") || userEmail === "gasencio@ecomundo.edu.ec";
+            const isAdmin = user.isSuperAdmin || (user.rol||"").toLowerCase().includes("admin") || user.email.includes("admin") || user.email === "gasencio@ecomundo.edu.ec" || user.email === "ajuanazo@ecomundo.edu.ec";
             document.getElementById('btn-open-admin').classList.toggle('hidden', !isAdmin);
             document.getElementById('btn-open-admin-header').classList.toggle('hidden', !isAdmin);
             
@@ -321,7 +332,7 @@
             const email = document.getElementById('email').value.trim();
             const pass = document.getElementById('password').value;
             if (email === "admin" && pass === "admin") {
-                loginSuccess({ uid: "local", email: "admin", rol: "Admin", isSuperAdmin: true, materias: [], cursos: [] });
+                loginSuccess({ uid: "local", email: "admin", rol: "Admin", isSuperAdmin: true, materias: [], asignaciones: [] });
                 return;
             }
             try {
@@ -358,8 +369,10 @@
             dom.userTable.innerHTML = state.users.map(u => `
                 <tr class="border-b border-slate-50 hover:bg-slate-50">
                     <td class="px-8 py-4"><div class="font-bold">${u.nombre||u.email}</div><div class="text-[10px] text-slate-400">${u.email}</div><div class="text-[10px] text-blue-400">${u.firma ? '✅ Firma' : '❌ Sin Firma'}</div></td>
+                    <td class="px-8 py-4 text-xs">
+                        ${(u.asignaciones||[]).map(a => `<div class='mb-1'><span class='font-bold'>${a.curso}</span> ${a.paralelo} <span class='text-slate-400'>(${a.seccion})</span></div>`).join('')}
+                    </td>
                     <td class="px-8 py-4 text-xs">${(u.materias||[]).map(m => typeof m==='object'?m.name:m).join(', ')}</td>
-                    <td class="px-8 py-4 text-xs">${(u.cursos||[]).map(c => typeof c==='object'?c.name:c).join(', ')}</td>
                     <td class="px-8 py-4"><span class="role-badge role-${u.rol}">${u.rol}</span></td>
                     <td class="px-8 py-4 text-right"><button onclick="window.editUser('${u.id}')" class="text-blue-600 font-bold text-xs uppercase">Editar</button> <button onclick="window.deleteUser('${u.id}')" class="text-red-400 font-bold text-xs uppercase ml-2">Borrar</button></td>
                 </tr>
@@ -367,6 +380,9 @@
         }
 
         // GLOBALS
+        window.logout = () => { signOut(auth).then(() => window.location.reload()); };
+        window.closeAdminPanel = () => { document.getElementById('admin-view').classList.add('hidden'); document.getElementById('main-dashboard-view').classList.remove('hidden'); };
+        
         window.switchTab = (tab) => {
             ['users','catalogs','schedules','leccionario','reports','courses'].forEach(t => document.getElementById('content-'+t).classList.add('hidden'));
             document.getElementById('content-'+tab).classList.remove('hidden');
@@ -382,9 +398,6 @@
         window.closeModal = (id) => document.getElementById(id).classList.replace('flex', 'hidden');
         
         window.showAdminPanel = () => { document.getElementById('main-dashboard-view').classList.add('hidden'); document.getElementById('admin-view').classList.remove('hidden'); window.switchTab('users'); };
-        window.closeAdminPanel = () => { document.getElementById('admin-view').classList.add('hidden'); document.getElementById('main-dashboard-view').classList.remove('hidden'); };
-        window.logout = () => { signOut(auth).then(() => window.location.reload()); };
-        
         window.editUser = (id) => {
             const u = state.users.find(x => x.id === id);
             document.getElementById('form-user-id').value = u.id;
@@ -392,26 +405,30 @@
             document.getElementById('form-name').value = u.nombre || "";
             document.getElementById('form-is-super-admin').checked = !!u.isSuperAdmin;
             
-            const sec = u.seccion;
-            populateSelect('sel-seccion', state.catalogs.secciones);
-            document.getElementById('sel-seccion').value = sec;
+            document.getElementById('sel-rol').value = u.rol;
+
+            // Load Assignments
+            state.editingUserAssignments = u.asignaciones || [];
+            renderUserAssignments();
             
-            renderUserFormOptions(); 
+            // Render other options
+            renderUserFormOptions();
             
             setChecked('chk-area', u.areas || []);
             const matNames = (u.materias||[]).map(m => typeof m === 'object' ? m.name : m);
             setChecked('chk-materia', matNames);
-            const curNames = (u.cursos||[]).map(c => typeof c === 'object' ? c.name : c);
-            setChecked('chk-curso', curNames);
-            // Check parallels - ensure string match
-            const parNames = (u.paralelos||[]).map(p => typeof p === 'object' ? p.name : p);
-            setChecked('chk-paralelo', parNames);
-            
-            document.getElementById('sel-rol').value = u.rol;
+
             window.openModal('modal-user');
         };
         
-        window.openAddUserModal = () => { populateSelect('sel-seccion', state.catalogs.secciones); renderUserFormOptions(); document.getElementById('user-form').reset(); document.getElementById('form-user-id').value=""; window.openModal('modal-user'); };
+        window.openAddUserModal = () => { 
+            state.editingUserAssignments = [];
+            renderUserAssignments();
+            renderUserFormOptions(); 
+            document.getElementById('user-form').reset(); 
+            document.getElementById('form-user-id').value=""; 
+            window.openModal('modal-user'); 
+        };
         window.deleteUser = async (id) => { if(confirm("Borrar?")) await deleteDoc(getDocRef("users", id)); };
 
         // Save User Logic
@@ -421,17 +438,7 @@
             const id = document.getElementById('form-user-id').value;
             const email = document.getElementById('form-email').value;
             const uid = document.getElementById('form-uid').value.trim() || email;
-            const sec = document.getElementById('sel-seccion').value;
             
-            const rawCourses = getChecked('chk-curso');
-            const finalCourses = rawCourses.map(cName => {
-                 const original = state.catalogs.cursos.find(c => c.name === cName && c.section === sec);
-                 return original || { name: cName, section: sec };
-            });
-            
-            const rawPars = getChecked('chk-paralelo');
-            const finalPars = rawPars.map(pName => ({ name: pName, section: sec }));
-
             const rawMats = getChecked('chk-materia');
             const finalMats = rawMats.map(mName => {
                 const found = state.catalogs.materias.find(m => m.name === mName || m === mName);
@@ -442,11 +449,9 @@
                 email, nombre: document.getElementById('form-name').value,
                 isSuperAdmin: document.getElementById('form-is-super-admin').checked,
                 rol: document.getElementById('sel-rol').value,
-                seccion: sec,
+                asignaciones: state.editingUserAssignments, // Saved from local state
                 areas: getChecked('chk-area'),
-                materias: finalMats,
-                cursos: finalCourses,
-                paralelos: finalPars
+                materias: finalMats
             };
             const f = document.getElementById('form-signature').files[0];
             if(f) userData.firma = await toBase64(f);
@@ -457,6 +462,43 @@
             else await setDoc(getDocRef("users", uid), userData);
             window.closeModal('modal-user');
         };
+
+        // --- ASSIGNMENT MATRIX LOGIC (New) ---
+        function renderUserAssignments() {
+            const list = document.getElementById('assignments-list');
+            list.innerHTML = state.editingUserAssignments.map((a, i) => `
+                <div class="assignment-row">
+                    <span><b>${a.curso}</b> ${a.paralelo} (${a.seccion})</span>
+                    <button type="button" onclick="window.removeAssignment(${i})" class="text-red-500 font-bold">✕</button>
+                </div>
+            `).join('');
+        }
+        
+        window.addAssignment = () => {
+             const sec = document.getElementById('assign-seccion').value;
+             const cur = document.getElementById('assign-curso').value;
+             const par = document.getElementById('assign-paralelo').value;
+             if(sec && cur && par) {
+                 // Check duplicate
+                 if(!state.editingUserAssignments.some(a => a.seccion === sec && a.curso === cur && a.paralelo === par)) {
+                     state.editingUserAssignments.push({ seccion: sec, curso: cur, paralelo: par });
+                     renderUserAssignments();
+                 }
+             }
+        };
+        
+        window.removeAssignment = (i) => {
+            state.editingUserAssignments.splice(i, 1);
+            renderUserAssignments();
+        };
+
+        // Listeners for Assignment Selects in User Modal
+        document.getElementById('assign-seccion').onchange = () => updateCourseOptions('assign-seccion', 'assign-curso', 'assign-paralelo');
+        document.getElementById('assign-curso').onchange = () => {
+             const curName = document.getElementById('assign-curso').value;
+             updateParallelOptions(curName, 'assign-paralelo');
+        };
+
 
         // --- SCHEDULES ---
         window.loadSchedule = async () => {
@@ -515,11 +557,9 @@
                          
                          let row = { time: `${slot.start} - ${slot.end}`, subject: subjName, teacher: "Sin Asignar", topic: "NO REGISTRADO", obs: "NO REGISTRADO", sign: `<span class="text-xs text-red-500 font-bold">PENDIENTE</span>` };
                          
-                         // Find Teacher
+                         // Find Teacher (Strict Check against Assignments)
                          const t = users.find(u => 
-                             u.seccion === sec && 
-                             (u.cursos||[]).some(c => (typeof c === 'object' ? c.name : c) === cur) && 
-                             (u.paralelos||[]).some(p => (typeof p === 'object' ? p.name : p) === par) && 
+                             (u.asignaciones || []).some(a => a.seccion === sec && a.curso === cur && a.paralelo === par) &&
                              ((u.materias||[]).map(m=>typeof m==='object'?m.name:m).includes(subjName))
                          );
                          if(t) row.teacher = t.nombre || t.email;
@@ -561,27 +601,19 @@
              createCheckboxes('container-materias', matNames, 'chk-materia');
              populateSelect('sel-seccion', state.catalogs.secciones);
              populateSelect('sel-rol', state.catalogs.roles);
-             createCheckboxes('container-paralelos', state.catalogs.paralelos, 'chk-paralelo');
-             updateUserCourses(); // Initial courses
+             
+             // Populate assignment selects
+             populateSelect('assign-seccion', state.catalogs.secciones);
+             // Trigger init update
+             updateCourseOptions('assign-seccion', 'assign-curso', 'assign-paralelo');
         }
-        document.getElementById('sel-seccion').onchange = updateUserCourses;
-        function updateUserCourses() {
-            const sec = document.getElementById('sel-seccion').value;
-            // FILTER COURSES BY SECTION
-            const courses = (state.catalogs.cursos||[]).filter(c => (typeof c === 'string') || (c.section === sec)).map(c => (typeof c === 'object') ? c.name : c);
-            createCheckboxes('container-cursos', courses, 'chk-curso');
-            
-            // FILTER PARALLELS BY SECTION (As requested)
-            const parallels = (state.catalogs.paralelos||[]).filter(p => (typeof p === 'string') || (p.section === sec)).map(p => (typeof p === 'object') ? p.name : p);
-            createCheckboxes('container-paralelos', parallels, 'chk-paralelo');
-        }
+        
         function createCheckboxes(id, list, name) { document.getElementById(id).innerHTML = (list||[]).map(v => `<label class="check-item"><input type="checkbox" name="${name}" value="${v}"><span>${v}</span></label>`).join(''); }
         function populateSelect(id, list) { document.getElementById(id).innerHTML = (list||[]).map(v => `<option value="${v}">${v}</option>`).join(''); }
         function setChecked(name, vals) { document.querySelectorAll(`input[name="${name}"]`).forEach(cb => cb.checked = vals.includes(cb.value)); }
         function getChecked(name) { return Array.from(document.querySelectorAll(`input[name="${name}"]:checked`)).map(cb => cb.value); }
         function populateScheduleSelectors() { ['sch','lec'].forEach(p => { 
              populateSelect(p+'-seccion', state.catalogs.secciones); 
-             // Trigger update for other selects based on first section
              updateCourseOptions(p+'-seccion', p+'-curso', p+'-paralelo');
         }); }
         
@@ -608,10 +640,6 @@
                 eIn.classList.remove('hidden');
                 document.getElementById('catalog-extra-label').textContent = "Vincular a Área";
                 eSel.innerHTML = (state.catalogs.areas || []).map(a => `<option value="${a}">${a}</option>`).join('');
-            } else if (k==='cursos' || k==='paralelos') {
-                eIn.classList.remove('hidden');
-                document.getElementById('catalog-extra-label').textContent = "Vincular a Sección";
-                eSel.innerHTML = (state.catalogs.secciones || []).map(s => `<option value="${s}">${s}</option>`).join('');
             } else {
                 eIn.classList.add('hidden');
             }
@@ -630,8 +658,11 @@
             const ex = document.getElementById('catalog-extra-select').value;
             if(v) { 
                 if(state.currentCatalog === 'materias') state.catalogs.materias.push({name:v, area:ex});
-                else if(state.currentCatalog === 'cursos') state.catalogs.cursos.push({name:v, section:ex});
-                else if(state.currentCatalog === 'paralelos') state.catalogs.paralelos.push({name:v, section:ex});
+                else if(state.currentCatalog === 'cursos') {
+                    // NEW COURSE MANAGER LOGIC handled in separate modal usually, but here simplified catalog
+                    // Initialize course with EMPTY parallels array by default
+                    state.catalogs.cursos.push({name:v, section:ex, parallels: []});
+                }
                 else state.catalogs[state.currentCatalog].push(v); 
                 await window.manualSaveCatalogs(); renderCatalogList(); renderCatalogs(); 
             } 
@@ -715,16 +746,15 @@
             
             scheds.forEach(s => {
                 const [sec, cur, par] = s.id.split('_');
-                // Check if user is assigned to this context (Section + Course + Parallel)
-                // AND teaches the subject in that slot
-                if(state.currentUser.seccion === sec && 
-                   state.currentUser.cursos.some(c=>(c.name||c)===cur) && 
-                   state.currentUser.paralelos.some(p=>(p.name||p)===par)) {
-                       
+                // Check assignments
+                const hasAssignment = (state.currentUser.asignaciones||[]).some(a => a.seccion === sec && a.curso === cur && a.paralelo === par);
+                
+                if(hasAssignment) {
                        (s.slots||[]).forEach(slot => {
                            const subj = s.grid[`${slot.id}_${dayIdx}`];
                            if(subj) {
                                const sName = subj.name || subj;
+                               // Check if user teaches this subject
                                if(state.currentUser.materias.some(m=>(m.name||m)===sName)) {
                                    myClasses.push({time: `${slot.start}-${slot.end}`, subject: sName, course: `${cur} ${par}`, sec, logId: `${d.toISOString().split('T')[0]}_${s.id}_${slot.id}`});
                                }
@@ -737,8 +767,8 @@
             else {
                  const content = [];
                  for(const c of myClasses) {
-                     const log = (await getDoc(doc(db, 'class_logs', c.logId))).data();
-                     const btnTxt = log ? "Ver / Editar" : "Firmar";
+                     const log = (await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'class_logs', c.logId))).data();
+                     const btnTxt = log ? "Ver Registro" : "Guardar y Firmar";
                      const color = log ? "green" : "blue";
                      content.push(`<div class="bg-white p-4 rounded-xl shadow-sm flex justify-between items-center border-l-4 border-${color}-500">
                         <div>
@@ -789,10 +819,7 @@
             const parEl = document.getElementById(parId);
             if(!parEl) return;
             
-            const course = state.catalogs.cursos.find(c => c.name === courseName); // Assumes unique name or add sec filter context
-            // Actually better to find in filtered list or pass sec. 
-            // Simplified: we trust unique names or first match. 
-            
+            const course = state.catalogs.cursos.find(c => c.name === courseName); 
             if(course && course.parallels && course.parallels.length > 0) {
                  parEl.innerHTML = course.parallels.map(p => `<option value="${p}">${p}</option>`).join('');
             } else {
@@ -821,7 +848,7 @@
             const content = document.getElementById('log-content').value;
             
             try {
-                await setDoc(doc(db, 'class_logs', id), {
+                await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'class_logs', id), {
                     topic, content, teacherEmail: state.currentUser.email, timestamp: new Date()
                 });
                 alert("Firmado y Guardado");
