@@ -8,7 +8,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
         .role-badge { padding: 0.25rem 0.5rem; border-radius: 0.5rem; font-size: 9px; font-weight: 900; text-transform: uppercase; background: #f1f5f9; color: #64748b; display: inline-block; margin-right: 4px; margin-bottom: 2px; }
-        .data-badge { display: inline-block; padding: 2px 6px; background: #eef2ff; color: #4338ca; border-radius: 4px; font-size: 10px; font-weight: 700; margin-right: 2px; margin-bottom: 2px; border: 1px solid #e0e7ff; }
+        .data-badge { display: inline-block; padding: 2px 6px; background: #eef2ff; color: #4338ca; border-radius: 12px; font-size: 10px; font-weight: 700; margin-right: 2px; margin-bottom: 2px; border: 1px solid #e0e7ff; }
         .modal-animate { animation: fadeIn 0.2s ease-out; }
         @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
         .tab-btn { border-bottom: 3px solid transparent; color: #94a3b8; transition: all 0.2s; cursor: pointer; }
@@ -33,10 +33,6 @@
         .status-missing { background: #fef2f2; color: #ef4444; padding: 4px 8px; border-radius: 6px; font-size: 10px; font-weight: 800; text-transform: uppercase; display: inline-block; }
         .status-done { background: #f0fdf4; color: #16a34a; padding: 4px 8px; border-radius: 6px; font-size: 10px; font-weight: 800; text-transform: uppercase; display: inline-block; }
         .signature-img { max-height: 40px; max-width: 100px; object-fit: contain; display: block; margin: 0 auto; }
-        
-        /* Assignment Matrix Styles */
-        .assignment-row { display: flex; align-items: center; justify-content: space-between; background: #f8fafc; padding: 8px 12px; border-radius: 8px; margin-bottom: 4px; border: 1px solid #e2e8f0; font-size: 12px; }
-        .assignment-row:hover { background: #eff6ff; border-color: #bfdbfe; }
     </style>
 </head>
 <body class="bg-slate-50 min-h-screen font-sans text-slate-900">
@@ -63,11 +59,15 @@
                 <div id="tab-login" onclick="window.switchAuthTab('login')" class="auth-tab active">Iniciar Sesión</div>
                 <div id="tab-register" onclick="window.switchAuthTab('register')" class="auth-tab">Crear Cuenta</div>
             </div>
+            
+            <!-- FORMULARIO DE LOGIN -->
             <form id="auth-form" class="space-y-5 text-left">
-                <input type="text" id="email" required placeholder="Correo" class="w-full px-5 py-4 rounded-2xl border border-slate-200 outline-none bg-slate-50">
-                <input type="password" id="password" required placeholder="Contraseña" class="w-full px-5 py-4 rounded-2xl border border-slate-200 outline-none bg-slate-50">
-                <button type="submit" class="w-full bg-blue-600 text-white py-4 rounded-2xl font-black uppercase tracking-widest hover:bg-blue-700 transition-all shadow-lg">Ingresar</button>
+                <input type="text" id="email" required placeholder="Correo" class="w-full px-5 py-4 rounded-2xl border border-slate-200 outline-none bg-slate-50 focus:ring-2 focus:ring-blue-100 transition-all">
+                <input type="password" id="password" required placeholder="Contraseña" class="w-full px-5 py-4 rounded-2xl border border-slate-200 outline-none bg-slate-50 focus:ring-2 focus:ring-blue-100 transition-all">
+                <button type="submit" id="btn-login-submit" class="w-full bg-blue-600 text-white py-4 rounded-2xl font-black uppercase tracking-widest hover:bg-blue-700 transition-all shadow-lg shadow-blue-200">Ingresar</button>
             </form>
+
+            <!-- FORMULARIO DE REGISTRO -->
             <form id="register-form" class="space-y-4 text-left hidden">
                 <input type="text" id="reg-name" required placeholder="Nombre Completo" class="w-full px-5 py-4 rounded-2xl border border-slate-200 outline-none bg-slate-50">
                 <input type="email" id="reg-email" required placeholder="Correo Electrónico" class="w-full px-5 py-4 rounded-2xl border border-slate-200 outline-none bg-slate-50">
@@ -76,8 +76,9 @@
                     <label class="block text-xs font-bold text-slate-400 ml-2 mb-1 uppercase">Subir Firma</label>
                     <input type="file" id="reg-signature" accept="image/*" class="w-full p-3 rounded-2xl border border-slate-200 bg-slate-50 text-xs">
                 </div>
-                <button type="submit" class="w-full bg-green-600 text-white py-4 rounded-2xl font-black uppercase hover:bg-green-700 transition-all shadow-lg">Registrar</button>
+                <button type="submit" id="btn-register-submit" class="w-full bg-green-600 text-white py-4 rounded-2xl font-black uppercase hover:bg-green-700 transition-all shadow-lg shadow-green-200">Registrar Usuario</button>
             </form>
+
             <div id="login-error" class="bg-red-50 text-red-500 text-xs p-3 rounded-xl mt-4 font-bold hidden border border-red-100 text-left"></div>
              <div class="mt-6 pt-6 border-t border-slate-100">
                 <p class="text-[9px] text-slate-300 mt-2 font-bold uppercase tracking-widest">Modo Prueba: admin / admin</p>
@@ -113,8 +114,9 @@
                     
                     <div class="bg-blue-50 p-8 rounded-[3rem] border border-blue-100">
                         <h3 class="font-black text-lg text-blue-800 mb-4">Mis Asignaciones</h3>
-                        <div class="grid grid-cols-1 gap-6">
-                             <div><p class="text-[10px] uppercase font-black text-blue-400 mb-2 tracking-widest">Carga Académica</p><div id="my-assignments-list" class="space-y-2 text-sm text-slate-600"></div></div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div><p class="text-[10px] uppercase font-black text-blue-400 mb-2 tracking-widest">Materias</p><div id="my-subjects-list" class="flex flex-wrap gap-2 text-sm text-slate-600"></div></div>
+                            <div><p class="text-[10px] uppercase font-black text-blue-400 mb-2 tracking-widest">Cursos</p><div id="my-courses-list" class="flex flex-wrap gap-2 text-sm text-slate-600"></div></div>
                         </div>
                     </div>
                 </div>
@@ -152,7 +154,7 @@
                         <button onclick="window.openAddUserModal()" class="bg-blue-600 text-white px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-blue-700 shadow-lg shadow-blue-200 flex items-center gap-2"><span>+</span> Nuevo</button>
                     </div>
                 </div>
-                <div class="bg-white rounded-[3rem] shadow-xl border border-slate-100 overflow-hidden"><div class="overflow-x-auto"><table class="w-full text-left min-w-[800px]"><thead><tr class="text-slate-400 text-[10px] uppercase font-black border-b border-slate-50"><th class="px-8 py-6">Usuario</th><th class="px-8 py-6">Carga Académica</th><th class="px-8 py-6">Firma</th><th class="px-8 py-6">Rol</th><th class="px-8 py-6 text-right">Acciones</th></tr></thead><tbody id="users-table-body" class="divide-y divide-slate-50"></tbody></table></div></div>
+                <div class="bg-white rounded-[3rem] shadow-xl border border-slate-100 overflow-hidden"><div class="overflow-x-auto"><table class="w-full text-left min-w-[800px]"><thead><tr class="text-slate-400 text-[10px] uppercase font-black border-b border-slate-50"><th class="px-8 py-6">Usuario</th><th class="px-8 py-6">Datos</th><th class="px-8 py-6">Cursos</th><th class="px-8 py-6">Rol</th><th class="px-8 py-6 text-right">Acciones</th></tr></thead><tbody id="users-table-body" class="divide-y divide-slate-50"></tbody></table></div></div>
             </div>
 
             <div id="content-catalogs" class="hidden space-y-6">
@@ -188,7 +190,7 @@
             
             <div id="content-leccionario" class="hidden space-y-6"><div class="bg-white p-6 rounded-[2.5rem] shadow-sm border border-slate-100 flex flex-wrap gap-4 items-end justify-between"><div class="flex gap-4 flex-wrap"><div><label class="block text-xs font-black text-slate-400 mb-2 uppercase">Sección</label><select id="lec-seccion" class="p-3 bg-slate-50 rounded-xl text-sm border-none outline-none font-bold text-slate-700 min-w-[150px]"></select></div><div><label class="block text-xs font-black text-slate-400 mb-2 uppercase">Curso</label><select id="lec-curso" class="p-3 bg-slate-50 rounded-xl text-sm border-none outline-none font-bold text-slate-700 min-w-[150px]"></select></div><div><label class="block text-xs font-black text-slate-400 mb-2 uppercase">Paralelo</label><select id="lec-paralelo" class="p-3 bg-slate-50 rounded-xl text-sm border-none outline-none font-bold text-slate-700 min-w-[100px]"></select></div><div><label class="block text-xs font-black text-slate-400 mb-2 uppercase">Fecha</label><input type="date" id="lec-date" class="p-3 bg-slate-50 rounded-xl text-sm border-none outline-none font-bold text-slate-700"></div><button onclick="window.generateLeccionario()" class="bg-slate-900 text-white px-6 py-3 rounded-xl font-black text-xs uppercase hover:bg-black transition-all h-[44px] self-end">Generar</button></div><button onclick="window.printLeccionarioPDF()" class="bg-blue-600 text-white px-6 py-3 rounded-xl font-black text-xs uppercase hover:bg-blue-700 transition-all h-[44px]">Imprimir</button></div><div class="grid grid-cols-1 md:grid-cols-3 gap-4 border-t border-slate-50 pt-4 mb-4"><div><label class="block text-xs font-black text-slate-400 mb-2 uppercase">Institución</label><input type="text" id="lec-input-inst" value="Unidad Educativa Ecomundo" class="w-full p-3 bg-slate-50 rounded-xl text-sm font-bold"></div><div><label class="block text-xs font-black text-slate-400 mb-2 uppercase">Periodo</label><input type="text" id="lec-input-period" value="2025 - 2026" class="w-full p-3 bg-slate-50 rounded-xl text-sm font-bold"></div><div><label class="block text-xs font-black text-slate-400 mb-2 uppercase">ISO</label><input type="text" id="lec-input-iso" value="ISO-9001" class="w-full p-3 bg-slate-50 rounded-xl text-sm font-bold text-right"></div></div><div id="leccionario-print-area" class="bg-white p-10 rounded-[2rem] shadow-xl border border-slate-100 min-h-[600px]"><div class="flex justify-between items-start border-b-2 border-slate-800 pb-6 mb-6 relative"><div class="absolute top-0 right-0 text-[10px] font-mono text-slate-400" id="lec-display-iso"></div><div class="w-32 h-32 flex items-center justify-center"><img src="logo.png" alt="Logo" class="object-contain max-h-full" onerror="this.src='https://placehold.co/150x150?text=LOGO'"></div><div class="text-right pt-6"><h2 class="text-lg font-bold text-slate-600 uppercase" id="lec-display-inst"></h2><h1 class="text-3xl font-black text-slate-900 uppercase">Leccionario</h1><p class="text-slate-500 font-bold mt-2" id="lec-header-info">...</p><p class="text-sm text-slate-400"><span id="lec-display-period"></span> | <span id="lec-header-date"></span></p></div></div><table class="w-full text-left border-collapse report-table"><thead><tr><th class="w-20">Hora</th><th class="w-40">Materia</th><th>Profesor</th><th>Tema</th><th>Actividad</th><th class="w-24 text-center">Firma</th></tr></thead><tbody id="leccionario-body"></tbody></table></div></div>
             
-            <div id="content-reports" class="hidden space-y-6"><div class="bg-white p-6 rounded-[2.5rem] shadow-sm border border-slate-100 flex flex-wrap gap-4 justify-between"><div><label class="block text-xs font-black text-slate-400 mb-2 uppercase">Fecha</label><input type="date" id="report-date" class="p-3 bg-slate-50 rounded-xl font-bold"></div><div class="flex gap-2"><select id="report-filter-teacher" class="p-3 bg-slate-50 rounded-xl"><option value="all">Todos</option></select><select id="report-filter-course" class="p-3 bg-slate-50 rounded-xl"><option value="all">Todos</option></select><select id="report-filter-subject" class="p-3 bg-slate-50 rounded-xl"><option value="all">Todas</option></select></div><button onclick="window.generateReport()" class="bg-slate-900 text-white px-6 py-3 rounded-xl font-bold">Generar</button></div><div id="report-container" class="bg-white rounded-[3rem] shadow-xl p-8"><h2 class="text-2xl font-black text-center mb-4" id="report-display-title">Reporte</h2><table class="w-full text-left report-table"><thead><tr><th>Fecha</th><th>Curso</th><th>Hora</th><th>Materia / Docente</th><th>Estado</th></tr></thead><tbody id="report-table-body"></tbody></table></div></div>
+            <div id="content-reports" class="hidden space-y-6"><div class="bg-white p-6 rounded-[2.5rem] shadow-sm border border-slate-100 flex flex-wrap gap-4 justify-between"><div><label class="block text-xs font-black text-slate-400 mb-2 uppercase">Fecha</label><input type="date" id="report-date" class="p-3 bg-slate-50 rounded-xl font-bold"></div><div class="flex gap-2"><select id="report-filter-teacher" class="p-3 bg-slate-50 rounded-xl"><option value="all">Todos</option></select><select id="report-filter-course" class="p-3 bg-slate-50 rounded-xl"><option value="all">Todos</option></select><select id="report-filter-subject" class="p-3 bg-slate-50 rounded-xl"><option value="all">Todos</option></select></div><button onclick="window.generateReport()" class="bg-slate-900 text-white px-6 py-3 rounded-xl font-bold">Generar</button></div><div id="report-container" class="bg-white rounded-[3rem] shadow-xl p-8"><h2 class="text-2xl font-black text-center mb-4" id="report-display-title">Reporte</h2><table class="w-full text-left report-table"><thead><tr><th>Fecha</th><th>Curso</th><th>Hora</th><th>Materia / Docente</th><th>Estado</th></tr></thead><tbody id="report-table-body"></tbody></table></div></div>
         </div>
     </div>
 
@@ -239,7 +241,7 @@
     <div id="modal-time-slots" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[130] hidden items-center justify-center p-4"><div class="bg-white w-full max-w-lg rounded-[2.5rem] p-8 modal-animate"><div class="flex justify-between items-center mb-6"><h3 class="text-2xl font-black">Horas</h3><button onclick="window.closeModal('modal-time-slots')">✕</button></div><div class="flex gap-2 mb-4"><input type="time" id="ts-start" class="p-2 rounded-lg border text-sm"><input type="time" id="ts-end" class="p-2 rounded-lg border text-sm"><button onclick="window.addTimeSlot()" class="bg-slate-800 text-white rounded-lg px-4 text-xs font-bold">Agregar</button></div><div id="slots-list" class="space-y-2"></div></div></div>
     <div id="modal-assign-subject" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[140] hidden items-center justify-center p-4"><div class="bg-white w-full max-w-sm rounded-[2.5rem] p-8 modal-animate"><h3 class="text-xl font-black mb-4">Asignar</h3><div id="subject-selector-list" class="grid grid-cols-2 gap-2 max-h-64 overflow-y-auto"></div><button onclick="window.closeModal('modal-assign-subject')" class="mt-6 w-full bg-slate-100 text-slate-500 py-3 rounded-xl font-bold text-xs">Cancelar</button></div></div>
     <div id="modal-copy-schedule" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[150] hidden items-center justify-center p-4"><div class="bg-white w-full max-w-md rounded-[2.5rem] p-8 modal-animate"><h3 class="text-xl font-black mb-4">Copiar</h3><div class="space-y-3 mb-6"><div><label class="block text-[10px] font-black uppercase text-slate-400">Sección</label><select id="copy-seccion" class="w-full p-3 bg-slate-50 rounded-xl text-sm outline-none"></select></div><div><label class="block text-[10px] font-black uppercase text-slate-400">Curso</label><select id="copy-curso" class="w-full p-3 bg-slate-50 rounded-xl text-sm outline-none"></select></div><div><label class="block text-[10px] font-black uppercase text-slate-400">Paralelo</label><select id="copy-paralelo" class="w-full p-3 bg-slate-50 rounded-xl text-sm outline-none"></select></div></div><button onclick="window.confirmCopySchedule()" class="w-full bg-blue-600 text-white py-3 rounded-xl font-bold text-sm">Copiar</button><button onclick="window.closeModal('modal-copy-schedule')" class="mt-3 w-full text-slate-400 font-bold uppercase text-xs">Cancelar</button></div></div>
-    <div id="modal-class-log" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[160] hidden items-center justify-center p-4"><div class="bg-white w-full max-w-lg rounded-[2.5rem] p-10 modal-animate"><div class="flex justify-between mb-6"><div><h3 class="text-2xl font-black">Registro</h3><p id="log-class-info" class="text-xs font-bold text-blue-600"></p></div><button onclick="window.closeModal('modal-class-log')">✕</button></div><form id="log-form" class="space-y-4"><input type="hidden" id="log-id"><div><label class="block text-xs font-black text-slate-400 uppercase">Tema</label><input type="text" id="log-topic" required class="w-full p-4 rounded-xl bg-slate-50"></div><div><label class="block text-xs font-black text-slate-400 uppercase">Actividad</label><textarea id="log-content" required class="w-full p-4 rounded-xl bg-slate-50 h-32 resize-none"></textarea></div><button type="submit" class="w-full bg-blue-600 text-white py-4 rounded-xl font-black uppercase">Guardar y Firmar</button></form></div></div>
+    <div id="modal-class-log" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[160] hidden items-center justify-center p-4"><div class="bg-white w-full max-w-lg rounded-[2.5rem] p-10 modal-animate"><div class="flex justify-between mb-6"><div><h3 class="text-2xl font-black">Registro</h3><p id="log-class-info" class="text-xs font-bold text-blue-600"></p></div><button onclick="window.closeModal('modal-class-log')">✕</button></div><form id="log-form" class="space-y-4"><input type="hidden" id="log-id"><div><label class="block text-xs font-black text-slate-400 uppercase">Tema</label><input type="text" id="log-topic" required class="w-full p-4 rounded-xl bg-slate-50"></div><div><label class="block text-xs font-black text-slate-400 uppercase">Observación / Actividad</label><textarea id="log-content" required class="w-full p-4 rounded-xl bg-slate-50 h-32 resize-none"></textarea></div><button type="submit" class="w-full bg-blue-600 text-white py-4 rounded-xl font-black uppercase">Guardar y Firmar</button></form></div></div>
     <!-- MODAL COURSE MANAGER -->
     <div id="modal-course-manager" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[130] hidden items-center justify-center p-4">
         <div class="bg-white w-full max-w-lg rounded-[2.5rem] p-8 modal-animate max-h-[85vh] overflow-y-auto">
@@ -255,7 +257,6 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-analytics.js";
         import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, getDoc, setDoc, collection, getDocs, updateDoc, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
@@ -263,9 +264,9 @@
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
-        const appId = 'leccionario-v1';
-        const getCollectionRef = (name) => collection(db, 'artifacts', appId, 'public', 'data', name);
-        const getDocRef = (col, id) => doc(db, 'artifacts', appId, 'public', 'data', col, id);
+        // Using Root collections per user request
+        const getCollectionRef = (name) => collection(db, name);
+        const getDocRef = (col, id) => doc(db, col, id);
 
         const dom = {
             loader: document.getElementById('loader'), auth: document.getElementById('auth-container'), dashboard: document.getElementById('user-logged-in'),
@@ -290,12 +291,27 @@
         // AUTH
         onAuthStateChanged(auth, async (user) => {
             if(user) {
-                let uData = (await getDoc(getDocRef("users", user.uid))).data();
-                if(!uData) { // Fallback creation
-                    uData = { email: user.email, rol: "Docente", materias: [], areas: [], asignaciones: [] };
-                    await setDoc(getDocRef("users", user.uid), uData);
+                // Robust user fetching
+                try {
+                    let uData = (await getDoc(getDocRef("users", user.uid))).data();
+                    if(!uData) {
+                        const emailDoc = await getDoc(getDocRef("users", user.email));
+                        if (emailDoc.exists()) { uData = emailDoc.data(); await setDoc(getDocRef("users", user.uid), uData); }
+                        else { 
+                            // Default Fallback
+                            uData = { email: user.email, rol: "Docente", materias: [], areas: [], asignaciones: [] }; 
+                            await setDoc(getDocRef("users", user.uid), uData); 
+                        }
+                    }
+                    // Fix missing array structure
+                    if(!uData.asignaciones) uData.asignaciones = [];
+                    if(!uData.materias) uData.materias = [];
+                    
+                    loginSuccess({ uid: user.uid, email: user.email, ...uData });
+                } catch(e) {
+                     // Fallback
+                     loginSuccess({ uid: user.uid, email: user.email, rol: "Docente" });
                 }
-                loginSuccess({ uid: user.uid, email: user.email, ...uData });
             } else {
                 dom.dashboard.classList.add('hidden'); dom.auth.classList.remove('hidden');
             }
@@ -317,7 +333,7 @@
                 document.getElementById('my-courses-list').innerHTML = "<span class='text-slate-400'>Sin asignaciones</span>";
             }
 
-            const isAdmin = user.isSuperAdmin || (user.rol||"").toLowerCase().includes("admin") || user.email.includes("admin") || user.email === "gasencio@ecomundo.edu.ec" || user.email === "ajuanazo@ecomundo.edu.ec";
+            const isAdmin = user.isSuperAdmin || (user.rol||"").toLowerCase().includes("admin") || (user.email||"").toLowerCase().includes("admin") || user.email === "gasencio@ecomundo.edu.ec" || user.email === "ajuanazo@ecomundo.edu.ec";
             document.getElementById('btn-open-admin').classList.toggle('hidden', !isAdmin);
             document.getElementById('btn-open-admin-header').classList.toggle('hidden', !isAdmin);
             
@@ -327,19 +343,56 @@
             updateDashboardDate();
         }
 
-        document.getElementById('auth-form').onsubmit = async (e) => {
+        // Toggle Auth (Separate Tabs)
+        window.switchAuthTab = (mode) => {
+            state.isRegisterMode = (mode === 'register');
+            document.getElementById('auth-form').classList.toggle('hidden', state.isRegisterMode);
+            document.getElementById('register-form').classList.toggle('hidden', !state.isRegisterMode);
+            document.getElementById('tab-login').className = state.isRegisterMode ? 'auth-tab' : 'auth-tab active';
+            document.getElementById('tab-register').className = state.isRegisterMode ? 'auth-tab active' : 'auth-tab';
+            document.getElementById('auth-error').classList.add('hidden');
+        };
+
+        // Submit forms
+        const handleAuth = async (e, mode) => {
             e.preventDefault();
-            const email = document.getElementById('email').value.trim();
-            const pass = document.getElementById('password').value;
+            const email = document.getElementById(mode === 'register' ? 'reg-email' : 'email').value.trim();
+            const pass = document.getElementById(mode === 'register' ? 'reg-pass' : 'password').value;
+            
             if (email === "admin" && pass === "admin") {
                 loginSuccess({ uid: "local", email: "admin", rol: "Admin", isSuperAdmin: true, materias: [], asignaciones: [] });
                 return;
             }
+
             try {
-                if (state.isRegisterMode) await createUserWithEmailAndPassword(auth, email, pass);
-                else await signInWithEmailAndPassword(auth, email, pass);
-            } catch(e) { document.getElementById('login-error').textContent = e.code; document.getElementById('login-error').classList.remove('hidden'); }
+                if (mode === 'register') {
+                    const userCredential = await createUserWithEmailAndPassword(auth, email, pass);
+                    const name = document.getElementById('reg-name').value;
+                    const sigFile = document.getElementById('reg-signature').files[0];
+                    let sigBase64 = "";
+                    if(sigFile) sigBase64 = await toBase64(sigFile);
+                    
+                    // Create user profile
+                    await setDoc(getDocRef("users", userCredential.user.uid), {
+                        email, nombre: name, rol: "Docente", firma: sigBase64, materias: [], asignaciones: [], areas: []
+                    });
+                } else {
+                    await signInWithEmailAndPassword(auth, email, pass);
+                }
+            } catch(e) { 
+                let msg = e.code;
+                if(e.code === 'auth/invalid-credential') msg = "Credenciales incorrectas.";
+                if(e.code === 'auth/user-not-found') msg = "Usuario no encontrado.";
+                
+                const err = document.getElementById('auth-error'); 
+                if(!err) document.getElementById('login-error').textContent = msg;
+                else { err.textContent = msg; err.classList.remove('hidden'); }
+                document.getElementById('login-error').textContent = msg; document.getElementById('login-error').classList.remove('hidden');
+            }
         };
+
+        document.getElementById('auth-form').onsubmit = (e) => handleAuth(e, 'login');
+        document.getElementById('register-form').onsubmit = (e) => handleAuth(e, 'register');
 
         // DATA
         async function loadCatalogs() {
