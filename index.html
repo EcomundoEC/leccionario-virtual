@@ -31,8 +31,8 @@
         .custom-table tr:last-child td { border-bottom: none; }
         .custom-table tr:hover { background-color: #f9fafb; }
         
-        /* Signature Preview */
-        .sig-preview { width: 80px; height: 40px; object-fit: contain; border: 1px dashed #cbd5e1; border-radius: 4px; background: #f8fafc; }
+        /* Signature Preview - Modified for transparency */
+        .sig-preview { width: 80px; height: 40px; object-fit: contain; mix-blend-mode: multiply; }
 
         /* Toast Notifications */
         #toast-container { position: fixed; bottom: 20px; right: 20px; z-index: 10000; display: flex; flex-direction: column; gap: 10px; }
@@ -206,6 +206,11 @@
                     <span id="user-email-display" class="text-[10px] text-slate-400">correo@ejemplo.com</span>
                 </div>
                 
+                <!-- Botón Cambiar Contraseña -->
+                <button onclick="openModal('modal-change-password')" class="bg-slate-100 text-slate-600 hover:bg-blue-50 hover:text-blue-600 px-3 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2" title="Cambiar Contraseña">
+                    <i class="fa-solid fa-key"></i>
+                </button>
+
                 <button id="btn-admin-panel" onclick="showSection('users')" class="hidden bg-slate-100 text-slate-600 hover:bg-slate-200 px-3 py-2 rounded-xl text-xs font-bold transition items-center gap-2" title="Gestión Usuarios">
                     <i class="fa-solid fa-users-gear"></i>
                 </button>
@@ -596,6 +601,28 @@
         </main>
     </div>
 
+    <!-- MODAL: CAMBIAR CONTRASEÑA (NUEVO) -->
+    <div id="modal-change-password" class="fixed inset-0 bg-slate-900/80 z-[100] hidden items-center justify-center p-4">
+        <div class="bg-white w-full max-w-sm rounded-3xl p-8 modal-animate shadow-2xl">
+            <div class="text-center mb-6">
+                <div class="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-xl mx-auto mb-2"><i class="fa-solid fa-key"></i></div>
+                <h3 class="text-xl font-black text-slate-800">Cambiar Contraseña</h3>
+                <p class="text-xs text-slate-400">Actualiza tu clave de acceso</p>
+            </div>
+            
+            <form id="form-change-password" class="space-y-4">
+                <div class="space-y-1">
+                    <label class="text-xs font-bold text-slate-500 uppercase">Nueva Contraseña</label>
+                    <input type="password" id="new-password" required minlength="6" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none text-sm" placeholder="Mínimo 6 caracteres">
+                </div>
+                <div class="flex gap-3 pt-2">
+                    <button type="button" onclick="closeModal('modal-change-password')" class="flex-1 bg-slate-100 text-slate-500 py-3 rounded-xl font-bold hover:bg-slate-200">Cancelar</button>
+                    <button type="submit" class="flex-1 bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700 shadow-lg shadow-blue-200">Actualizar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- MODAL: EDICIÓN DE USUARIO -->
     <div id="modal-user-edit" class="fixed inset-0 bg-slate-900/80 z-[100] hidden items-center justify-center p-4">
         <!-- ... (Sin Cambios) ... -->
@@ -737,7 +764,7 @@
     <!-- FIREBASE MODULE -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, updatePassword } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
         import { getFirestore, doc, getDoc, setDoc, collection, getDocs, updateDoc, deleteDoc, addDoc, query, where, orderBy, writeBatch } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         // --- CONFIGURACIÓN ---
@@ -830,6 +857,10 @@
                 document.getElementById('nav-reports').classList.remove('hidden');
                 showSection('dashboard');
             } else {
+                // Para Docentes, nos aseguramos que estos elementos estén ocultos
+                document.getElementById('btn-admin-panel').classList.add('hidden');
+                document.getElementById('nav-academic').classList.add('hidden');
+                document.getElementById('nav-reports').classList.add('hidden');
                 showSection('dashboard');
             }
             
@@ -841,6 +872,30 @@
             document.getElementById('app-view').classList.add('hidden');
             document.getElementById('auth-view').classList.remove('hidden');
         }
+
+        // --- CAMBIAR CONTRASEÑA ---
+        document.getElementById('form-change-password').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const newPass = document.getElementById('new-password').value;
+            const user = auth.currentUser;
+
+            if (user) {
+                try {
+                    await updatePassword(user, newPass);
+                    showToast("Contraseña actualizada exitosamente");
+                    window.closeModal('modal-change-password');
+                    document.getElementById('form-change-password').reset();
+                } catch (error) {
+                    if (error.code === 'auth/requires-recent-login') {
+                        showToast("Por seguridad, debes volver a iniciar sesión para cambiar la contraseña", 'error');
+                        await signOut(auth);
+                        window.location.reload();
+                    } else {
+                        showToast("Error al cambiar contraseña: " + error.message, 'error');
+                    }
+                }
+            }
+        });
 
         // --- PERSISTENCIA Y UTILIDADES DE UI ---
         window.loadSavedReportConfig = () => {
@@ -1119,71 +1174,93 @@
             });
 
             reportRows.sort((a,b) => a.start.localeCompare(b.start));
+            
+            // Fetch Section Data for Report
             const courseObj = globalData.courses.find(c => c.id === courseId);
-            const cycleName = localStorage.getItem('school_cycle') || "Ciclo Escolar"; // Usar el ciclo guardado
+            const sectionObj = courseObj ? globalData.sections.find(s => s.id === courseObj.sectionId) : null;
+            const sectionName = sectionObj ? sectionObj.name : "SECCIÓN DESCONOCIDA";
+            const cycleName = localStorage.getItem('school_cycle') || "2025-2026"; // Fallback/Default
             
             return `
-            <div class="bg-white p-8 rounded-2xl shadow-xl border border-slate-200 print:shadow-none print:border-none print-break-after">
-                <div class="border-b-2 border-slate-800 pb-4 mb-6">
-                    <div class="flex justify-between items-start">
-                        <div>
-                            <h1 class="text-2xl font-black text-slate-900 uppercase tracking-widest">${institution.toUpperCase()}</h1>
-                            <p class="text-sm font-bold text-slate-600">REPORTE DE LECCIONARIO DIARIO - ${cycleName}</p>
-                        </div>
-                        <div class="text-right">
-                            <p class="text-xs font-bold text-slate-500">CÓDIGO: <span class="text-slate-900">${auditCode}</span></p>
-                            <p class="text-xs font-bold text-slate-500">FECHA: <span class="text-slate-900">${dateStr}</span></p>
-                        </div>
-                    </div>
-                    <div class="mt-4 flex gap-8 text-sm">
-                        <p><span class="font-bold text-slate-500">CURSO:</span> <span class="font-bold">${courseObj ? courseObj.name : "---"}</span></p>
-                        <p><span class="font-bold text-slate-500">PARALELO:</span> <span class="font-bold">${parallel}</span></p>
-                    </div>
+            <div class="bg-white p-8 rounded-2xl shadow-xl border border-slate-200 print:shadow-none print:border-none print-break-after" style="font-family: 'Arial', sans-serif; font-size: 8pt;">
+                
+                <!-- Row 1: Logo & Audit Code -->
+                <div class="flex justify-between items-center mb-1" style="font-family: 'Calibri', sans-serif; font-size: 11pt;">
+                    <div><img src="logo.png" alt="Logo" class="h-16 object-contain"></div> <!-- Adjusted height assumption -->
+                    <div class="font-bold">CÓDIGO: ${auditCode}</div>
                 </div>
 
-                <div class="overflow-hidden border border-slate-200 rounded-lg">
-                    <table class="w-full text-sm">
-                        <thead class="bg-slate-100 text-slate-700">
-                            <tr>
-                                <th class="border-b border-r border-slate-200 p-3 text-left w-24">HORA</th>
-                                <th class="border-b border-r border-slate-200 p-3 text-left">MATERIA</th>
-                                <th class="border-b border-r border-slate-200 p-3 text-left">TEMA</th>
-                                <th class="border-b border-r border-slate-200 p-3 text-left">DOCENTE</th>
-                                <th class="border-b border-r border-slate-200 p-3 text-center w-24">FIRMA</th>
-                                <th class="border-b border-slate-200 p-3 text-left">OBSERVACIÓN</th>
+                <!-- Row 2: Institution -->
+                <div class="text-center font-bold mb-1" style="font-family: 'Calibri', sans-serif; font-size: 11pt;">
+                    ${institution.toUpperCase()}
+                </div>
+
+                <!-- Row 3: Section -->
+                <div class="text-center font-bold mb-4" style="font-family: 'Calibri', sans-serif; font-size: 11pt;">
+                    ${sectionName.toUpperCase()}
+                </div>
+
+                <!-- Row 4: Course & Parallel (Right) -->
+                <div class="text-right font-bold mb-2">
+                    ${courseObj ? courseObj.name : "---"} - PARALELO: ${parallel}
+                </div>
+
+                <!-- Row 5: Cycle -->
+                <div class="text-center font-bold mb-2 uppercase">
+                    LECCIONARIO ${cycleName}
+                </div>
+
+                <!-- Row 6: Day & Date -->
+                <div class="flex justify-between items-center mb-2 border-b-2 border-black pb-1">
+                    <div class="font-bold uppercase">${dayName}</div>
+                    <div class="font-bold">${dateStr}</div>
+                </div>
+
+                <!-- Table Content (Arial 8pt) -->
+                <div class="overflow-hidden border border-slate-800 rounded-none">
+                    <table class="w-full" style="font-size: 8pt;">
+                        <thead>
+                            <tr class="bg-slate-100 border-b border-slate-800">
+                                <th class="border-r border-slate-800 p-1 text-center w-16">HORA</th>
+                                <th class="border-r border-slate-800 p-1 text-center">MATERIA</th>
+                                <th class="border-r border-slate-800 p-1 text-center">TEMA TRATADO</th>
+                                <th class="border-r border-slate-800 p-1 text-center">DOCENTE</th>
+                                <th class="border-r border-slate-800 p-1 text-center w-24">FIRMA</th>
+                                <th class="p-1 text-center">OBSERVACIÓN</th>
                             </tr>
                         </thead>
                         <tbody>
                             ${reportRows.map(row => `
-                                <tr class="border-b border-slate-200 hover:bg-slate-50">
-                                    <td class="p-3 border-r border-slate-200">
-                                        <div class="font-bold text-slate-800">${row.start}</div>
-                                        <div class="text-xs text-slate-500">${row.end}</div>
+                                <tr class="border-b border-slate-800">
+                                    <td class="p-1 border-r border-slate-800 text-center align-middle">
+                                        <div>${row.start}</div>
+                                        <div>${row.end}</div>
                                     </td>
-                                    <td class="p-3 border-r border-slate-200 font-bold text-slate-800">
+                                    <td class="p-1 border-r border-slate-800 font-bold align-middle">
                                         ${row.subjectName}
                                     </td>
-                                    <td class="p-3 border-r border-slate-200 ${!row.isSigned ? 'text-red-500 font-bold bg-red-50' : 'text-slate-700'}">
+                                    <td class="p-1 border-r border-slate-800 align-middle ${!row.isSigned ? 'text-red-500 font-bold' : ''}">
                                         ${row.topic}
                                     </td>
-                                    <td class="p-3 border-r border-slate-200 text-xs text-slate-500 italic">
+                                    <td class="p-1 border-r border-slate-800 align-middle text-center italic">
                                         ${row.teacherName}
                                     </td>
-                                    <td class="p-3 border-r border-slate-200 text-center">
+                                    <td class="p-1 border-r border-slate-800 text-center align-middle">
                                         ${row.isSigned && row.signature 
-                                            ? `<img src="${row.signature}" class="h-10 mx-auto object-contain">` 
-                                            : `<span class="text-xs text-slate-300 font-bold">PENDIENTE</span>`}
+                                            ? `<img src="${row.signature}" class="h-8 mx-auto object-contain" style="mix-blend-mode: multiply;">` 
+                                            : ``}
                                     </td>
-                                    <td class="p-3 border-slate-200 ${!row.isSigned ? 'text-red-500 font-bold bg-red-50' : 'text-slate-600 italic'}">
-                                        ${row.observation || '-'}
+                                    <td class="p-1 align-middle ${!row.isSigned ? 'text-red-500 font-bold' : ''}">
+                                        ${row.observation || ''}
                                     </td>
                                 </tr>
                             `).join('')}
                         </tbody>
                     </table>
                 </div>
-                <div class="mt-4 pt-4 border-t border-slate-200 text-center">
-                    <p class="text-[10px] text-slate-400">Generado automáticamente por Leccionario Virtual</p>
+                
+                <div class="mt-2 text-right text-[8px] text-slate-400">
+                    Generado el ${new Date().toLocaleDateString()}
                 </div>
             </div>`;
         }
@@ -1304,7 +1381,7 @@
                             <div class="font-bold text-slate-800">${u.nombre || "Sin Nombre"}</div>
                             <div class="text-xs text-slate-400">${u.email}</div>
                         </td>
-                        <td>${u.firma ? `<img src="${u.firma}" class="h-8 w-auto object-contain border rounded bg-white">` : '<span class="text-xs text-red-300">Sin Firma</span>'}</td>
+                        <td>${u.firma ? `<img src="${u.firma}" class="h-8 w-auto object-contain" style="mix-blend-mode: multiply;">` : '<span class="text-xs text-red-300">Sin Firma</span>'}</td>
                         <td><span class="role-badge role-${u.rol}">${u.rol}</span></td>
                         <td class="text-right flex justify-end gap-2">
                             <button onclick="window.editUser('${u.id}')" class="text-blue-600 p-2 hover:bg-blue-50 rounded"><i class="fa-solid fa-pen"></i></button>
