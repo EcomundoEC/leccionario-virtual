@@ -1187,7 +1187,7 @@
                 <!-- Row 1: Logo & Audit Code -->
                 <div class="flex justify-between items-center mb-1" style="font-family: 'Calibri', sans-serif; font-size: 11pt;">
                     <div><img src="logo.png" alt="Logo" class="h-16 object-contain"></div> <!-- Adjusted height assumption -->
-                    <div class="font-bold">CÓDIGO: ${auditCode}</div>
+                    <div class="font-bold">${auditCode}</div>
                 </div>
 
                 <!-- Row 2: Institution -->
@@ -1211,8 +1211,8 @@
                 </div>
 
                 <!-- Row 6: Day & Date -->
-                <div class="flex justify-between items-center mb-2 border-b-2 border-black pb-1">
-                    <div class="font-bold uppercase">${dayName}</div>
+                <div class="flex justify-between items-center mb-2 pb-1">
+                    <div class="font-bold uppercase">DÍA: ${dayName}</div>
                     <div class="font-bold">${dateStr}</div>
                 </div>
 
@@ -1248,7 +1248,7 @@
                                     <td class="p-1 border-r border-slate-800 text-center align-middle">
                                         ${row.isSigned && row.signature 
                                             ? `<img src="${row.signature}" class="h-8 mx-auto object-contain" style="mix-blend-mode: multiply;">` 
-                                            : ``}
+                                            : `<span class="text-xs text-red-500 font-bold">NO FIRMADO</span>`} 
                                     </td>
                                     <td class="p-1 align-middle ${!row.isSigned ? 'text-red-500 font-bold' : ''}">
                                         ${row.observation || ''}
@@ -1260,7 +1260,7 @@
                 </div>
                 
                 <div class="mt-2 text-right text-[8px] text-slate-400">
-                    Generado el ${new Date().toLocaleDateString()}
+                    Generado el ${new Date().toLocaleDateString()} | Creado por: GAscencio
                 </div>
             </div>`;
         }
