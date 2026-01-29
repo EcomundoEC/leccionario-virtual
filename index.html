@@ -76,6 +76,8 @@
             body { background: white; padding: 0; margin: 0; }
             main { padding: 0; margin: 0; max-width: none; }
             .glass-panel { border: none; }
+            /* Force background colors */
+            * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
         }
     </style>
 </head>
@@ -1182,7 +1184,7 @@
             const cycleName = localStorage.getItem('school_cycle') || "2025-2026"; // Fallback/Default
             
             return `
-            <div class="bg-white p-8 rounded-2xl shadow-xl border border-slate-200 print:shadow-none print:border-none print-break-after" style="font-family: 'Arial', sans-serif; font-size: 8pt;">
+            <div class="bg-white p-8 rounded-2xl shadow-xl border border-slate-200 print:shadow-none print:border-none print-break-after" style="font-family: 'Arial', sans-serif; font-size: 10pt;">
                 
                 <!-- Row 1: Logo & Audit Code -->
                 <div class="flex justify-between items-center mb-1" style="font-family: 'Calibri', sans-serif; font-size: 11pt;">
@@ -1216,11 +1218,11 @@
                     <div class="font-bold">${dateStr}</div>
                 </div>
 
-                <!-- Table Content (Arial 8pt) -->
+                <!-- Table Content (Arial 10pt) -->
                 <div class="overflow-hidden border border-slate-800 rounded-none">
-                    <table class="w-full" style="font-size: 8pt;">
+                    <table class="w-full" style="font-size: 10pt;">
                         <thead>
-                            <tr class="bg-slate-100 border-b border-slate-800">
+                            <tr class="bg-slate-100 border-b border-slate-800" style="font-size: 12pt;">
                                 <th class="border-r border-slate-800 p-1 text-center w-16">HORA</th>
                                 <th class="border-r border-slate-800 p-1 text-center">MATERIA</th>
                                 <th class="border-r border-slate-800 p-1 text-center">TEMA TRATADO</th>
@@ -1230,31 +1232,48 @@
                             </tr>
                         </thead>
                         <tbody>
-                            ${reportRows.map(row => `
-                                <tr class="border-b border-slate-800">
-                                    <td class="p-1 border-r border-slate-800 text-center align-middle">
-                                        <div>${row.start}</div>
-                                        <div>${row.end}</div>
-                                    </td>
-                                    <td class="p-1 border-r border-slate-800 font-bold align-middle">
-                                        ${row.subjectName}
-                                    </td>
-                                    <td class="p-1 border-r border-slate-800 align-middle ${!row.isSigned ? 'text-red-500 font-bold' : ''}">
-                                        ${row.topic}
-                                    </td>
-                                    <td class="p-1 border-r border-slate-800 align-middle text-center italic">
-                                        ${row.teacherName}
-                                    </td>
-                                    <td class="p-1 border-r border-slate-800 text-center align-middle">
-                                        ${row.isSigned && row.signature 
-                                            ? `<img src="${row.signature}" class="h-8 mx-auto object-contain" style="mix-blend-mode: multiply;">` 
-                                            : `<span class="text-xs text-red-500 font-bold">NO FIRMADO</span>`} 
-                                    </td>
-                                    <td class="p-1 align-middle ${!row.isSigned ? 'text-red-500 font-bold' : ''}">
-                                        ${row.observation || ''}
-                                    </td>
-                                </tr>
-                            `).join('')}
+                            ${reportRows.map(row => {
+                                const isReceso = row.subjectName.toUpperCase().includes("RECESO");
+                                if (isReceso) {
+                                    return `
+                                    <tr class="border-b border-slate-800 bg-gray-200 print:bg-gray-200">
+                                        <td class="p-1 border-r border-slate-800 text-center align-middle font-bold">
+                                            <div>${row.start}</div>
+                                            <div>${row.end}</div>
+                                        </td>
+                                        <td colspan="5" class="p-1 border-slate-800 text-center align-middle font-black tracking-widest text-slate-600">
+                                            RECESO
+                                        </td>
+                                    </tr>
+                                    `;
+                                } else {
+                                    return `
+                                    <tr class="border-b border-slate-800 hover:bg-slate-50">
+                                        <td class="p-1 border-r border-slate-800 text-center align-middle">
+                                            <div>${row.start}</div>
+                                            <div>${row.end}</div>
+                                        </td>
+                                        <td class="p-1 border-r border-slate-800 font-bold align-middle">
+                                            ${row.subjectName}
+                                        </td>
+                                        <td class="p-1 border-r border-slate-800 align-middle ${!row.isSigned ? 'text-red-500 font-bold' : ''}">
+                                            ${row.topic}
+                                        </td>
+                                        <td class="p-1 border-r border-slate-800 align-middle text-center italic">
+                                            ${row.teacherName}
+                                        </td>
+                                        <td class="p-1 border-r border-slate-800 text-center align-middle">
+                                            ${row.isSigned && row.signature 
+                                                ? `<img src="${row.signature}" class="h-8 mx-auto object-contain" style="mix-blend-mode: multiply;">` 
+                                                : `<span class="text-xs text-red-500 font-bold">NO FIRMADO</span>`} 
+                                        </td>
+                                        <td class="p-1 align-middle ${!row.isSigned ? 'text-red-500 font-bold' : ''}">
+                                            ${row.observation || ''}
+                                        </td>
+                                    </tr>
+                                    `;
+                                }
+                            }).join('')}
                         </tbody>
                     </table>
                 </div>
