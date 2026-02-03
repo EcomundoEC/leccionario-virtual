@@ -251,6 +251,10 @@
                 <div class="flex justify-between items-center">
                     <h2 class="text-2xl font-black text-slate-800">Gestión de Usuarios</h2>
                     <div class="flex gap-2">
+                         <select id="user-sort-select" onchange="renderUsersTable()" class="bg-white border border-slate-200 text-slate-600 px-3 py-2 rounded-xl text-xs font-bold outline-none cursor-pointer hover:bg-slate-50">
+                            <option value="name">Ordenar por Nombre</option>
+                            <option value="role">Ordenar por Rol</option>
+                        </select>
                         <button onclick="loadUsers()" class="bg-white border border-slate-200 text-slate-600 px-4 py-2 rounded-xl text-xs font-bold hover:bg-slate-50">
                             <i class="fa-solid fa-rotate"></i> Recargar
                         </button>
@@ -832,6 +836,7 @@
             const superAdmins = ["gasencio@ecomundo.edu.ec", "ajuanazo@ecomundo.edu.ec"];
             const isAdmin = user.isSuperAdmin || superAdmins.includes(user.email) || user.rol === 'Admin';
             
+            // Cargar datos - CON MANEJO DE ERRORES ROBUSTO
             try {
                 await loadAllAcademicData(isAdmin); 
             } catch (e) {
@@ -839,7 +844,7 @@
             }
 
             loadSavedReportConfig();
-            loadSchoolCycle(); 
+            loadSchoolCycle(); // Load saved cycle name
 
             if (isAdmin) {
                 document.getElementById('btn-admin-panel').classList.remove('hidden');
@@ -847,6 +852,7 @@
                 document.getElementById('nav-reports').classList.remove('hidden');
                 showSection('dashboard');
             } else {
+                // Para Docentes, nos aseguramos que estos elementos estén ocultos
                 document.getElementById('btn-admin-panel').classList.add('hidden');
                 document.getElementById('nav-academic').classList.add('hidden');
                 document.getElementById('nav-reports').classList.add('hidden');
@@ -921,10 +927,11 @@
             const container = document.getElementById('dashboard-daily-schedule');
             const dateLabel = document.getElementById('current-date-label');
             
+            // 1. Determinar Día
             const days = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
             const now = new Date();
             const todayName = days[now.getDay()];
-            const todayStr = now.toISOString().split('T')[0]; 
+            const todayStr = now.toISOString().split('T')[0]; // YYYY-MM-DD
             const fullDate = now.toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
             
             dateLabel.textContent = fullDate.charAt(0).toUpperCase() + fullDate.slice(1);
@@ -936,14 +943,16 @@
                  return;
             }
 
+            // Fetch fresco de Entries de HOY para este profesor
             const qEntries = query(collection(db, "leccionario_entries"), 
                 where("teacherId", "==", currentUser.uid),
                 where("date", "==", todayStr)
             );
             const snapEntries = await getDocs(qEntries);
             const myEntries = [];
-            snapEntries.forEach(d => myEntries.push({id: d.id, ...d.data()})); 
+            snapEntries.forEach(d => myEntries.push({id: d.id, ...d.data()})); // Include ID
 
+            // Fetch Schedules
             const schedSnap = await getDocs(collection(db, "schedules"));
             const allSchedules = [];
             schedSnap.forEach(d => allSchedules.push({id: d.id, ...d.data()}));
@@ -965,6 +974,7 @@
                 matches.forEach(match => {
                     const period = allPeriods.find(p => p.id === match.periodId);
                     if (period) {
+                        // Check if registered
                         const existingEntry = myEntries.find(e => e.scheduleId === match.id);
 
                         todaysClasses.push({
@@ -987,6 +997,8 @@
             });
 
             todaysClasses.sort((a,b) => a.start.localeCompare(b.start));
+            
+            // Store for easy access in modal
             globalData.dailyClasses = todaysClasses;
 
             if (todaysClasses.length === 0) {
@@ -1022,29 +1034,37 @@
                             </p>
                         </div>
                     </div>
+                    
                     <button onclick="openSignModal('${index}')" 
                         class="w-full md:w-auto ${btnColor} text-white px-6 py-3 rounded-xl font-bold text-sm transition flex items-center justify-center gap-2 shadow-lg shadow-slate-200">
                         <i class="fa-solid fa-pen-nib"></i> ${btnText}
                     </button>
-                </div>`;
+                </div>
+                `;
             }).join('');
         };
 
         // --- FIRMA DE LECCIONARIO (CON MODO EDICIÓN) ---
         window.openSignModal = (index) => {
+            // Validar Firma
             if (!currentUser.firma) {
                 showToast("⚠️ ERROR: No tienes firma digital configurada. Ve a tu perfil.", 'error');
                 return;
             }
+
             const cls = globalData.dailyClasses[index];
             if (!cls) return;
 
             document.getElementById('sign-class-info').textContent = `${cls.subjectName} | ${cls.courseName} "${cls.parallel}"`;
+            
+            // Set hidden fields
             document.getElementById('sign-schedule-id').value = cls.scheduleId;
             document.getElementById('sign-course-id').value = cls.courseId;
             document.getElementById('sign-subject-id').value = cls.subjectId;
             document.getElementById('sign-period-start').value = cls.start;
             document.getElementById('sign-period-end').value = cls.end;
+            
+            // Set data for Edit Mode
             document.getElementById('sign-entry-id').value = cls.entryId || "";
             document.getElementById('sign-topic').value = cls.savedTopic || "";
             document.getElementById('sign-obs').value = cls.savedObs || "";
@@ -1069,7 +1089,7 @@
                 subjectId: document.getElementById('sign-subject-id').value,
                 topic: document.getElementById('sign-topic').value,
                 observation: document.getElementById('sign-obs').value,
-                date: new Date().toISOString().split('T')[0], 
+                date: new Date().toISOString().split('T')[0], // YYYY-MM-DD
                 timestamp: new Date().toISOString(),
                 signatureSnapshot: currentUser.firma,
                 periodStart: document.getElementById('sign-period-start').value,
@@ -1078,9 +1098,11 @@
 
             try {
                 if (entryId) {
+                    // Update
                     await updateDoc(doc(db, "leccionario_entries", entryId), data);
                     showToast("✅ Leccionario Actualizado");
                 } else {
+                    // Create
                     await addDoc(collection(db, "leccionario_entries"), data);
                     showToast("✅ Leccionario Firmado y Guardado");
                 }
@@ -1095,6 +1117,7 @@
         });
 
         // --- REPORTES ---
+        // Helper auxiliar HTML
         async function buildReportHTML(courseId, parallel, dateStr, institution, auditCode, dayName) {
             const qSched = query(collection(db, "schedules"), 
                 where("courseId", "==", courseId), 
@@ -1147,40 +1170,48 @@
 
             reportRows.sort((a,b) => a.start.localeCompare(b.start));
             
+            // Fetch Section Data for Report
             const courseObj = globalData.courses.find(c => c.id === courseId);
             const sectionObj = courseObj ? globalData.sections.find(s => s.id === courseObj.sectionId) : null;
             const sectionName = sectionObj ? sectionObj.name : "SECCIÓN DESCONOCIDA";
-            const cycleName = localStorage.getItem('school_cycle') || "2025-2026"; 
+            const cycleName = localStorage.getItem('school_cycle') || "2025-2026"; // Fallback/Default
             
             return `
             <div class="bg-white p-8 rounded-2xl shadow-xl border border-slate-200 print:shadow-none print:border-none print-break-after" style="font-family: 'Arial', sans-serif; font-size: 10pt;">
                 
+                <!-- Row 1: Logo & Audit Code -->
                 <div class="flex justify-between items-center mb-1" style="font-family: 'Calibri', sans-serif; font-size: 11pt;">
-                    <div><img src="logo.png" alt="Logo" class="h-16 object-contain"></div> 
+                    <div><img src="logo.png" alt="Logo" class="h-16 object-contain"></div> <!-- Adjusted height assumption -->
                     <div class="font-bold">${auditCode}</div>
                 </div>
 
+                <!-- Row 2: Institution -->
                 <div class="text-center font-bold mb-1" style="font-family: 'Calibri', sans-serif; font-size: 11pt;">
                     ${institution.toUpperCase()}
                 </div>
 
+                <!-- Row 3: Section -->
                 <div class="text-center font-bold mb-4" style="font-family: 'Calibri', sans-serif; font-size: 11pt;">
                     ${sectionName.toUpperCase()}
                 </div>
 
+                <!-- Row 4: Course & Parallel (Right) -->
                 <div class="text-right font-bold mb-2">
                     ${courseObj ? courseObj.name : "---"} - PARALELO: ${parallel}
                 </div>
 
+                <!-- Row 5: Cycle -->
                 <div class="text-center font-bold mb-2 uppercase">
                     LECCIONARIO ${cycleName}
                 </div>
 
+                <!-- Row 6: Day & Date -->
                 <div class="flex justify-between items-center mb-2 pb-1">
                     <div class="font-bold uppercase">DÍA: ${dayName}</div>
                     <div class="font-bold">${dateStr}</div>
                 </div>
 
+                <!-- Table Content (Arial 10pt) -->
                 <div class="overflow-hidden border border-slate-800 rounded-none">
                     <table class="w-full" style="font-size: 10pt;">
                         <thead>
@@ -1324,6 +1355,7 @@
         // --- CARGADORES DE DATOS ---
 
         async function loadAllAcademicData(isAdmin) {
+            // Cargas esenciales para todos
             await Promise.all([
                 loadSections(),
                 loadAreas(),
@@ -1332,6 +1364,7 @@
                 loadDistributive()
             ]);
             
+            // Cargas solo para Admin (evitar error de permisos)
             if (isAdmin) {
                 try {
                     await loadUsers();
@@ -1339,9 +1372,11 @@
                     console.warn("Could not load users list (Permission denied?):", e);
                 }
             }
+            
             updateDropdowns();
         }
 
+        // 1. Usuarios (CORREGIDO: FIRMA VISIBLE + ORDENAMIENTO)
         window.loadUsers = async () => {
             const tbody = document.getElementById('users-table-body');
             tbody.innerHTML = `<tr><td colspan="4" class="text-center p-8"><i class="fa-solid fa-spinner fa-spin"></i></td></tr>`;
@@ -1350,21 +1385,7 @@
                 globalData.users = [];
                 querySnapshot.forEach((doc) => globalData.users.push({id: doc.id, ...doc.data()}));
                 
-                if (globalData.users.length === 0) { tbody.innerHTML = `<tr><td colspan="4" class="text-center p-4">Sin datos</td></tr>`; return; }
-
-                tbody.innerHTML = globalData.users.map(u => `
-                    <tr>
-                        <td>
-                            <div class="font-bold text-slate-800">${u.nombre || "Sin Nombre"}</div>
-                            <div class="text-xs text-slate-400">${u.email}</div>
-                        </td>
-                        <td>${u.firma ? `<img src="${u.firma}" class="h-8 w-auto object-contain" style="mix-blend-mode: multiply;">` : '<span class="text-xs text-red-300">Sin Firma</span>'}</td>
-                        <td><span class="role-badge role-${u.rol}">${u.rol}</span></td>
-                        <td class="text-right flex justify-end gap-2">
-                            <button onclick="window.editUser('${u.id}')" class="text-blue-600 p-2 hover:bg-blue-50 rounded"><i class="fa-solid fa-pen"></i></button>
-                            <button onclick="window.deleteUser('${u.id}')" class="text-red-500 p-2 hover:bg-red-50 rounded" title="Eliminar"><i class="fa-solid fa-trash"></i></button>
-                        </td>
-                    </tr>`).join('');
+                renderUsersTable(); // Call render function
             } catch (e) { 
                 console.error("Error loading users:", e); 
                 tbody.innerHTML = `<tr><td colspan="4" class="text-center p-4 text-red-400">Error de permisos</td></tr>`;
@@ -1372,11 +1393,47 @@
             }
         };
 
+        window.renderUsersTable = () => {
+            const tbody = document.getElementById('users-table-body');
+            const sortValue = document.getElementById('user-sort-select').value;
+            
+            if (globalData.users.length === 0) { 
+                tbody.innerHTML = `<tr><td colspan="4" class="text-center p-4">Sin datos</td></tr>`; 
+                return; 
+            }
+
+            const sorted = [...globalData.users].sort((a, b) => {
+                if (sortValue === 'name') {
+                    return (a.nombre || "").localeCompare(b.nombre || "");
+                } else {
+                    // Sort by Role: Admin first usually preferred, or just alphabetical
+                    // Let's do alphabetical for roles "Admin" vs "Docente" -> A vs D.
+                    return (a.rol || "").localeCompare(b.rol || "");
+                }
+            });
+
+            tbody.innerHTML = sorted.map(u => `
+                <tr>
+                    <td>
+                        <div class="font-bold text-slate-800">${u.nombre || "Sin Nombre"}</div>
+                        <div class="text-xs text-slate-400">${u.email}</div>
+                    </td>
+                    <td>${u.firma ? `<img src="${u.firma}" class="h-8 w-auto object-contain" style="mix-blend-mode: multiply;">` : '<span class="text-xs text-red-300">Sin Firma</span>'}</td>
+                    <td><span class="role-badge role-${u.rol}">${u.rol}</span></td>
+                    <td class="text-right flex justify-end gap-2">
+                        <button onclick="window.editUser('${u.id}')" class="text-blue-600 p-2 hover:bg-blue-50 rounded"><i class="fa-solid fa-pen"></i></button>
+                        <button onclick="window.deleteUser('${u.id}')" class="text-red-500 p-2 hover:bg-red-50 rounded" title="Eliminar"><i class="fa-solid fa-trash"></i></button>
+                    </td>
+                </tr>`).join('');
+        };
+
         window.deleteUser = async (id) => {
             if(!confirm("ADVERTENCIA: ¿Realmente desea eliminar este usuario de la base de datos?")) return;
             try { 
                 await deleteDoc(doc(db, "users", id)); 
+                // Actualizar la tabla localmente sin recargar toda la página si es posible, o recargar
                 showToast("Usuario eliminado correctamente"); 
+                // Si el usuario borrado es el actual, salir
                 if(currentUser && currentUser.uid === id) {
                     await handleLogout();
                 } else {
@@ -1387,6 +1444,8 @@
             }
         };
 
+        // 2-6. Datos Académicos (Sections, Areas, Subjects, Courses, Distributive)
+        // (Funciones similares abreviadas para ahorrar espacio, lógica idéntica a versión anterior)
         window.loadSections = async () => { const s = await getDocs(collection(db, "sections")); globalData.sections=[]; s.forEach(d=>globalData.sections.push({id:d.id,...d.data()})); renderSimpleTable('sections-table-body', globalData.sections, 'sections'); };
         window.loadAreas = async () => { const s = await getDocs(collection(db, "areas")); globalData.areas=[]; s.forEach(d=>globalData.areas.push({id:d.id,...d.data()})); renderSimpleTable('areas-table-body', globalData.areas, 'areas'); };
         window.loadSubjects = async () => { const s = await getDocs(collection(db, "subjects")); globalData.subjects=[]; s.forEach(d=>globalData.subjects.push({id:d.id,...d.data()})); renderSubjectsTable(); };
@@ -1417,9 +1476,11 @@
             }).join('');
         }
 
+        // 7. Dashboard Resumen
         window.loadTeacherAssignments = async (teacherId) => {
             const container = document.getElementById('dashboard-cards');
             const myAssignments = globalData.distributive.filter(d => d.teacherId === teacherId);
+            // No mostrar mensaje vacío aquí para no duplicar con el calendario, solo dejar vacío o cards
             if (myAssignments.length === 0) { container.innerHTML = ""; return; }
             
             container.innerHTML = myAssignments.map(assign => {
@@ -1436,6 +1497,8 @@
                 </div>`;
             }).join('');
         };
+
+        // --- GESTIÓN DE HORARIOS (MATRIZ & COPIA) ---
 
         window.updateSchedCourses = () => {
             const sectionId = document.getElementById('sched-section-select').value;
@@ -1472,12 +1535,14 @@
             if (!courseId || !parallel) return;
             document.getElementById('schedule-matrix-container').classList.remove('hidden');
             
+            // 1. Cargar Periodos (Filas)
             const qPeriods = query(collection(db, "course_periods"), where("courseId", "==", courseId), where("parallel", "==", parallel));
             const snapP = await getDocs(qPeriods);
             globalData.currentPeriods = [];
             snapP.forEach(d => globalData.currentPeriods.push({id: d.id, ...d.data()}));
             globalData.currentPeriods.sort((a,b) => a.start.localeCompare(b.start));
 
+            // 2. Cargar Asignaciones (Celdas)
             const qAssign = query(collection(db, "schedules"), where("courseId", "==", courseId), where("parallel", "==", parallel));
             const snapA = await getDocs(qAssign);
             globalData.currentAssignments = [];
@@ -1493,16 +1558,19 @@
             globalData.currentPeriods.forEach(period => {
                 const tr = document.createElement('tr');
                 
+                // Columna de Hora
                 const tdTime = document.createElement('td');
                 tdTime.className = 'matrix-time-cell';
                 tdTime.innerHTML = `<div>${period.start}<br><span class="text-xs text-blue-300">|</span><br>${period.end}</div>`;
                 tr.appendChild(tdTime);
 
+                // Columnas de Días
                 const days = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes"];
                 days.forEach(day => {
                     const td = document.createElement('td');
                     td.className = 'matrix-cell';
                     
+                    // Buscar asignación existente
                     const assign = globalData.currentAssignments.find(a => a.periodId === period.id && a.day === day);
                     
                     if (assign) {
@@ -1519,6 +1587,7 @@
                     tr.appendChild(td);
                 });
 
+                // Botón Borrar Fila
                 const tdAction = document.createElement('td');
                 tdAction.className = 'text-center align-middle';
                 tdAction.innerHTML = `<button onclick="deletePeriod('${period.id}')" class="text-slate-300 hover:text-red-500"><i class="fa-solid fa-trash"></i></button>`;
@@ -1548,6 +1617,7 @@
             loadScheduleMatrix();
         };
 
+        // --- FUNCIONES PARA COPIAR HORARIO ---
         window.openCopyScheduleModal = () => {
             const courseId = document.getElementById('sched-course-select').value;
             const parallel = document.getElementById('sched-parallel-select').value;
@@ -1559,6 +1629,7 @@
 
             globalData.courses.forEach(course => {
                 course.parallels.forEach(p => {
+                    // Skip current selection
                     if (course.id === courseId && p === parallel) return;
 
                     const label = document.createElement('label');
@@ -1586,6 +1657,7 @@
             const batch = writeBatch(db);
             let opCount = 0;
 
+            // Get source data
             const periods = globalData.currentPeriods;
             const assigns = globalData.currentAssignments;
 
@@ -1593,6 +1665,7 @@
                 const targetCourseId = cb.dataset.course;
                 const targetParallel = cb.dataset.parallel;
 
+                // Copy Periods
                 periods.forEach(p => {
                     const newPeriodRef = doc(collection(db, "course_periods"));
                     batch.set(newPeriodRef, {
@@ -1602,13 +1675,14 @@
                         end: p.end
                     });
                     
+                    // Copy assignments linked to this period (find matches by old period ID)
                     const relatedAssigns = assigns.filter(a => a.periodId === p.id);
                     relatedAssigns.forEach(a => {
                         const newAssignRef = doc(collection(db, "schedules"));
                         batch.set(newAssignRef, {
                             courseId: targetCourseId,
                             parallel: targetParallel,
-                            periodId: newPeriodRef.id, 
+                            periodId: newPeriodRef.id, // Link to NEW period ID
                             day: a.day,
                             subjectId: a.subjectId
                         });
@@ -1628,6 +1702,7 @@
             }
         };
 
+        // --- LÓGICA DEL MODAL DE ASIGNACIÓN (ADMIN) ---
         let currentAssignContext = null;
 
         window.openAssignModal = (periodId, day, start, end, currentSubjectId, assignId) => {
@@ -1636,6 +1711,7 @@
             document.getElementById('assign-modal-subtitle').textContent = `${day} | ${start} - ${end}`;
             document.getElementById('assign-subject-select').value = currentSubjectId || "";
             
+            // Llenar select de materias
             const select = document.getElementById('assign-subject-select');
             select.innerHTML = '<option value="">-- Seleccionar Materia --</option>';
             globalData.subjects.forEach(s => {
@@ -1658,8 +1734,10 @@
             
             try {
                 if (currentAssignContext.assignId) {
+                    // Actualizar existente
                     await updateDoc(doc(db, "schedules", currentAssignContext.assignId), { subjectId });
                 } else {
+                    // Crear nuevo
                     await addDoc(collection(db, "schedules"), {
                         courseId, parallel,
                         periodId: currentAssignContext.periodId,
@@ -1685,6 +1763,8 @@
             } catch(e) { showToast("Error", 'error'); }
         };
 
+
+        // --- UI HELPERS & COMMON ---
         window.updateRepCourses = () => {
              const sectionId = document.getElementById('rep-section-select').value;
              const courseSel = document.getElementById('rep-course-select');
@@ -1736,16 +1816,20 @@
             document.getElementById('dist-course-select').innerHTML = '<option value="">Sel. Curso...</option>' + globalData.courses.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
         }
         
+        // Window Functions
         window.deleteItem = async (colName, id) => { if(!confirm("¿Eliminar?")) return; try { await deleteDoc(doc(db, colName, id)); showToast("Eliminado"); loadAllAcademicData(); } catch(e) { showToast("Error", 'error'); } }
         window.switchTab = (btn, tabId) => { 
+            // Handle active class for special tabs
             const isIndividual = btn.classList.contains('tab-btn-individual');
             const isMass = btn.classList.contains('tab-btn-mass');
             
+            // Remove active from siblings
             const parent = btn.parentElement;
             Array.from(parent.children).forEach(child => child.classList.remove('active'));
             
             btn.classList.add('active');
             
+            // Hide all content in this container
             const container = parent.parentElement;
             container.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
             document.getElementById(tabId).classList.remove('hidden');
@@ -1760,6 +1844,7 @@
         window.updateDistParallels = () => { const courseId = document.getElementById('dist-course-select').value; const parSel = document.getElementById('dist-parallel-select'); parSel.innerHTML = ''; const course = globalData.courses.find(c => c.id === courseId); if(course) parSel.innerHTML = course.parallels.map(p => `<option value="${p}">${p}</option>`).join(''); };
         window.resetEditForm = () => { document.getElementById('edit-uid').value = ""; document.getElementById('form-user-edit').reset(); }
 
+        // Generic Event Listeners
         document.getElementById('form-user-edit').addEventListener('submit', async (e) => { e.preventDefault(); const uid = document.getElementById('edit-uid').value; const updates = { nombre: document.getElementById('edit-name').value, rol: document.getElementById('edit-rol').value, isSuperAdmin: document.getElementById('edit-is-super').checked }; const sigFile = document.getElementById('edit-signature').files[0]; if (sigFile) updates.firma = await toBase64(sigFile); try { if (uid) { await updateDoc(doc(db, "users", uid), updates); showToast("Actualizado"); } loadUsers(); window.closeModal('modal-user-edit'); } catch(error) { showToast("Error", 'error'); } });
         document.getElementById('form-section').addEventListener('submit', (e) => { e.preventDefault(); addItem('sections', { name: document.getElementById('section-name').value }, loadSections); e.target.reset(); });
         document.getElementById('form-area').addEventListener('submit', (e) => { e.preventDefault(); addItem('areas', { name: document.getElementById('area-name').value }, loadAreas); e.target.reset(); });
