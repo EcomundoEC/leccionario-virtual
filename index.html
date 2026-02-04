@@ -172,19 +172,22 @@
                     <button class="flex items-center gap-2 text-sm font-bold text-slate-600 hover:text-blue-600 py-2">
                         <i class="fa-solid fa-graduation-cap"></i> Académico <i class="fa-solid fa-chevron-down text-xs"></i>
                     </button>
-                    <div class="dropdown-menu hidden absolute top-full right-0 w-56 bg-white border border-slate-200 rounded-xl shadow-xl mt-1 py-2 z-50">
-                        <a href="#" onclick="showSection('academic-admin')" class="block px-4 py-2 text-sm text-slate-600 hover:bg-slate-50 hover:text-blue-600">
-                            <i class="fa-solid fa-sliders w-5"></i> Admin. Académica
-                        </a>
-                        <a href="#" onclick="showSection('courses')" class="block px-4 py-2 text-sm text-slate-600 hover:bg-slate-50 hover:text-blue-600">
-                            <i class="fa-solid fa-layer-group w-5"></i> Cursos y Paralelos
-                        </a>
-                        <a href="#" onclick="showSection('distributive')" class="block px-4 py-2 text-sm text-slate-600 hover:bg-slate-50 hover:text-blue-600">
-                            <i class="fa-solid fa-chalkboard-user w-5"></i> Distributivo
-                        </a>
-                         <a href="#" onclick="showSection('schedules')" class="block px-4 py-2 text-sm text-slate-600 hover:bg-slate-50 hover:text-blue-600">
-                            <i class="fa-regular fa-calendar-days w-5"></i> Horarios
-                        </a>
+                    <!-- Wrapper con padding-top para evitar que el menú desaparezca -->
+                    <div class="dropdown-menu hidden absolute top-full right-0 w-56 pt-2 z-50">
+                        <div class="bg-white border border-slate-200 rounded-xl shadow-xl py-2">
+                            <a href="#" onclick="showSection('academic-admin')" class="block px-4 py-2 text-sm text-slate-600 hover:bg-slate-50 hover:text-blue-600">
+                                <i class="fa-solid fa-sliders w-5"></i> Admin. Académica
+                            </a>
+                            <a href="#" onclick="showSection('courses')" class="block px-4 py-2 text-sm text-slate-600 hover:bg-slate-50 hover:text-blue-600">
+                                <i class="fa-solid fa-layer-group w-5"></i> Cursos y Paralelos
+                            </a>
+                            <a href="#" onclick="showSection('distributive')" class="block px-4 py-2 text-sm text-slate-600 hover:bg-slate-50 hover:text-blue-600">
+                                <i class="fa-solid fa-chalkboard-user w-5"></i> Distributivo
+                            </a>
+                            <a href="#" onclick="showSection('schedules')" class="block px-4 py-2 text-sm text-slate-600 hover:bg-slate-50 hover:text-blue-600">
+                                <i class="fa-regular fa-calendar-days w-5"></i> Horarios
+                            </a>
+                        </div>
                     </div>
                 </div>
 
@@ -192,10 +195,13 @@
                     <button class="flex items-center gap-2 text-sm font-bold text-slate-600 hover:text-blue-600 py-2">
                         <i class="fa-solid fa-print"></i> Reportes <i class="fa-solid fa-chevron-down text-xs"></i>
                     </button>
-                    <div class="dropdown-menu hidden absolute top-full right-0 w-56 bg-white border border-slate-200 rounded-xl shadow-xl mt-1 py-2 z-50">
-                        <a href="#" onclick="showSection('leccionario-report')" class="block px-4 py-2 text-sm text-slate-600 hover:bg-slate-50 hover:text-blue-600">
-                            <i class="fa-solid fa-book-open w-5"></i> Leccionario Diario
-                        </a>
+                    <!-- Wrapper con padding-top para evitar que el menú desaparezca -->
+                    <div class="dropdown-menu hidden absolute top-full right-0 w-56 pt-2 z-50">
+                        <div class="bg-white border border-slate-200 rounded-xl shadow-xl py-2">
+                            <a href="#" onclick="showSection('leccionario-report')" class="block px-4 py-2 text-sm text-slate-600 hover:bg-slate-50 hover:text-blue-600">
+                                <i class="fa-solid fa-book-open w-5"></i> Leccionario Diario
+                            </a>
+                        </div>
                     </div>
                 </div>
 
@@ -331,6 +337,12 @@
                 <div id="tab-subjects" class="tab-content hidden grid grid-cols-1 lg:grid-cols-3 gap-6">
                     <div class="glass-panel p-6 rounded-2xl h-fit">
                         <h3 class="font-bold text-lg mb-4">Nueva Materia</h3>
+                        <div class="flex items-center gap-2 mb-4 justify-end">
+                            <select id="subject-sort-select" onchange="renderSubjectsTable()" class="bg-slate-50 border border-slate-200 text-slate-600 px-3 py-2 rounded-xl text-xs font-bold outline-none cursor-pointer hover:bg-white">
+                                <option value="name">Ordenar por Nombre</option>
+                                <option value="area">Ordenar por Área</option>
+                            </select>
+                        </div>
                         <form id="form-subject" class="space-y-4">
                             <div class="space-y-1">
                                 <label class="text-xs font-bold text-slate-500 uppercase">Nombre Materia</label>
@@ -1448,18 +1460,41 @@
         // (Funciones similares abreviadas para ahorrar espacio, lógica idéntica a versión anterior)
         window.loadSections = async () => { const s = await getDocs(collection(db, "sections")); globalData.sections=[]; s.forEach(d=>globalData.sections.push({id:d.id,...d.data()})); renderSimpleTable('sections-table-body', globalData.sections, 'sections'); };
         window.loadAreas = async () => { const s = await getDocs(collection(db, "areas")); globalData.areas=[]; s.forEach(d=>globalData.areas.push({id:d.id,...d.data()})); renderSimpleTable('areas-table-body', globalData.areas, 'areas'); };
-        window.loadSubjects = async () => { const s = await getDocs(collection(db, "subjects")); globalData.subjects=[]; s.forEach(d=>globalData.subjects.push({id:d.id,...d.data()})); renderSubjectsTable(); };
+        
+        window.loadSubjects = async () => { 
+            const s = await getDocs(collection(db, "subjects")); 
+            globalData.subjects=[]; 
+            s.forEach(d=>globalData.subjects.push({id:d.id,...d.data()})); 
+            renderSubjectsTable(); 
+        };
+
+        window.renderSubjectsTable = () => {
+            const tbody = document.getElementById('subjects-table-body');
+            const sortValue = document.getElementById('subject-sort-select').value;
+            
+            const sortedSubjects = [...globalData.subjects].sort((a, b) => {
+                if (sortValue === 'name') {
+                    return (a.name || "").localeCompare(b.name || "");
+                } else {
+                    // Sort by Area Name
+                    const areaA = globalData.areas.find(ar => ar.id === a.areaId)?.name || "";
+                    const areaB = globalData.areas.find(ar => ar.id === b.areaId)?.name || "";
+                    return areaA.localeCompare(areaB);
+                }
+            });
+
+            tbody.innerHTML = sortedSubjects.map(s => {
+                const area = globalData.areas.find(a => a.id === s.areaId)?.name || '---';
+                return `<tr><td class="font-bold">${s.name}</td><td class="text-xs uppercase">${area}</td><td class="text-right"><button onclick="deleteItem('subjects','${s.id}')" class="text-red-400 hover:text-red-600"><i class="fa-solid fa-trash"></i></button></td></tr>`;
+            }).join('');
+        };
+
+
         window.loadCourses = async () => { const s = await getDocs(collection(db, "courses")); globalData.courses=[]; s.forEach(d=>globalData.courses.push({id:d.id,...d.data()})); renderCoursesTable(); };
         window.loadDistributive = async () => { const s = await getDocs(collection(db, "distributive")); globalData.distributive=[]; s.forEach(d=>globalData.distributive.push({id:d.id,...d.data()})); renderDistributiveTable(); };
 
         function renderSimpleTable(id, data, col) {
             document.getElementById(id).innerHTML = data.map(i => `<tr><td class="font-bold">${i.name}</td><td class="text-right"><button onclick="deleteItem('${col}','${i.id}')" class="text-red-400 hover:text-red-600"><i class="fa-solid fa-trash"></i></button></td></tr>`).join('');
-        }
-        function renderSubjectsTable() {
-            document.getElementById('subjects-table-body').innerHTML = globalData.subjects.map(s => {
-                const area = globalData.areas.find(a => a.id === s.areaId)?.name || '---';
-                return `<tr><td class="font-bold">${s.name}</td><td class="text-xs uppercase">${area}</td><td class="text-right"><button onclick="deleteItem('subjects','${s.id}')" class="text-red-400"><i class="fa-solid fa-trash"></i></button></td></tr>`;
-            }).join('');
         }
         function renderCoursesTable() {
              document.getElementById('courses-table-body').innerHTML = globalData.courses.map(c => {
@@ -1810,7 +1845,9 @@
             const teachers = globalData.users.filter(u => u.rol === 'Docente' || u.rol === 'Admin');
             document.getElementById('dist-teacher-select').innerHTML = '<option value="">Sel. Docente...</option>' + teachers.map(t => `<option value="${t.id}">${t.nombre || t.email}</option>`).join('');
 
-            const subjOpts = globalData.subjects.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+            // Sort subjects
+            const sortedSubjects = [...globalData.subjects].sort((a, b) => a.name.localeCompare(b.name));
+            const subjOpts = sortedSubjects.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
             document.getElementById('dist-subject-select').innerHTML = '<option value="">Sel. Materia...</option>' + subjOpts;
             
             document.getElementById('dist-course-select').innerHTML = '<option value="">Sel. Curso...</option>' + globalData.courses.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
@@ -1852,29 +1889,7 @@
         document.getElementById('form-course').addEventListener('submit', (e) => { e.preventDefault(); const name = document.getElementById('course-name').value; const sectionId = document.getElementById('course-section-select').value; const parallelsStr = document.getElementById('course-parallels').value; if(!sectionId) return showToast("Seleccione una Sección", 'error'); const parallels = parallelsStr.split(',').map(p => p.trim().toUpperCase()).filter(p => p !== ""); addItem('courses', { name, sectionId, parallels }, loadCourses); e.target.reset(); });
         document.getElementById('form-distributive').addEventListener('submit', (e) => { e.preventDefault(); const teacherId = document.getElementById('dist-teacher-select').value; const courseId = document.getElementById('dist-course-select').value; const parallel = document.getElementById('dist-parallel-select').value; const subjectId = document.getElementById('dist-subject-select').value; if(!teacherId || !courseId || !parallel || !subjectId) return showToast("Faltan datos", 'error'); addItem('distributive', { teacherId, courseId, parallel, subjectId }, loadDistributive); });
         document.getElementById('login-form').addEventListener('submit', async (e) => { e.preventDefault(); const email = document.getElementById('login-email').value; const pass = document.getElementById('login-pass').value; try { await signInWithEmailAndPassword(auth, email, pass); } catch (error) { showToast(error.code, 'error'); } });
-        
-        // Register form with custom error handling for existing users
-        document.getElementById('register-form').addEventListener('submit', async (e) => { 
-            e.preventDefault(); 
-            const email = document.getElementById('reg-email').value; 
-            const pass = document.getElementById('reg-pass').value; 
-            const name = document.getElementById('reg-name').value; 
-            const sigFile = document.getElementById('reg-signature').files[0]; 
-            
-            try { 
-                const cred = await createUserWithEmailAndPassword(auth, email, pass); 
-                let signatureBase64 = null; 
-                if (sigFile) signatureBase64 = await toBase64(sigFile); 
-                await setDoc(doc(db, "users", cred.user.uid), { email: email, nombre: name, rol: "Docente", firma: signatureBase64, createdAt: new Date().toISOString() }); 
-                showToast("Cuenta creada", 'success'); 
-            } catch (error) { 
-                if(error.code === 'auth/email-already-in-use') {
-                    showToast("Este correo ya está registrado. Por favor inicie sesión para reactivar su cuenta.", 'error');
-                } else {
-                    showToast(error.code, 'error'); 
-                }
-            } 
-        });
+        document.getElementById('register-form').addEventListener('submit', async (e) => { e.preventDefault(); const email = document.getElementById('reg-email').value; const pass = document.getElementById('reg-pass').value; const name = document.getElementById('reg-name').value; const sigFile = document.getElementById('reg-signature').files[0]; try { const cred = await createUserWithEmailAndPassword(auth, email, pass); let signatureBase64 = null; if (sigFile) signatureBase64 = await toBase64(sigFile); await setDoc(doc(db, "users", cred.user.uid), { email: email, nombre: name, rol: "Docente", firma: signatureBase64, createdAt: new Date().toISOString() }); showToast("Cuenta creada", 'success'); } catch (error) { showToast(error.code, 'error'); } });
 
         async function addItem(collectionName, data, loadFn) { try { await addDoc(collection(db, collectionName), data); showToast("Guardado"); await loadFn(); } catch (e) { showToast("Error", 'error'); } }
         const toBase64 = file => new Promise((resolve, reject) => { const reader = new FileReader(); reader.readAsDataURL(file); reader.onload = () => resolve(reader.result); reader.onerror = error => reject(error); });
