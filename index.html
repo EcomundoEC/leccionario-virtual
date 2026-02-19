@@ -1,695 +1,751 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Leccionario Virtual V3.8</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    
-    <!-- Firebase -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut, updatePassword } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-        import { getFirestore, collection, addDoc, doc, deleteDoc, updateDoc, setDoc, onSnapshot, getDoc, query, where } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import React, { useState, useEffect } from 'react';
+import { initializeApp } from "firebase/app";
+import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "firebase/auth";
+import { getFirestore, doc, setDoc, getDoc, onSnapshot, collection, addDoc, deleteDoc, updateDoc, query, where, orderBy, writeBatch } from "firebase/firestore";
+import { getAnalytics } from "firebase/analytics";
+import { 
+  GraduationCap, User, PenTool, ShieldCheck, BookOpen, LogOut, 
+  Loader2, AlertCircle, CheckCircle2, Menu, Users, Settings, 
+  Plus, Trash2, Save, X, Edit, ChevronRight, Layers, LayoutGrid, Library,
+  Calendar, Briefcase, Clock, ChevronDown, Monitor, Coffee, Bell, Copy, FileBarChart, Filter, FileSignature, CheckSquare, Square
+} from 'lucide-react';
 
-        // CONFIGURACIÓN FIREBASE
-        const firebaseConfig = {
-            apiKey: "AIzaSyB1eXkCiF5VZcTin0W5hBQv2X2PEE2bAJc",
-            authDomain: "leccionario-virtual.firebaseapp.com",
-            projectId: "leccionario-virtual",
-            storageBucket: "leccionario-virtual.firebasestorage.app",
-            messagingSenderId: "731785058376",
-            appId: "1:731785058376:web:161550bdc3941e1a64207d",
-            measurementId: "G-ZR0SXQDNY9"
-        };
+// --- CONFIGURACIÓN DE COLORES ECOMUNDO ---
+const COLORS = {
+  blue: '#003366',
+  red: '#cc0000',
+  light: '#f0f4f8',
+  gray: '#64748b'
+};
 
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
+// --- CONFIGURACIÓN FIREBASE ---
+const firebaseConfig = {
+  apiKey: "AIzaSyB1eXkCiF5VZcTin0W5hBQv2X2PEE2bAJc",
+  authDomain: "leccionario-virtual.firebaseapp.com",
+  projectId: "leccionario-virtual",
+  storageBucket: "leccionario-virtual.firebasestorage.app",
+  messagingSenderId: "731785058376",
+  appId: "1:731785058376:web:161550bdc3941e1a64207d",
+  measurementId: "G-ZR0SXQDNY9"
+};
 
-        // ESTADO GLOBAL
-        let currentUser = null;
-        let userData = null;
-        
-        // Cache de datos para renderizado instantáneo
-        window.dbData = {
-            courses: [],
-            schedules: [],
-            logs: [],
-            users: {},
-            sections: [],
-            areas: [],
-            subjects: []
-        };
-        
-        let calCurrentDate = new Date();
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+let analytics;
+try { analytics = getAnalytics(app); } catch (e) { console.log("Analytics offline"); }
 
-        // ------------------------------------------------------------------
-        // 1. SISTEMA DE DATOS EN TIEMPO REAL (CORE)
-        // ------------------------------------------------------------------
-        
-        // Inicia la escucha de datos apenas se loguea el usuario
-        function initDataListeners(user) {
-            // 1. Cursos
-            onSnapshot(collection(db, 'courses'), snap => {
-                window.dbData.courses = [];
-                snap.forEach(d => window.dbData.courses.push({id: d.id, ...d.data()}));
-                refreshDashboardUI(); // Actualizar Dashboard si cambian cursos
-            });
+// --- COMPONENTE DE FILA CON SELECCIÓN Y EDICIÓN ---
+const SelectableRow = ({ id, initialValue, subLabel, isSelected, onToggle, onUpdate }) => {
+  const [isEditing, setIsEditing] = useState(false);
+  const [value, setValue] = useState(initialValue);
 
-            // 2. Horarios (Solo del usuario actual)
-            const schedQ = query(collection(db, 'schedules'), where("uid", "==", user.uid));
-            onSnapshot(schedQ, snap => {
-                window.dbData.schedules = [];
-                snap.forEach(d => window.dbData.schedules.push({id: d.id, ...d.data()}));
-                refreshDashboardUI(); // Actualizar Dashboard si cambian horarios
-            });
+  // Sincronizar si cambia desde fuera
+  useEffect(() => setValue(initialValue), [initialValue]);
 
-            // 3. Logs/Registros (Solo del usuario actual)
-            const logsQ = query(collection(db, 'daily_logs'), where("uid", "==", user.uid));
-            onSnapshot(logsQ, snap => {
-                window.dbData.logs = [];
-                snap.forEach(d => window.dbData.logs.push({id: d.id, ...d.data()}));
-                refreshDashboardUI(); // Actualizar Dashboard si cambian registros
-            });
+  const handleUpdate = async () => {
+    if (value !== initialValue && value.trim() !== "") {
+      await onUpdate(id, value);
+    }
+    setIsEditing(false);
+  };
 
-            // 4. Catálogos Generales (Secciones, Áreas, Materias)
-            onSnapshot(collection(db, 'sections'), snap => {
-                window.dbData.sections = [];
-                snap.forEach(d => window.dbData.sections.push({id: d.id, ...d.data()}));
-                updateAdminTables();
-            });
-            onSnapshot(collection(db, 'areas'), snap => {
-                window.dbData.areas = [];
-                snap.forEach(d => window.dbData.areas.push({id: d.id, ...d.data()}));
-                updateAdminTables();
-            });
-            onSnapshot(collection(db, 'subjects'), snap => {
-                window.dbData.subjects = [];
-                snap.forEach(d => window.dbData.subjects.push({id: d.id, ...d.data()}));
-                updateAdminTables();
-            });
-            
-            // 5. Usuarios
-            onSnapshot(collection(db, 'users'), snap => {
-                window.dbData.users = {};
-                snap.forEach(d => window.dbData.users[d.id] = d.data());
-                renderUsersTable();
-            });
-        }
+  return (
+    <div className={`flex items-center gap-3 p-3 border rounded-lg transition-all ${isSelected ? 'bg-red-50 border-red-200' : 'bg-white border-gray-200 hover:border-blue-300'}`}>
+      
+      {/* Checkbox de Selección */}
+      <button 
+        onClick={() => onToggle(id)}
+        className={`p-1 rounded transition-colors ${isSelected ? 'text-red-600' : 'text-gray-300 hover:text-gray-500'}`}
+      >
+        {isSelected ? <CheckSquare size={20} /> : <Square size={20} />}
+      </button>
 
-        function refreshDashboardUI() {
-            // Si el dashboard es visible, redibujarlo con los nuevos datos
-            if(!document.getElementById('section-dashboard').classList.contains('hidden')) {
-                renderDashboard();
-            }
-        }
+      {/* Contenido Editable */}
+      <div className="flex-1">
+        {isEditing ? (
+          <div className="flex items-center gap-2">
+            <input 
+              value={value} 
+              onChange={(e) => setValue(e.target.value)} 
+              className="flex-1 border border-blue-300 rounded px-2 py-1 text-sm outline-none"
+              autoFocus
+            />
+            <button onClick={handleUpdate} className="text-green-600 p-1 hover:bg-green-50 rounded"><Save size={16}/></button>
+            <button onClick={() => { setIsEditing(false); setValue(initialValue); }} className="text-gray-400 p-1 hover:bg-gray-50 rounded"><X size={16}/></button>
+          </div>
+        ) : (
+          <div onClick={() => onToggle(id)} className="cursor-pointer">
+            <div className={`font-medium ${isSelected ? 'text-red-800' : 'text-gray-800'}`}>{initialValue}</div>
+            {subLabel && <div className="text-xs text-gray-400">{subLabel}</div>}
+          </div>
+        )}
+      </div>
 
-        // ------------------------------------------------------------------
-        // 2. RENDERIZADO DE INTERFAZ (UI)
-        // ------------------------------------------------------------------
-
-        function renderDashboard() {
-            // A. Panel Mis Cursos
-            const list = document.getElementById('my-load-list');
-            const myC = window.dbData.courses.filter(c => c.uid === currentUser.uid);
-            
-            if (myC.length === 0) {
-                list.innerHTML = '<p class="text-sm text-slate-400 italic text-center py-4">No tienes cursos registrados aún.</p>';
-            } else {
-                list.innerHTML = myC.map(c => `
-                    <div class="p-3 bg-white border border-slate-200 rounded-xl hover:shadow-md transition cursor-pointer flex items-center gap-3 mb-2" onclick="window.showSection('schedules')">
-                        <div class="w-10 h-10 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-lg shrink-0">
-                            ${c.name.charAt(0).toUpperCase()}
-                        </div>
-                        <div class="overflow-hidden">
-                            <div class="font-bold text-slate-800 text-sm truncate">${c.name}</div>
-                            <div class="text-xs text-slate-500 truncate">Paralelos: ${c.parallels.join(', ')}</div>
-                        </div>
-                    </div>`).join('');
-            }
-
-            // B. Leccionario de Hoy
-            renderTodayLeccionario();
-
-            // C. Calendario
-            renderCalendarWidget();
-        }
-
-        function renderTodayLeccionario() {
-            const container = document.getElementById('today-leccionario-body');
-            const emptyMsg = document.getElementById('leccionario-empty-msg');
-            const wrapper = document.getElementById('leccionario-wrapper');
-            
-            const today = new Date();
-            const dateStr = today.toISOString().split('T')[0];
-            const dayIdx = (today.getDay() + 6) % 7; // Ajuste para 0=Lunes
-
-            // Buscar clases para hoy en los horarios cargados
-            const tasks = [];
-            window.dbData.schedules.forEach(sched => {
-                const from = new Date(sched.validFrom); from.setHours(0,0,0,0);
-                const to = new Date(sched.validTo); to.setHours(23,59,59,999);
-                
-                if(today >= from && today <= to) {
-                    Object.keys(sched.matrix).forEach(key => {
-                        const [row, col] = key.split('-');
-                        if(parseInt(col) === dayIdx) {
-                            const subj = sched.matrix[key];
-                            if(subj) {
-                                const timeSlot = sched.timeSlots && sched.timeSlots[row] ? sched.timeSlots[row] : {s:'??',e:'??'};
-                                tasks.push({
-                                    key: `${sched.id}_${row}`,
-                                    schedId: sched.id,
-                                    row: parseInt(row),
-                                    time: `${timeSlot.s} - ${timeSlot.e}`,
-                                    subject: subj,
-                                    course: `${sched.courseName} ${sched.parallel}`
-                                });
-                            }
-                        }
-                    });
-                }
-            });
-
-            if(tasks.length === 0) {
-                wrapper.classList.add('hidden');
-                emptyMsg.classList.remove('hidden');
-                return;
-            }
-
-            wrapper.classList.remove('hidden');
-            emptyMsg.classList.add('hidden');
-            tasks.sort((a,b) => a.row - b.row);
-
-            // Cruzar con lo ya guardado hoy
-            const savedLogs = {};
-            window.dbData.logs.filter(l => l.dateStr === dateStr).forEach(l => {
-                savedLogs[`${l.schedId}_${l.row}`] = l;
-            });
-
-            const firmaImg = userData?.firma ? `<img src="${userData.firma}" class="h-8 mx-auto" alt="Firma">` : '<span class="text-xs text-gray-300">--</span>';
-
-            container.innerHTML = tasks.map(t => {
-                const saved = savedLogs[t.key] || {};
-                const isReceso = t.subject.toUpperCase() === 'RECESO';
-                
-                if(isReceso) return `
-                    <tr class="bg-gray-100 border-b border-gray-200">
-                        <td class="p-3 text-xs font-bold text-slate-500">${t.time}</td>
-                        <td colspan="5" class="p-3 text-center text-xs font-bold text-slate-400 tracking-widest">RECESO</td>
-                    </tr>`;
-
-                return `
-                    <tr class="hover:bg-blue-50/30 transition border-b border-gray-100">
-                        <td class="p-3 text-xs font-bold text-slate-600 whitespace-nowrap align-middle">${t.time}</td>
-                        <td class="p-3 align-middle">
-                            <div class="text-xs font-bold text-slate-800">${t.subject}</div>
-                            <div class="text-[10px] text-blue-600 font-medium">${t.course}</div>
-                        </td>
-                        <td class="p-2 align-middle"><textarea id="topic_${t.key}" class="w-full text-xs p-2 border border-slate-200 rounded-lg resize-none focus:ring-2 focus:ring-blue-500 outline-none bg-slate-50 focus:bg-white" rows="2" placeholder="Tema tratado...">${saved.topic||''}</textarea></td>
-                        <td class="p-3 text-xs text-center text-slate-600 align-middle">${userData?.nombre||'Yo'}</td>
-                        <td class="p-3 text-center align-middle">${firmaImg}</td>
-                        <td class="p-2 align-middle"><textarea id="obs_${t.key}" class="w-full text-xs p-2 border border-slate-200 rounded-lg resize-none focus:ring-2 focus:ring-blue-500 outline-none bg-slate-50 focus:bg-white" rows="2" placeholder="Observaciones...">${saved.observation||''}</textarea></td>
-                    </tr>`;
-            }).join('');
-            
-            window.currentTasks = tasks;
-        }
-
-        function renderCalendarWidget() {
-            const year = calCurrentDate.getFullYear();
-            const month = calCurrentDate.getMonth();
-            const monthNames = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
-            
-            const label = document.getElementById('cal-month-label');
-            if(label) label.textContent = `${monthNames[month]} ${year}`;
-            
-            const grid = document.getElementById('cal-grid');
-            if(!grid) return;
-
-            const firstDay = new Date(year, month, 1);
-            const lastDay = new Date(year, month + 1, 0);
-            const daysInMonth = lastDay.getDate();
-            const startDayOfWeek = (firstDay.getDay() + 6) % 7; 
-
-            let html = '';
-            for(let i=0; i<startDayOfWeek; i++) html += `<div class="h-16 bg-slate-50 rounded-lg opacity-50 border border-transparent"></div>`;
-
-            const todayStr = new Date().toISOString().split('T')[0];
-
-            for(let day=1; day<=daysInMonth; day++) {
-                const dateObj = new Date(year, month, day);
-                const dateStr = dateObj.toISOString().split('T')[0];
-                const dayOfWeekIdx = (dateObj.getDay() + 6) % 7;
-
-                // Calcular Esperado vs Real
-                let expected = 0;
-                window.dbData.schedules.forEach(s => {
-                    const from = new Date(s.validFrom); from.setHours(0,0,0,0);
-                    const to = new Date(s.validTo); to.setHours(23,59,59,999);
-                    if (dateObj >= from && dateObj <= to) {
-                        Object.keys(s.matrix).forEach(k => {
-                            const [r, c] = k.split('-');
-                            if(parseInt(c) === dayOfWeekIdx) {
-                                const subj = s.matrix[k];
-                                if(subj && subj.toUpperCase() !== 'RECESO') expected++;
-                            }
-                        });
-                    }
-                });
-
-                const filled = window.dbData.logs.filter(l => l.dateStr === dateStr).length;
-                
-                let colorClass = "bg-white border-slate-200 text-slate-400";
-                let statusIcon = "";
-                
-                if (expected > 0) {
-                    if (filled >= expected) {
-                        colorClass = "bg-emerald-50 border-emerald-200 text-emerald-700";
-                        statusIcon = `<i class="fa-solid fa-check-circle text-emerald-500 absolute bottom-1 right-1 text-xs"></i>`;
-                    } else if (filled > 0) {
-                        colorClass = "bg-amber-50 border-amber-200 text-amber-700";
-                        statusIcon = `<i class="fa-solid fa-circle-half-stroke text-amber-500 absolute bottom-1 right-1 text-xs"></i>`;
-                    } else {
-                        if (dateObj < new Date().setHours(0,0,0,0)) {
-                            colorClass = "bg-rose-50 border-rose-200 text-rose-700";
-                            statusIcon = `<i class="fa-solid fa-circle-exclamation text-rose-500 absolute bottom-1 right-1 text-xs"></i>`;
-                        } else {
-                            colorClass = "bg-white border-slate-300 text-slate-600";
-                        }
-                    }
-                }
-
-                const isToday = dateStr === todayStr;
-                const todayRing = isToday ? "ring-2 ring-blue-500 ring-offset-2 z-10" : "";
-
-                html += `
-                    <div class="h-16 border rounded-lg p-1 relative flex flex-col justify-between ${colorClass} ${todayRing}">
-                        <span class="font-bold text-xs">${day}</span>
-                        ${expected > 0 ? `<div class="text-[9px] leading-tight text-right mt-1">${filled}/${expected}<br>Clases</div>` : ''}
-                        ${statusIcon}
-                    </div>
-                `;
-            }
-            grid.innerHTML = html;
-        }
-
-        // ------------------------------------------------------------------
-        // 3. AUTHENTICATION & STARTUP
-        // ------------------------------------------------------------------
-
-        onAuthStateChanged(auth, async (user) => {
-            currentUser = user;
-            if (user) {
-                // 1. Obtener Datos de Usuario
-                try {
-                    const userDoc = await getDoc(doc(db, "users", user.uid));
-                    userData = userDoc.exists() ? userDoc.data() : { nombre: user.email, rol: 'Docente' };
-                } catch (e) {
-                    console.error("Error perfil", e);
-                    userData = { nombre: "Usuario", rol: "Docente" };
-                }
-                
-                // 2. Actualizar UI Perfil
-                document.getElementById('user-name-display').textContent = userData.nombre;
-                document.getElementById('user-role-label').textContent = userData.rol;
-                
-                // 3. Gestión de Roles (Mostrar/Ocultar Menús)
-                const isAdmin = userData.rol === 'Admin';
-                ['nav-admin-group', 'nav-schedules-group', 'nav-reports-group'].forEach(id => {
-                    const el = document.getElementById(id);
-                    if(el) {
-                        if(isAdmin) el.classList.remove('hidden');
-                        else el.classList.add('hidden');
-                    }
-                });
-
-                // 4. CAMBIO DE VISTA INMEDIATO
-                document.getElementById('auth-view').classList.add('hidden');
-                document.getElementById('app-view').classList.remove('hidden');
-                
-                // 5. INICIAR CARGA DE DATOS REALTIME
-                initDataListeners(user);
-                
-                // 6. FORZAR DASHBOARD
-                window.showSection('dashboard');
-
-            } else {
-                document.getElementById('app-view').classList.add('hidden');
-                document.getElementById('auth-view').classList.remove('hidden');
-                userData = null;
-            }
-        });
-
-        // ------------------------------------------------------------------
-        // 4. HELPERS GLOBALES (WINDOW)
-        // ------------------------------------------------------------------
-
-        window.showSection = (id) => {
-            document.querySelectorAll('main > div').forEach(d => d.classList.add('hidden'));
-            const target = document.getElementById(`section-${id}`);
-            if(target) {
-                target.classList.remove('hidden');
-                if(id === 'dashboard') refreshDashboardUI();
-                if(id === 'users') {
-                   const tb = document.getElementById('users-table-body');
-                   if(!tb.hasChildNodes() || tb.innerHTML.trim() === "") window.forceLoadUsers();
-                }
-                // Actualizar selects si entramos a configuración
-                if(id === 'academic-admin' || id === 'schedules' || id === 'courses') updateAdminTables();
-            }
-        };
-
-        window.showToast = (msg, type = 'success') => {
-            const container = document.getElementById('toast-container');
-            const el = document.createElement('div');
-            const color = type === 'success' ? 'bg-emerald-600' : 'bg-rose-600';
-            el.className = `${color} text-white px-6 py-3 rounded-xl shadow-lg font-bold text-sm mb-2 animate-bounce flex items-center gap-2`;
-            el.innerHTML = `<i class="fa-solid fa-${type==='success'?'check':'triangle-exclamation'}"></i> ${msg}`;
-            container.appendChild(el);
-            setTimeout(() => el.remove(), 3000);
-        };
-
-        // Acciones Login/Logout
-        window.switchAuth = (type) => {
-            document.getElementById('login-form').classList.toggle('hidden', type !== 'login');
-            document.getElementById('register-form').classList.toggle('hidden', type !== 'register');
-        };
-
-        window.handleLogout = async () => {
-            try {
-                await signOut(auth);
-                window.location.reload();
-            } catch (error) { window.showToast("Error al salir", 'error'); }
-        };
-
-        // Acciones Guardado Diario
-        window.saveDaily = async () => {
-            if(!window.currentTasks) return;
-            const dateStr = new Date().toISOString().split('T')[0];
-            let c = 0;
-            const btn = document.getElementById('btn-save-daily');
-            const originalText = btn.innerHTML;
-            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Guardando...';
-            btn.disabled = true;
-            
-            try {
-                const batchPromises = window.currentTasks.map(async t => {
-                    if(t.subject.toUpperCase() === 'RECESO') return;
-                    const topic = document.getElementById(`topic_${t.key}`).value;
-                    let obs = document.getElementById(`obs_${t.key}`).value;
-                    
-                    // Regla de negocio: Si escribe tema pero no obs, poner N/A. Si no escribe nada, ignorar.
-                    if(!topic && !obs) return;
-                    if(!obs) obs = "N/A";
-                    
-                    await setDoc(doc(db, 'daily_logs', `${dateStr}_${t.key}`), { 
-                        dateStr, schedId: t.schedId, row: t.row, uid: currentUser.uid, 
-                        topic, observation: obs, subject: t.subject, course: t.course, 
-                        time: t.time, timestamp: new Date() 
-                    });
-                    c++;
-                });
-                await Promise.all(batchPromises);
-                window.showToast(`${c} registros guardados`);
-                refreshDashboardUI(); // Refrescar para ver cambios en calendario
-            } catch(e) {
-                window.showToast("Error al guardar", 'error');
-            } finally {
-                btn.innerHTML = originalText;
-                btn.disabled = false;
-            }
-        };
-
-        // Helpers de Tablas Admin
-        function updateAdminTables() {
-            // Llenar selects
-            const fillSelect = (id, data, valKey='id', labelKey='name') => {
-                const s = document.getElementById(id);
-                if(s) {
-                    s.innerHTML = '<option value="">Seleccione...</option>';
-                    data.forEach(d => s.innerHTML += `<option value="${d[valKey]}">${d[labelKey]}</option>`);
-                }
-            };
-            fillSelect('course-section-select', window.dbData.sections);
-            fillSelect('sched-section-select', window.dbData.sections);
-            fillSelect('subject-area-select', window.dbData.areas, 'name', 'name');
-
-            // Render Tablas
-            const renderTable = (id, data, colName) => {
-                const tb = document.getElementById(id);
-                if(tb) {
-                    tb.innerHTML = data.map(d => `<tr><td>${d.name}</td><td class="text-right"><i class="fa-solid fa-trash text-red-400 cursor-pointer" onclick="deleteItem('${colName}','${d.id}')"></i></td></tr>`).join('');
-                }
-            };
-            renderTable('sections-table-body', window.dbData.sections, 'sections');
-            renderTable('areas-table-body', window.dbData.areas, 'areas');
-            
-            const tbSub = document.getElementById('subjects-table-body');
-            if(tbSub) tbSub.innerHTML = window.dbData.subjects.map(d => `<tr><td>${d.name}</td><td>${d.area}</td><td class="text-right flex justify-end gap-2"><i class="fa-solid fa-pen text-blue-500 cursor-pointer" onclick="editSubjectFull('${d.id}','${d.name}','${d.area}')"></i><i class="fa-solid fa-trash text-red-400 cursor-pointer" onclick="deleteItem('subjects','${d.id}')"></i></td></tr>`).join('');
-            
-            const tbCourses = document.getElementById('courses-table-body');
-            if(tbCourses) tbCourses.innerHTML = window.dbData.courses.map(d => `<tr><td>${d.name}</td><td>${d.sectionId}</td><td>${d.parallels.join(', ')}</td><td class="text-right"><i class="fa-solid fa-trash text-red-400 cursor-pointer" onclick="deleteItem('courses','${d.id}')"></i></td></tr>`).join('');
-        }
-
-        function renderUsersTable() {
-            const tb = document.getElementById('users-table-body');
-            if(tb) tb.innerHTML = Object.values(window.dbData.users).map(u => `<tr><td class="p-3 font-bold text-slate-700">${u.nombre}</td><td class="p-3 text-xs">${u.email}</td><td class="p-3"><span class="bg-blue-100 text-blue-800 text-xs font-bold px-2 py-1 rounded">${u.rol}</span></td><td class="p-3 text-center">${u.firma ? '<i class="fa-solid fa-check text-green-500"></i>' : '--'}</td></tr>`).join('');
-        }
-
-        // Utilitarios CRUD y Varios
-        window.deleteItem = async (col, id) => { if(confirm('¿Eliminar?')) { try{ await deleteDoc(doc(db, col, id)); window.showToast('Eliminado'); }catch(e){ window.showToast('Error', 'error'); } } };
-        window.editSubjectFull = async (id, name, area) => { const opt = prompt(`Editar ${name}\n1.Nombre 2.Área`); if(opt=='1'){const n=prompt("Nombre:",name);if(n)await updateDoc(doc(db,'subjects',id),{name:n});} else if(opt=='2'){const a=prompt("Área:",area);if(a)await updateDoc(doc(db,'subjects',id),{area:a});} };
-        window.changeMonth = (d) => { calCurrentDate.setMonth(calCurrentDate.getMonth()+d); renderCalendarWidget(); };
-        window.exportPDF = () => { const el=document.getElementById('leccionario-print-area'); html2pdf().set({margin:0.3, filename:`Leccionario_${new Date().toISOString().split('T')[0]}.pdf`, image:{type:'jpeg',quality:0.98}, html2canvas:{scale:2,useCORS:true}, jsPDF:{unit:'in',format:'letter',orientation:'landscape'}}).from(el).save(); };
-        window.forceLoadUsers = async () => { const q = query(collection(db, "users")); const s = await getDocs(q); window.dbData.users={}; s.forEach(d=>window.dbData.users[d.id]=d.data()); renderUsersTable(); window.showToast('Actualizado'); };
-        
-        // Modal Password
-        window.openPassModal = () => document.getElementById('modal-password').classList.remove('hidden');
-        window.closePassModal = () => document.getElementById('modal-password').classList.add('hidden');
-        window.saveNewPassword = async () => { const p=document.getElementById('new-password').value; if(p.length<6)return window.showToast('Mínimo 6 chars','error'); try{ await updatePassword(currentUser,p); window.showToast('Clave actualizada'); window.closePassModal(); }catch(e){ window.showToast('Error: Re-ingresa al sistema','error'); } };
-
-        // DOM Loaded - Event Listeners Formularios
-        document.addEventListener('DOMContentLoaded', () => {
-            // Login con Feedback Visual
-            document.getElementById('login-form').addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const btn = e.target.querySelector('button');
-                const old = btn.innerHTML;
-                btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Verificando...';
-                btn.disabled = true;
-                try {
-                    await signInWithEmailAndPassword(auth, document.getElementById('login-email').value, document.getElementById('login-pass').value);
-                } catch(e) {
-                    window.showToast('Credenciales incorrectas', 'error');
-                    btn.innerHTML = old;
-                    btn.disabled = false;
-                }
-            });
-
-            document.getElementById('register-form').addEventListener('submit', async (e) => {
-                e.preventDefault();
-                try {
-                    const cred = await createUserWithEmailAndPassword(auth, document.getElementById('reg-email').value, document.getElementById('reg-pass').value);
-                    const file = document.getElementById('reg-signature').files[0];
-                    const reader = new FileReader();
-                    reader.onload = async () => {
-                        await setDoc(doc(db, "users", cred.user.uid), { email: document.getElementById('reg-email').value, nombre: document.getElementById('reg-name').value, rol: "Docente", firma: reader.result, createdAt: new Date().toISOString() });
-                    };
-                    if(file) reader.readAsDataURL(file);
-                    else await setDoc(doc(db, "users", cred.user.uid), { email: document.getElementById('reg-email').value, nombre: document.getElementById('reg-name').value, rol: "Docente", firma: null, createdAt: new Date().toISOString() });
-                } catch(e) { window.showToast(e.message, 'error'); }
-            });
-
-            // Forms Admin Simplificados
-            const add = async (col, data) => { await addDoc(collection(db, col), {...data, createdAt: new Date().toISOString()}); window.showToast('Guardado'); document.activeElement.form.reset(); };
-            document.getElementById('form-section').onsubmit = (e) => { e.preventDefault(); add('sections', {name: document.getElementById('section-name').value}); };
-            document.getElementById('form-area').onsubmit = (e) => { e.preventDefault(); add('areas', {name: document.getElementById('area-name').value}); };
-            document.getElementById('form-subject').onsubmit = (e) => { e.preventDefault(); add('subjects', {name: document.getElementById('subject-name').value, area: document.getElementById('subject-area-select').value}); };
-            document.getElementById('form-course').onsubmit = (e) => { e.preventDefault(); add('courses', {name: document.getElementById('course-name').value, sectionId: document.getElementById('course-section-select').value, parallels: document.getElementById('course-parallels').value.split(',').map(s=>s.trim())}); };
-
-            document.getElementById('current-date-label').textContent = new Date().toLocaleDateString('es-ES', {weekday:'long', year:'numeric', month:'long', day:'numeric'});
-            setTimeout(() => document.getElementById('loader').classList.add('hidden'), 500);
-        });
-
-        // Helpers Horarios
-        window.tempTimeSlots = [{s:'07:15', e:'08:00'}, {s:'08:00', e:'08:45'}, {s:'08:45', e:'09:25'}, {s:'10:00', e:'10:40'}, {s:'10:40', e:'11:20'}];
-        window.initSchedule = () => { renderTimeConfig(); document.getElementById('sched-valid-from').value=new Date().toISOString().split('T')[0]; document.getElementById('sched-valid-to').value = new Date(new Date().setFullYear(new Date().getFullYear()+1)).toISOString().split('T')[0]; };
-        window.renderTimeConfig = () => { document.getElementById('time-slots-config').innerHTML = window.tempTimeSlots.map((s,i) => `<div class="flex gap-2 mb-1"><input type="time" value="${s.s}" class="border rounded px-1 text-xs" onchange="window.tempTimeSlots[${i}].s=this.value"><input type="time" value="${s.e}" class="border rounded px-1 text-xs" onchange="window.tempTimeSlots[${i}].e=this.value"></div>`).join('') + `<button onclick="addSlot()" class="text-xs text-blue-600 font-bold mt-2">+ Agregar Hora</button>`; renderMatrix(); };
-        window.addSlot = () => { window.tempTimeSlots.push({s:'00:00',e:'00:00'}); renderTimeConfig(); };
-        window.removeSlot = (i) => { window.tempTimeSlots.splice(i,1); renderTimeConfig(); };
-        window.updateSlot = (i,f,v) => { window.tempTimeSlots[i][f] = v; };
-        function renderMatrix() { document.getElementById('matrix-body').innerHTML = window.tempTimeSlots.map((h, r) => `<tr><td class="text-[10px] text-center bg-slate-50 border-b">${h.s}<br>${h.e}</td>${[0,1,2,3,4].map(c => `<td class="border p-1 h-10 text-center cursor-pointer hover:bg-blue-50 text-[10px]" onclick="setCell(this)" data-key="${r}-${c}"></td>`).join('')}</tr>`).join(''); }
-        window.setCell = (td) => { const v = prompt("Materia:", td.innerText); if(v!==null) { td.innerText = v; td.className = v === 'RECESO' ? "border p-1 h-10 text-center cursor-pointer bg-gray-200 text-[10px]" : "border p-1 h-10 text-center cursor-pointer bg-blue-100 text-[10px]"; } };
-        window.updateSchedSelects = (val) => { const s = document.getElementById('sched-course-select'); s.innerHTML = '<option value="">Curso...</option>'; s.disabled = !val; window.dbData.courses.filter(c => c.sectionId === val).forEach(c => s.innerHTML += `<option value="${c.id}">${c.name}</option>`); };
-        window.enableParallel = (val) => { const s = document.getElementById('sched-parallel-select'); s.innerHTML = '<option value="">Paralelo...</option>'; s.disabled = !val; window.dbData.courses.find(c => c.id === val).parallels.forEach(p => s.innerHTML += `<option value="${p}">${p}</option>`); };
-        window.saveSchedule = async () => { const cid = document.getElementById('sched-course-select').value; const par = document.getElementById('sched-parallel-select').value; if(!cid || !par) return; const m = {}; document.querySelectorAll('#matrix-body td[data-key]').forEach(td => { if(td.innerText) m[td.dataset.key] = td.innerText; }); const cObj = window.dbData.courses.find(c => c.id === cid); await setDoc(doc(db, 'schedules', `${cid}_${par}`), { courseId: cid, courseName: cObj.name, parallel: par, uid: currentUser.uid, validFrom: document.getElementById('sched-valid-from').value, validTo: document.getElementById('sched-valid-to').value, timeSlots: window.tempTimeSlots, matrix: m }); window.showToast('Horario guardado'); };
-
-    </script>
-</head>
-<body class="bg-slate-50 text-slate-800 font-sans">
-
-    <!-- NAVBAR -->
-    <nav class="bg-white border-b sticky top-0 z-50 shadow-sm">
-        <div class="max-w-7xl mx-auto px-4 h-16 flex justify-between items-center">
-            <div class="flex items-center gap-2 font-bold text-slate-700 cursor-pointer" onclick="window.showSection('dashboard')">
-                <div class="bg-blue-600 text-white p-1.5 rounded-lg text-xl">LV</div> V3.8
-            </div>
-            <div class="hidden md:flex items-center gap-4 text-sm font-medium text-slate-600">
-                <button onclick="window.showSection('dashboard')" class="hover:text-blue-600">Inicio</button>
-                <div id="nav-admin-group" class="hidden flex gap-4">
-                    <button onclick="window.showSection('academic-admin')" class="hover:text-blue-600">Configuración</button>
-                    <button onclick="window.showSection('courses')" class="hover:text-blue-600">Cursos</button>
-                    <button onclick="window.showSection('users')" class="hover:text-blue-600">Usuarios</button>
-                    <button onclick="window.showSection('schedules'); window.initSchedule()" class="hover:text-blue-600">Horarios</button>
-                    <button onclick="window.showSection('report-compliance')" class="hover:text-blue-600">Reportes</button>
-                </div>
-            </div>
-            <div class="flex items-center gap-3">
-                <div class="text-right hidden sm:block">
-                    <div id="user-name-display" class="text-sm font-bold">Usuario</div>
-                    <div id="user-role-label" class="text-[10px] uppercase text-slate-500">Rol</div>
-                </div>
-                <button onclick="window.openPassModal()" class="text-slate-400 hover:text-blue-600 transition" title="Clave"><i class="fa-solid fa-key"></i></button>
-                <button onclick="window.handleLogout()" class="text-slate-400 hover:text-red-500 transition" title="Salir"><i class="fa-solid fa-power-off text-lg"></i></button>
-            </div>
-        </div>
-    </nav>
-
-    <main class="max-w-7xl mx-auto p-4 md:p-6 space-y-6">
-        
-        <!-- DASHBOARD (AUTO-LOAD) -->
-        <div id="section-dashboard" class="hidden animate-fade-in">
-            <div class="flex justify-between items-end mb-4">
-                <div><h1 class="text-2xl font-bold">Leccionario de Hoy</h1><p id="current-date-label" class="text-sm text-slate-500 capitalize"></p></div>
-                <div class="flex gap-2">
-                    <button id="btn-save-daily" onclick="window.saveDaily()" class="bg-blue-600 text-white px-4 py-2 rounded-lg font-bold text-sm shadow hover:bg-blue-700 transition"><i class="fa-solid fa-save mr-2"></i>Guardar</button>
-                    <button onclick="window.exportPDF()" class="bg-slate-800 text-white px-4 py-2 rounded-lg font-bold text-sm shadow hover:bg-slate-900 transition"><i class="fa-solid fa-print mr-2"></i>PDF</button>
-                </div>
-            </div>
-
-            <!-- LECCIONARIO (ARRIBA) -->
-            <div id="leccionario-print-area" class="bg-white rounded-xl border shadow-sm mb-6 overflow-hidden">
-                <div class="p-3 bg-slate-50 border-b font-bold text-slate-700 text-xs uppercase tracking-wider text-center">Registro de Clases</div>
-                <div id="leccionario-wrapper" class="overflow-x-auto">
-                    <table class="w-full text-left border-collapse">
-                        <thead><tr class="text-xs text-slate-500 border-b bg-white"><th class="p-3">Hora</th><th class="p-3">Materia</th><th class="p-3 w-1/3">Tema</th><th class="p-3 text-center">Docente</th><th class="p-3 text-center">Firma</th><th class="p-3 w-1/3">Observación</th></tr></thead>
-                        <tbody id="today-leccionario-body">
-                            <tr><td colspan="6" class="text-center py-8 text-slate-400"><i class="fa-solid fa-circle-notch fa-spin mr-2"></i>Cargando leccionario...</td></tr>
-                        </tbody>
-                    </table>
-                </div>
-                <div id="leccionario-empty-msg" class="p-8 text-center text-slate-400 hidden"><i class="fa-solid fa-mug-hot text-3xl mb-2"></i><p>No tienes clases asignadas hoy.</p></div>
-            </div>
-
-            <!-- PANELES INFERIORES -->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <!-- CALENDARIO (AMPLIADO 50%) -->
-                <div class="bg-white p-5 rounded-xl border shadow-sm h-full">
-                    <div class="flex justify-between items-center mb-4">
-                        <h3 class="font-bold text-slate-700">Cumplimiento Mensual</h3>
-                        <div class="flex gap-2">
-                            <button onclick="window.changeMonth(-1)" class="text-slate-400 hover:text-blue-600"><i class="fa-solid fa-chevron-left"></i></button>
-                            <span id="cal-month-label" class="text-sm font-bold uppercase w-24 text-center">MES</span>
-                            <button onclick="window.changeMonth(1)" class="text-slate-400 hover:text-blue-600"><i class="fa-solid fa-chevron-right"></i></button>
-                        </div>
-                    </div>
-                    <div class="grid grid-cols-7 gap-2 text-center text-[10px] font-bold text-slate-400 mb-2"><div>L</div><div>M</div><div>M</div><div>J</div><div>V</div><div>S</div><div>D</div></div>
-                    <div id="cal-grid" class="grid grid-cols-7 gap-2"></div>
-                </div>
-
-                <!-- MIS CURSOS (50%) -->
-                <div class="bg-white p-5 rounded-xl border shadow-sm h-full flex flex-col">
-                    <h3 class="font-bold text-slate-700 mb-4">Mis Cursos Asignados</h3>
-                    <div id="my-load-list" class="space-y-3 flex-1 overflow-y-auto pr-2">
-                        <p class="text-xs text-slate-400 animate-pulse">Cargando cursos...</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- SECCIONES OCULTAS (ADMIN, CONFIG, ETC) -->
-        <div id="section-academic-admin" class="hidden">
-            <h2 class="text-xl font-bold mb-4">Configuración Académica</h2>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div class="bg-white p-4 rounded-xl border shadow-sm">
-                    <h3 class="font-bold text-sm mb-2">Secciones</h3>
-                    <form id="form-section" class="flex gap-2 mb-2"><input id="section-name" class="border rounded p-1 flex-1 text-sm" required><button class="bg-blue-600 text-white px-2 rounded">+</button></form>
-                    <table class="w-full text-sm"><tbody id="sections-table-body"></tbody></table>
-                </div>
-                <div class="bg-white p-4 rounded-xl border shadow-sm">
-                    <h3 class="font-bold text-sm mb-2">Áreas</h3>
-                    <form id="form-area" class="flex gap-2 mb-2"><input id="area-name" class="border rounded p-1 flex-1 text-sm" required><button class="bg-blue-600 text-white px-2 rounded">+</button></form>
-                    <table class="w-full text-sm"><tbody id="areas-table-body"></tbody></table>
-                </div>
-                <div class="bg-white p-4 rounded-xl border shadow-sm">
-                    <h3 class="font-bold text-sm mb-2">Materias</h3>
-                    <form id="form-subject" class="space-y-2 mb-2"><input id="subject-name" class="w-full border rounded p-1 text-sm" placeholder="Nombre" required><select id="subject-area-select" class="w-full border rounded p-1 text-sm" required></select><button class="w-full bg-blue-600 text-white py-1 rounded text-xs font-bold">Crear</button></form>
-                    <div class="h-40 overflow-y-auto"><table class="w-full text-sm"><tbody id="subjects-table-body"></tbody></table></div>
-                </div>
-            </div>
-        </div>
-
-        <div id="section-courses" class="hidden">
-            <h2 class="text-xl font-bold mb-4">Gestión de Cursos</h2>
-            <div class="bg-white p-6 rounded-xl border shadow-sm">
-                <form id="form-course" class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6"><input id="course-name" class="border rounded p-2 text-sm" placeholder="Nombre" required><select id="course-section-select" class="border rounded p-2 text-sm" required></select><input id="course-parallels" class="border rounded p-2 text-sm" placeholder="Paralelos (A,B,C)" required><button class="bg-blue-600 text-white rounded p-2 font-bold text-sm">Guardar</button></form>
-                <table class="w-full text-sm text-left"><thead class="bg-slate-50 text-xs uppercase"><tr><th class="p-2">Curso</th><th class="p-2">Sección</th><th class="p-2">Paralelos</th><th></th></tr></thead><tbody id="courses-table-body"></tbody></table>
-            </div>
-        </div>
-
-        <div id="section-users" class="hidden">
-            <h2 class="text-xl font-bold mb-4">Usuarios</h2>
-            <div class="bg-white p-6 rounded-xl border shadow-sm">
-                <div class="flex justify-between mb-4"><h3 class="font-bold">Lista de Personal</h3><button onclick="window.forceLoadUsers()" class="text-sm text-blue-600"><i class="fa-solid fa-rotate"></i> Actualizar</button></div>
-                <table class="w-full text-sm text-left"><thead class="bg-slate-50 text-xs uppercase"><tr><th class="p-3">Nombre</th><th class="p-3">Email</th><th class="p-3">Rol</th><th class="p-3 text-center">Firma</th></tr></thead><tbody id="users-table-body"></tbody></table>
-            </div>
-        </div>
-
-        <div id="section-schedules" class="hidden">
-            <div class="flex justify-between items-center mb-4"><h2 class="text-xl font-bold">Horarios</h2><button onclick="window.saveSchedule()" class="bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-bold shadow">Guardar</button></div>
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
-                <div class="bg-white p-4 rounded-xl border shadow-sm space-y-4">
-                    <div><label class="text-xs font-bold text-slate-500">Contexto</label><select id="sched-section-select" class="w-full border rounded p-2 text-sm mt-1" onchange="window.updateSchedSelects(this.value)"></select><select id="sched-course-select" class="w-full border rounded p-2 text-sm mt-2" disabled onchange="window.enableParallel(this.value)"></select><select id="sched-parallel-select" class="w-full border rounded p-2 text-sm mt-2" disabled></select></div>
-                    <div><label class="text-xs font-bold text-slate-500">Vigencia</label><div class="flex gap-1 mt-1"><input type="date" id="sched-valid-from" class="w-full border rounded p-1 text-xs"><input type="date" id="sched-valid-to" class="w-full border rounded p-1 text-xs"></div></div>
-                    <div><label class="text-xs font-bold text-slate-500">Horas</label><div id="time-slots-config"></div></div>
-                </div>
-                <div class="md:col-span-3 bg-white p-1 rounded-xl border shadow-sm overflow-x-auto"><table class="w-full border-collapse"><thead><tr><th class="p-2 w-20"></th><th class="text-xs bg-slate-50 p-2">Lunes</th><th class="text-xs bg-slate-50 p-2">Martes</th><th class="text-xs bg-slate-50 p-2">Miércoles</th><th class="text-xs bg-slate-50 p-2">Jueves</th><th class="text-xs bg-slate-50 p-2">Viernes</th></tr></thead><tbody id="matrix-body"></tbody></table></div>
-            </div>
-        </div>
-
-        <div id="section-report-compliance" class="hidden">
-            <h2 class="text-xl font-bold mb-4">Reporte de Faltantes</h2>
-            <div class="bg-white p-6 rounded-xl border shadow-sm">
-                <div class="flex items-end gap-4 mb-6"><div><label class="text-xs font-bold text-slate-500">Fecha</label><input type="date" id="rep-date" class="block mt-1 border rounded p-2 text-sm"></div><button onclick="window.runComplianceReport()" class="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-bold">Generar</button></div>
-                <table class="w-full text-left text-sm"><thead class="bg-slate-50 text-xs uppercase"><tr><th class="p-3">Curso</th><th class="p-3">Materia</th><th class="p-3">Responsable</th><th class="p-3">Estado</th></tr></thead><tbody id="compliance-body"></tbody></table>
-            </div>
-        </div>
-
-    </main>
-
-    <!-- LOADERS & MODALS -->
-    <div id="loader" class="fixed inset-0 bg-white z-[100] flex items-center justify-center"><div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div></div>
-    <div id="toast-container" class="fixed bottom-4 right-4 z-[60] flex flex-col items-end"></div>
-    
-    <div id="modal-password" class="fixed inset-0 bg-black bg-opacity-50 z-[70] hidden flex items-center justify-center p-4">
-        <div class="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm">
-            <h3 class="font-bold text-lg mb-4">Cambiar Contraseña</h3>
-            <input type="password" id="new-password" class="w-full border p-2 rounded mb-4 text-sm" placeholder="Nueva clave">
-            <div class="flex gap-2"><button onclick="window.closePassModal()" class="flex-1 bg-slate-100 py-2 rounded text-sm">Cancelar</button><button onclick="window.saveNewPassword()" class="flex-1 bg-blue-600 text-white py-2 rounded text-sm">Guardar</button></div>
-        </div>
+      {/* Botón Editar Individual */}
+      {!isEditing && (
+        <button onClick={() => setIsEditing(true)} className="text-blue-400 hover:text-blue-600 p-2 rounded hover:bg-blue-50">
+          <Edit size={16}/>
+        </button>
+      )}
     </div>
+  );
+};
 
-    <div id="auth-view" class="fixed inset-0 bg-slate-100 flex items-center justify-center p-4 z-50">
-        <div class="bg-white w-full max-w-md p-8 rounded-2xl shadow-xl">
-            <h1 class="text-2xl font-bold text-center mb-6">Leccionario V3.8</h1>
-            <div class="flex border-b mb-6"><button onclick="window.switchAuth('login')" class="flex-1 pb-2 font-bold text-blue-600 border-b-2 border-blue-600">Entrar</button><button onclick="window.switchAuth('register')" class="flex-1 pb-2 font-bold text-slate-400">Registro</button></div>
-            <form id="login-form" class="space-y-4"><input id="login-email" type="email" class="w-full border p-3 rounded-lg" placeholder="Email" required><input id="login-pass" type="password" class="w-full border p-3 rounded-lg" placeholder="Password" required><button class="w-full bg-blue-600 text-white p-3 rounded-lg font-bold">Ingresar</button></form>
-            <form id="register-form" class="space-y-4 hidden"><input id="reg-name" class="w-full border p-3 rounded-lg" placeholder="Nombre" required><input id="reg-email" type="email" class="w-full border p-3 rounded-lg" placeholder="Email" required><input id="reg-pass" type="password" class="w-full border p-3 rounded-lg" placeholder="Password" required><input id="reg-signature" type="file" accept="image/*" class="w-full text-sm"><button class="w-full bg-green-600 text-white p-3 rounded-lg font-bold">Registrar</button></form>
-        </div>
+// --- BARRA DE BORRADO MASIVO ---
+const BulkDeleteToolbar = ({ selectedIds, onDelete, onCancel }) => {
+  if (selectedIds.size === 0) return null;
+
+  return (
+    <div className="sticky top-0 z-10 flex justify-between items-center bg-red-600 text-white p-3 rounded-lg shadow-lg mb-4 animate-in slide-in-from-top-2">
+      <div className="font-bold flex items-center gap-2">
+        <CheckSquare size={18}/>
+        {selectedIds.size} elemento(s) seleccionado(s)
+      </div>
+      <div className="flex gap-2">
+        <button onClick={onCancel} className="px-3 py-1 text-xs font-bold bg-white/20 hover:bg-white/30 rounded text-white">Cancelar</button>
+        <button onClick={onDelete} className="px-3 py-1 text-xs font-bold bg-white text-red-600 hover:bg-red-50 rounded flex items-center gap-1">
+          <Trash2 size={14}/> Eliminar
+        </button>
+      </div>
     </div>
-</body>
-</html>
+  );
+};
+
+export default function EcomundoApp() {
+  const [user, setUser] = useState(null);
+  const [profile, setProfile] = useState(null);
+  const [view, setView] = useState('loading');
+  const [authMode, setAuthMode] = useState('login');
+  const [error, setError] = useState('');
+  
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      if (currentUser) {
+        setUser(currentUser);
+        const profileRef = doc(db, 'users', currentUser.uid);
+        const unsubProfile = onSnapshot(profileRef, (docSnap) => {
+          if (docSnap.exists()) {
+            setProfile({ ...docSnap.data(), uid: currentUser.uid });
+            setView('app');
+          } else {
+            setProfile(null);
+          }
+        });
+        return () => unsubProfile();
+      } else {
+        setUser(null);
+        setProfile(null);
+        setView('auth');
+      }
+    });
+    return () => unsubscribe();
+  }, []);
+
+  const handleLogin = async (e, email, password) => {
+    e.preventDefault();
+    setError('');
+    try { await signInWithEmailAndPassword(auth, email, password); } 
+    catch (err) { setError('Error de credenciales o conexión.'); }
+  };
+
+  const handleRegister = async (formData) => {
+    setError('');
+    try {
+      const userCredential = await createUserWithEmailAndPassword(auth, formData.email, formData.password);
+      const newUser = userCredential.user;
+      const isSuper = ['gasencio@ecomundo.edu.ec', 'ajuanazo@ecomundo.edu.ec'].includes(formData.email.toLowerCase());
+      const newProfile = {
+        nombre: formData.nombre,
+        email: formData.email.toLowerCase(),
+        rol: isSuper ? 'Admin' : 'Docente',
+        isSuperAdmin: isSuper,
+        firma: formData.firma || null,
+        createdAt: new Date().toISOString(),
+        uid: newUser.uid
+      };
+      await setDoc(doc(db, 'users', newUser.uid), newProfile);
+    } catch (err) { setError('Error al registrar: ' + err.message); }
+  };
+
+  const handleLogout = async () => { await signOut(auth); };
+
+  if (view === 'loading') return <Loader />;
+
+  return (
+    <div className="font-sans text-gray-800 h-screen overflow-hidden flex flex-col bg-gray-100">
+      {view === 'auth' ? (
+        <AuthView mode={authMode} setMode={setAuthMode} onLogin={handleLogin} onRegister={handleRegister} error={error} />
+      ) : (
+        <DashboardLayout profile={profile} onLogout={handleLogout} />
+      )}
+    </div>
+  );
+}
+
+// --- LAYOUT PRINCIPAL ---
+const DashboardLayout = ({ profile, onLogout }) => {
+  const [activeModule, setActiveModule] = useState('profile'); 
+  const isAdmin = profile.rol === 'Admin' || profile.isSuperAdmin;
+
+  return (
+    <div className="flex h-screen bg-gray-100">
+      <aside className="w-64 bg-white shadow-xl z-20 hidden md:flex flex-col">
+        <div className="h-16 flex items-center justify-center border-b border-gray-100 bg-ecomundo-blue" style={{ backgroundColor: COLORS.blue }}>
+           <div className="flex items-center gap-2 text-white">
+              <GraduationCap />
+              <span className="font-bold text-lg">Ecomundo</span>
+           </div>
+        </div>
+        
+        <nav className="flex-1 py-6 px-3 space-y-1 overflow-y-auto">
+          <SidebarItem icon={<User size={18}/>} label="Mi Perfil" isActive={activeModule === 'profile'} onClick={() => setActiveModule('profile')} />
+          
+          {isAdmin && (
+            <>
+              <div className="pt-4 pb-2 px-3 text-[10px] font-bold text-gray-400 uppercase tracking-wider">Gestión Académica</div>
+              <SidebarItem icon={<Settings size={18}/>} label="Configuración" isActive={activeModule === 'config'} onClick={() => setActiveModule('config')} />
+              <SidebarItem icon={<Briefcase size={18}/>} label="Distributivo" isActive={activeModule === 'distributive'} onClick={() => setActiveModule('distributive')} />
+              <SidebarItem icon={<Calendar size={18}/>} label="Horario de Clases" isActive={activeModule === 'schedule'} onClick={() => setActiveModule('schedule')} />
+              
+              <div className="pt-4 pb-2 px-3 text-[10px] font-bold text-gray-400 uppercase tracking-wider">Reportes</div>
+              <SidebarItem icon={<FileBarChart size={18}/>} label="Reporte Carga Horaria" isActive={activeModule === 'reports_load'} onClick={() => setActiveModule('reports_load')} />
+
+              <div className="pt-4 pb-2 px-3 text-[10px] font-bold text-gray-400 uppercase tracking-wider">Sistema</div>
+              <SidebarItem icon={<Users size={18}/>} label="Usuarios" isActive={activeModule === 'users'} onClick={() => setActiveModule('users')} />
+            </>
+          )}
+        </nav>
+
+        <div className="p-4 border-t border-gray-100">
+          <button onClick={onLogout} className="flex items-center gap-3 text-gray-500 hover:text-red-600 w-full px-3 py-2 rounded-lg transition-colors text-sm font-medium">
+            <LogOut size={18} /> Cerrar Sesión
+          </button>
+        </div>
+      </aside>
+
+      <div className="flex-1 flex flex-col h-screen overflow-hidden">
+        <header className="md:hidden h-16 bg-ecomundo-blue text-white flex items-center justify-between px-4" style={{ backgroundColor: COLORS.blue }}>
+          <div className="font-bold">Ecomundo</div>
+          <button onClick={onLogout}><LogOut size={20}/></button>
+        </header>
+
+        <main className="flex-1 overflow-y-auto p-4 md:p-8">
+          {activeModule === 'profile' && <ProfileModule profile={profile} />}
+          {activeModule === 'users' && isAdmin && <UsersModule />}
+          {activeModule === 'config' && isAdmin && <ConfigModule />}
+          {activeModule === 'distributive' && isAdmin && <DistributiveModule />}
+          {activeModule === 'schedule' && isAdmin && <ScheduleModule />}
+          {activeModule === 'reports_load' && isAdmin && <WorkloadReportModule />}
+        </main>
+      </div>
+    </div>
+  );
+};
+
+const SidebarItem = ({ icon, label, isActive, onClick }) => (
+  <button 
+    onClick={onClick}
+    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200
+      ${isActive ? 'bg-blue-50 text-blue-900 border-r-4 border-blue-900' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'}`}
+      style={isActive ? { borderColor: COLORS.blue, color: COLORS.blue, backgroundColor: '#f0f9ff' } : {}}
+  >
+    {icon} {label}
+  </button>
+);
+
+// --- MÓDULOS DE CONFIGURACIÓN (CON SELECCIÓN MÚLTIPLE) ---
+
+const ConfigModule = () => {
+  const [activeTab, setActiveTab] = useState('years');
+  const [years, setYears] = useState([]);
+  const [selectedYearId, setSelectedYearId] = useState('');
+
+  useEffect(() => {
+    const q = query(collection(db, 'academic_years')); 
+    const unsubscribe = onSnapshot(q, (snap) => {
+      const data = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      data.sort((a, b) => b.name.localeCompare(a.name));
+      setYears(data);
+      if (!selectedYearId && data.length > 0) setSelectedYearId(data[0].id);
+    });
+    return () => unsubscribe();
+  }, [selectedYearId]);
+
+  return (
+    <div className="max-w-6xl mx-auto animate-in fade-in duration-500">
+      <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+        <h2 className="text-2xl font-bold text-gray-800">Configuración Académica</h2>
+        <div className="flex items-center gap-2 bg-white p-2 rounded-lg shadow-sm border border-gray-200">
+          <span className="text-xs font-bold text-gray-500 uppercase px-2">Año Lectivo:</span>
+          <select value={selectedYearId} onChange={(e) => setSelectedYearId(e.target.value)} className="font-bold text-blue-800 outline-none bg-transparent">
+            {years.map(y => <option key={y.id} value={y.id}>{y.name}</option>)}
+            {years.length === 0 && <option value="">Crear primero</option>}
+          </select>
+        </div>
+      </div>
+      <div className="flex gap-2 mb-6 border-b border-gray-200 pb-1 overflow-x-auto">
+        {['years', 'sections', 'areas', 'subjects', 'courses', 'time_slots'].map(tab => (
+          <ConfigTab key={tab} id={tab} label={tab === 'years' ? 'Años' : tab === 'sections' ? 'Secciones' : tab === 'areas' ? 'Áreas' : tab === 'subjects' ? 'Materias' : tab === 'courses' ? 'Cursos' : 'Franjas Horarias'} active={activeTab} set={setActiveTab} />
+        ))}
+      </div>
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        {activeTab === 'years' && <YearsManager years={years} />}
+        {activeTab !== 'years' && !selectedYearId && <div className="text-center py-10 text-gray-400">Selecciona un Año Lectivo.</div>}
+        {selectedYearId && (
+          <>
+            {activeTab === 'sections' && <GenericCrud collectionName="sections" yearId={selectedYearId} label="Sección" />}
+            {activeTab === 'areas' && <GenericCrud collectionName="areas" yearId={selectedYearId} label="Área" />}
+            {activeTab === 'subjects' && <SubjectsManager yearId={selectedYearId} />}
+            {activeTab === 'courses' && <CoursesManager yearId={selectedYearId} />}
+            {activeTab === 'time_slots' && <TimeSlotsManager yearId={selectedYearId} />}
+          </>
+        )}
+      </div>
+    </div>
+  );
+};
+
+const ConfigTab = ({ id, label, active, set }) => (<button onClick={() => set(id)} className={`px-4 py-2 rounded-t-lg text-sm font-bold border-b-2 transition-all ${active ? 'bg-white text-blue-900 border-blue-900' : 'border-transparent text-gray-500 hover:bg-gray-50'}`}>{label}</button>);
+
+// --- HOOK DE GESTIÓN DE SELECCIÓN ---
+const useSelection = (collectionName) => {
+  const [selectedIds, setSelectedIds] = useState(new Set());
+
+  const toggleSelect = (id) => {
+    const newSet = new Set(selectedIds);
+    if (newSet.has(id)) newSet.delete(id);
+    else newSet.add(id);
+    setSelectedIds(newSet);
+  };
+
+  const deleteSelected = async () => {
+    if (!window.confirm(`¿Estás seguro de eliminar ${selectedIds.size} elementos seleccionados? Esta acción es irreversible.`)) return;
+    
+    const batch = writeBatch(db);
+    selectedIds.forEach(id => {
+      const ref = doc(db, collectionName, id);
+      batch.delete(ref);
+    });
+
+    try {
+      await batch.commit();
+      setSelectedIds(new Set()); // Limpiar selección tras borrado
+    } catch (e) {
+      alert("Error eliminando: " + e.message);
+    }
+  };
+
+  const cancelSelection = () => setSelectedIds(new Set());
+
+  return { selectedIds, toggleSelect, deleteSelected, cancelSelection };
+};
+
+// --- MANAGERS RE-IMPLEMENTADOS CON SELECCIÓN MÚLTIPLE ---
+
+const YearsManager = ({ years }) => {
+  const [name, setName] = useState('');
+  const { selectedIds, toggleSelect, deleteSelected, cancelSelection } = useSelection('academic_years');
+
+  const add = async (e) => { e.preventDefault(); if(name) { await addDoc(collection(db, 'academic_years'), { name, isActive: true }); setName(''); }};
+  const update = async (id, val) => await updateDoc(doc(db, 'academic_years', id), { name: val });
+  
+  return (
+    <div>
+      <BulkDeleteToolbar selectedIds={selectedIds} onDelete={deleteSelected} onCancel={cancelSelection} />
+      <form onSubmit={add} className="flex gap-2 mb-6"><input value={name} onChange={e=>setName(e.target.value)} placeholder="Ej: 2024-2025" className="flex-1 border p-2 rounded" /><button type="submit" className="bg-green-600 text-white px-4 rounded font-bold">Crear</button></form>
+      <div className="space-y-2">
+        {years.map(y => (
+          <SelectableRow 
+            key={y.id} 
+            id={y.id} 
+            initialValue={y.name} 
+            isSelected={selectedIds.has(y.id)}
+            onToggle={toggleSelect}
+            onUpdate={update}
+          />
+        ))}
+      </div>
+    </div>
+  );
+};
+
+const GenericCrud = ({ collectionName, yearId, label }) => {
+  const [items, setItems] = useState([]);
+  const [name, setName] = useState('');
+  const { selectedIds, toggleSelect, deleteSelected, cancelSelection } = useSelection(collectionName);
+  
+  useEffect(() => {
+    const q = query(collection(db, collectionName), where('academicYearId', '==', yearId));
+    return onSnapshot(q, s => setItems(s.docs.map(d=>({id:d.id, ...d.data()}))));
+  }, [collectionName, yearId]);
+  
+  const add = async (e) => { e.preventDefault(); if(name) { await addDoc(collection(db, collectionName), { name, academicYearId: yearId }); setName(''); }};
+  const update = async (id, val) => await updateDoc(doc(db, collectionName, id), { name: val });
+
+  return (
+    <div>
+      <BulkDeleteToolbar selectedIds={selectedIds} onDelete={deleteSelected} onCancel={cancelSelection} />
+      <h3 className="font-bold text-gray-400 text-xs uppercase mb-4">Gestión de {label}s</h3>
+      <form onSubmit={add} className="flex gap-2 mb-4"><input value={name} onChange={e=>setName(e.target.value)} placeholder={`Nombre ${label}`} className="flex-1 border p-2 rounded" /><button className="bg-blue-600 text-white px-4 rounded"><Plus size={16}/></button></form>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        {items.map(i => (
+          <SelectableRow 
+            key={i.id} 
+            id={i.id} 
+            initialValue={i.name} 
+            isSelected={selectedIds.has(i.id)}
+            onToggle={toggleSelect}
+            onUpdate={update}
+          />
+        ))}
+      </div>
+    </div>
+  );
+};
+
+const SubjectsManager = ({ yearId }) => {
+  const [subjects, setSubjects] = useState([]);
+  const [areas, setAreas] = useState([]);
+  const [name, setName] = useState('');
+  const [areaId, setAreaId] = useState('');
+  const { selectedIds, toggleSelect, deleteSelected, cancelSelection } = useSelection('subjects');
+
+  useEffect(() => onSnapshot(query(collection(db, 'areas'), where('academicYearId', '==', yearId)), s => { const d = s.docs.map(x=>({id:x.id, ...x.data()})); setAreas(d); if(d.length) setAreaId(d[0].id); }), [yearId]);
+  useEffect(() => onSnapshot(query(collection(db, 'subjects'), where('academicYearId', '==', yearId)), s => setSubjects(s.docs.map(d=>({id:d.id, ...d.data()})))), [yearId]);
+  const add = async (e) => { e.preventDefault(); if(name && areaId) { const areaName = areas.find(a=>a.id===areaId)?.name; await addDoc(collection(db, 'subjects'), { name, areaId, areaName, academicYearId: yearId }); setName(''); }};
+  const update = async (id, val) => await updateDoc(doc(db, 'subjects', id), { name: val });
+
+  return (
+    <div>
+      <BulkDeleteToolbar selectedIds={selectedIds} onDelete={deleteSelected} onCancel={cancelSelection} />
+      <h3 className="font-bold text-gray-400 text-xs uppercase mb-4">Gestión de Materias</h3>
+      <form onSubmit={add} className="flex gap-2 mb-4 p-4 bg-gray-50 rounded border"><select value={areaId} onChange={e=>setAreaId(e.target.value)} className="border p-2 rounded w-1/3">{areas.map(a=><option key={a.id} value={a.id}>{a.name}</option>)}</select><input value={name} onChange={e=>setName(e.target.value)} placeholder="Nombre Materia" className="flex-1 border p-2 rounded" /><button className="bg-blue-600 text-white px-4 rounded"><Plus size={16}/></button></form>
+      <div className="space-y-2">
+        {subjects.map(s => (
+          <SelectableRow 
+            key={s.id} 
+            id={s.id} 
+            initialValue={s.name} 
+            subLabel={s.areaName}
+            isSelected={selectedIds.has(s.id)}
+            onToggle={toggleSelect}
+            onUpdate={update}
+          />
+        ))}
+      </div>
+    </div>
+  );
+};
+
+const CoursesManager = ({ yearId }) => {
+  const [courses, setCourses] = useState([]);
+  const [sections, setSections] = useState([]);
+  const [courseName, setCourseName] = useState('');
+  const [parallel, setParallel] = useState('');
+  const [sectionId, setSectionId] = useState('');
+  const { selectedIds, toggleSelect, deleteSelected, cancelSelection } = useSelection('courses');
+
+  useEffect(() => onSnapshot(query(collection(db, 'sections'), where('academicYearId', '==', yearId)), s => { const d = s.docs.map(x=>({id:x.id, ...x.data()})); setSections(d); if(d.length) setSectionId(d[0].id); }), [yearId]);
+  useEffect(() => onSnapshot(query(collection(db, 'courses'), where('academicYearId', '==', yearId)), s => setCourses(s.docs.map(d=>({id:d.id, ...d.data()})))), [yearId]);
+  const add = async (e) => { e.preventDefault(); if(courseName && parallel && sectionId) { const sectionName = sections.find(s=>s.id===sectionId)?.name; await addDoc(collection(db, 'courses'), { name: courseName, parallel, sectionId, sectionName, academicYearId: yearId }); setCourseName(''); setParallel(''); }};
+  const update = async (id, val) => await updateDoc(doc(db, 'courses', id), { name: val });
+  
+  return (
+    <div>
+      <BulkDeleteToolbar selectedIds={selectedIds} onDelete={deleteSelected} onCancel={cancelSelection} />
+      <h3 className="font-bold text-gray-400 text-xs uppercase mb-4">Gestión de Cursos</h3>
+      <form onSubmit={add} className="flex flex-col md:flex-row gap-2 mb-4 p-4 bg-gray-50 rounded border"><select value={sectionId} onChange={e=>setSectionId(e.target.value)} className="border p-2 rounded md:w-1/3">{sections.map(s=><option key={s.id} value={s.id}>{s.name}</option>)}</select><input value={courseName} onChange={e=>setCourseName(e.target.value)} placeholder="Curso (Ej: 10mo)" className="border p-2 rounded flex-1" /><input value={parallel} onChange={e=>setParallel(e.target.value)} placeholder="Paralelo (A)" className="border p-2 rounded w-24" /><button className="bg-blue-600 text-white px-4 rounded font-bold">Crear</button></form>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        {courses.map(c => (
+          <SelectableRow 
+            key={c.id} 
+            id={c.id} 
+            initialValue={`${c.name} "${c.parallel}"`} 
+            subLabel={c.sectionName}
+            isSelected={selectedIds.has(c.id)}
+            onToggle={toggleSelect}
+            onUpdate={update}
+          />
+        ))}
+      </div>
+    </div>
+  );
+};
+
+const TimeSlotsManager = ({ yearId }) => {
+  const [slots, setSlots] = useState([]);
+  const [sections, setSections] = useState([]);
+  const [currentSectionId, setCurrentSectionId] = useState('');
+  const [sourceSectionId, setSourceSectionId] = useState('');
+  const [start, setStart] = useState('');
+  const [end, setEnd] = useState('');
+  const [type, setType] = useState('Clase'); 
+  const { selectedIds, toggleSelect, deleteSelected, cancelSelection } = useSelection('time_slots');
+
+  useEffect(() => onSnapshot(query(collection(db, 'sections'), where('academicYearId', '==', yearId)), s => { const d = s.docs.map(x=>({id:x.id, ...x.data()})); setSections(d); if(d.length > 0 && !currentSectionId) setCurrentSectionId(d[0].id); }), [yearId]);
+  useEffect(() => { if(!currentSectionId) return; const q = query(collection(db, 'time_slots'), where('sectionId', '==', currentSectionId)); const unsub = onSnapshot(q, (snapshot) => { const data = snapshot.docs.map(d => ({ id: d.id, ...d.data() })); data.sort((a, b) => a.start.localeCompare(b.start)); setSlots(data); }); return () => unsub(); }, [currentSectionId]);
+  const add = async (e) => { e.preventDefault(); if(start && end && currentSectionId) { await addDoc(collection(db, 'time_slots'), { start, end, type, academicYearId: yearId, sectionId: currentSectionId }); setStart(''); setEnd(''); }};
+  const copySlots = async () => { if(!sourceSectionId || !currentSectionId || sourceSectionId === currentSectionId) return alert("Selecciona una sección origen válida."); if(!window.confirm("¿Copiar franjas?")) return; const qSource = query(collection(db, 'time_slots'), where('sectionId', '==', sourceSectionId)); const snapSource = await import("firebase/firestore").then(mod => mod.getDocs(qSource)); const batch = writeBatch(db); snapSource.docs.forEach(docSrc => { const data = docSrc.data(); const newRef = doc(collection(db, 'time_slots')); batch.set(newRef, { ...data, sectionId: currentSectionId, academicYearId: yearId }); }); await batch.commit(); alert("Copiado."); };
+
+  return (
+    <div>
+      <BulkDeleteToolbar selectedIds={selectedIds} onDelete={deleteSelected} onCancel={cancelSelection} />
+      <h3 className="font-bold text-gray-400 text-xs uppercase mb-4">Gestión de Franjas Horarias</h3>
+      <div className="mb-6 p-4 bg-blue-50 border border-blue-100 rounded-lg"><label className="block text-xs font-bold text-blue-800 uppercase mb-2">Configurando Horario Para:</label><select value={currentSectionId} onChange={e=>setCurrentSectionId(e.target.value)} className="w-full border border-blue-300 rounded p-2 font-bold text-gray-700">{sections.map(s=><option key={s.id} value={s.id}>{s.name}</option>)}</select></div>
+      <div className="flex gap-2 items-center mb-6 p-3 bg-gray-50 border border-gray-200 rounded-lg"><Copy size={16} className="text-gray-400"/><select value={sourceSectionId} onChange={e=>setSourceSectionId(e.target.value)} className="text-sm border p-1 rounded"><option value="">Copiar de otra sección...</option>{sections.filter(s=>s.id !== currentSectionId).map(s=><option key={s.id} value={s.id}>{s.name}</option>)}</select><button type="button" onClick={copySlots} className="text-xs bg-gray-200 hover:bg-gray-300 px-3 py-1 rounded font-bold">Importar</button></div>
+      {currentSectionId ? (
+        <>
+          <form onSubmit={add} className="flex flex-col md:flex-row gap-2 mb-4 p-4 bg-gray-50 rounded border items-end"><div className="flex-1"><label className="text-xs text-gray-400 block mb-1">Inicio</label><input type="time" value={start} onChange={e=>setStart(e.target.value)} className="border p-2 rounded w-full" /></div><div className="flex-1"><label className="text-xs text-gray-400 block mb-1">Fin</label><input type="time" value={end} onChange={e=>setEnd(e.target.value)} className="border p-2 rounded w-full" /></div><div className="flex-1"><label className="text-xs text-gray-400 block mb-1">Tipo</label><select value={type} onChange={e=>setType(e.target.value)} className="border p-2 rounded w-full"><option value="Clase">Clase</option><option value="Receso">Receso</option></select></div><button className="bg-blue-600 text-white px-4 py-2 rounded font-bold h-10">Agregar</button></form>
+          <div className="space-y-2">
+            {slots.map(s => (
+              <SelectableRow 
+                key={s.id} 
+                id={s.id} 
+                initialValue={`${s.start} - ${s.end}`} 
+                subLabel={s.type}
+                isSelected={selectedIds.has(s.id)}
+                onToggle={toggleSelect}
+                onUpdate={()=>{/* No update logic for slots in this view */}}
+              />
+            ))}
+          </div>
+        </>
+      ) : <div className="text-center text-gray-400">Crea secciones primero.</div>}
+    </div>
+  );
+};
+
+// --- RESTO DE MÓDULOS (DISTRIBUTIVO, HORARIO, PERFIL, ETC.) ---
+const DistributiveModule = () => {
+  const [years, setYears] = useState([]);
+  const [yearId, setYearId] = useState('');
+  const [sections, setSections] = useState([]);
+  const [sectionId, setSectionId] = useState('');
+  const [courses, setCourses] = useState([]);
+  const [courseId, setCourseId] = useState('');
+  const [subjects, setSubjects] = useState([]);
+  const [teachers, setTeachers] = useState([]);
+  const [allocations, setAllocations] = useState({});
+
+  useEffect(() => onSnapshot(query(collection(db, 'academic_years')), s => { const d = s.docs.map(x=>({id:x.id, ...x.data()})); setYears(d); if(d.length) setYearId(d[0].id); }), []);
+  useEffect(() => onSnapshot(query(collection(db, 'users')), s => { const allUsers = s.docs.map(d=>({id:d.id, ...d.data()})); const staff = allUsers.filter(u => u.rol === 'Docente' || u.rol === 'Admin'); setTeachers(staff); }), []);
+  useEffect(() => { if(yearId) onSnapshot(query(collection(db, 'sections'), where('academicYearId', '==', yearId)), s => { const d = s.docs.map(x=>({id:x.id, ...x.data()})); setSections(d); setSectionId(''); setCourseId(''); })}, [yearId]);
+  useEffect(() => { if(sectionId) { onSnapshot(query(collection(db, 'courses'), where('sectionId', '==', sectionId)), s => { const d = s.docs.map(x=>({id:x.id, ...x.data()})); setCourses(d); setCourseId(''); }); } else { setCourses([]); } }, [sectionId]);
+  useEffect(() => { if(yearId) onSnapshot(query(collection(db, 'subjects'), where('academicYearId', '==', yearId)), s => setSubjects(s.docs.map(d=>({id:d.id, ...d.data()})))); }, [yearId]);
+  useEffect(() => { if(courseId) { const q = query(collection(db, 'allocations'), where('courseId', '==', courseId)); return onSnapshot(q, snap => { const allocs = {}; snap.docs.forEach(d => allocs[d.data().subjectId] = d.data().teacherId); setAllocations(allocs); }); } }, [courseId]);
+  const assignTeacher = async (subjectId, teacherId) => { const allocId = `${courseId}_${subjectId}`; await setDoc(doc(db, 'allocations', allocId), { academicYearId: yearId, courseId, subjectId, teacherId }); };
+
+  return (
+    <div className="max-w-6xl mx-auto animate-in fade-in duration-500">
+      <h2 className="text-2xl font-bold text-gray-800 mb-6">Distributivo de Carga Horaria</h2>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 bg-white p-4 rounded-xl shadow-sm border"><div><label className="block text-xs font-bold text-gray-400 uppercase mb-1">1. Año Lectivo</label><select value={yearId} onChange={e=>setYearId(e.target.value)} className="w-full border p-2 rounded font-bold text-blue-900">{years.map(y=><option key={y.id} value={y.id}>{y.name}</option>)}</select></div><div><label className="block text-xs font-bold text-gray-400 uppercase mb-1">2. Sección</label><select value={sectionId} onChange={e=>setSectionId(e.target.value)} className="w-full border p-2 rounded"><option value="">Seleccione Sección...</option>{sections.map(s=><option key={s.id} value={s.id}>{s.name}</option>)}</select></div><div><label className="block text-xs font-bold text-gray-400 uppercase mb-1">3. Curso</label><select value={courseId} onChange={e=>setCourseId(e.target.value)} className="w-full border p-2 rounded" disabled={!sectionId}><option value="">Seleccione Curso...</option>{courses.map(c=><option key={c.id} value={c.id}>{c.name} "{c.parallel}"</option>)}</select></div></div>
+      {courseId ? (<div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden"><table className="w-full text-left text-sm"><thead className="bg-gray-50 uppercase font-bold text-xs text-gray-500"><tr><th className="px-6 py-3">Materia</th><th className="px-6 py-3">Área</th><th className="px-6 py-3">Docente Asignado</th></tr></thead><tbody className="divide-y divide-gray-100">{subjects.map(s => (<tr key={s.id} className="hover:bg-gray-50"><td className="px-6 py-3 font-bold">{s.name}</td><td className="px-6 py-3 text-gray-500">{s.areaName}</td><td className="px-6 py-3"><select value={allocations[s.id] || ''} onChange={(e) => assignTeacher(s.id, e.target.value)} className={`border rounded p-2 w-full ${allocations[s.id] ? 'bg-blue-50 text-blue-800 font-bold border-blue-200' : 'text-gray-400'}`}><option value="">-- Sin Asignar --</option>{teachers.map(t=><option key={t.id} value={t.id}>{t.nombre} ({t.rol})</option>)}</select></td></tr>))}</tbody></table></div>) : <div className="text-center p-10 text-gray-400 border-2 border-dashed rounded-xl">Selecciona los filtros superiores para comenzar la asignación.</div>}
+    </div>
+  );
+};
+
+const ScheduleModule = () => {
+  const [years, setYears] = useState([]);
+  const [yearId, setYearId] = useState('');
+  const [courses, setCourses] = useState([]);
+  const [courseId, setCourseId] = useState('');
+  const [slots, setSlots] = useState([]);
+  const [courseSubjects, setCourseSubjects] = useState([]);
+  const [schedule, setSchedule] = useState({});
+  const [modalData, setModalData] = useState(null);
+  const days = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes'];
+
+  useEffect(() => onSnapshot(query(collection(db, 'academic_years')), s => { const d = s.docs.map(x=>({id:x.id, ...x.data()})); setYears(d); if(d.length) setYearId(d[0].id); }), []);
+  useEffect(() => { if(yearId) onSnapshot(query(collection(db, 'courses'), where('academicYearId', '==', yearId)), s => { const d = s.docs.map(x=>({id:x.id, ...x.data()})); setCourses(d); setCourseId(''); })}, [yearId]);
+  useEffect(() => { if(!courseId || !yearId) return; const selectedCourse = courses.find(c => c.id === courseId); if (!selectedCourse?.sectionId) return; const unsubSlots = onSnapshot(query(collection(db, 'time_slots'), where('sectionId', '==', selectedCourse.sectionId)), (snapshot) => { const data = snapshot.docs.map(d => ({ id: d.id, ...d.data() })); data.sort((a, b) => a.start.localeCompare(b.start)); setSlots(data); }); const unsubSubs = onSnapshot(query(collection(db, 'subjects'), where('academicYearId', '==', yearId)), s => setCourseSubjects(s.docs.map(d=>({id:d.id, ...d.data()})))); return () => { unsubSlots(); unsubSubs(); } }, [courseId, yearId, courses]);
+  useEffect(() => { if(!courseId) return; const unsubSched = onSnapshot(doc(db, 'schedules', courseId), docSnap => { if(docSnap.exists()) setSchedule(docSnap.data().grid || {}); else setSchedule({}); }); return () => unsubSched(); }, [courseId]);
+  const handleCellClick = (day, slot) => { if (slot.type === 'Receso') return; setModalData({ day, slotId: slot.id, slotTime: `${slot.start} - ${slot.end}` }); };
+  const assignSubject = async (subjectId) => { if (!modalData) return; const key = `${modalData.day}_${modalData.slotId}`; const newSchedule = { ...schedule, [key]: subjectId }; setSchedule(newSchedule); await setDoc(doc(db, 'schedules', courseId), { grid: newSchedule, academicYearId: yearId, courseId }, { merge: true }); setModalData(null); };
+
+  return (
+    <div className="max-w-full mx-auto animate-in fade-in duration-500 relative">
+      <h2 className="text-2xl font-bold text-gray-800 mb-6">Gestión de Horarios</h2>
+      <div className="flex gap-4 mb-6 bg-white p-4 rounded-xl shadow-sm border max-w-4xl"><div className="flex-1"><label className="block text-xs font-bold text-gray-400 uppercase mb-1">Año Lectivo</label><select value={yearId} onChange={e=>setYearId(e.target.value)} className="w-full border p-2 rounded font-bold text-blue-900">{years.map(y=><option key={y.id} value={y.id}>{y.name}</option>)}</select></div><div className="flex-1"><label className="block text-xs font-bold text-gray-400 uppercase mb-1">Curso</label><select value={courseId} onChange={e=>setCourseId(e.target.value)} className="w-full border p-2 rounded"><option value="">Seleccione Curso...</option>{courses.map(c=><option key={c.id} value={c.id}>{c.name} "{c.parallel}"</option>)}</select></div></div>
+      {courseId ? (slots.length > 0 ? (<div className="bg-white rounded-xl shadow border border-gray-200 overflow-x-auto"><table className="w-full text-center text-sm border-collapse"><thead><tr><th className="p-3 border-b border-r bg-gray-50 text-gray-500 font-bold w-32">Hora</th>{days.map(d => <th key={d} className="p-3 border-b bg-gray-50 text-blue-900 font-bold">{d}</th>)}</tr></thead><tbody>{slots.map((slot) => (<tr key={slot.id}><td className="p-2 border-b border-r text-xs font-bold text-gray-400">{slot.start} - {slot.end}<div className="text-[10px] font-normal text-gray-300">{slot.type}</div></td>{slot.type === 'Receso' ? (<td colSpan={5} className="bg-orange-50 border-b p-2 text-xs font-bold text-orange-400 tracking-widest uppercase"><Coffee size={14} className="inline mr-2"/> Receso</td>) : (days.map(d => { const subjectId = schedule[`${d}_${slot.id}`]; const subject = courseSubjects.find(s => s.id === subjectId); return (<td key={d} onClick={() => handleCellClick(d, slot)} className="border-b border-r p-1 cursor-pointer hover:bg-blue-50 transition relative h-12">{subject ? (<div className="text-blue-900 font-bold text-xs">{subject.name}</div>) : (<div className="text-gray-200 text-[10px] flex items-center justify-center h-full"><Plus size={14}/></div>)}</td>); }))}</tr>))}</tbody></table></div>) : <div className="text-center p-10 bg-yellow-50 text-yellow-800 rounded-lg border border-yellow-200"><AlertCircle className="mx-auto mb-2"/>No hay franjas horarias configuradas para la SECCIÓN de este curso. Ve a Configuración &gt; Franjas Horarias.</div>) : <div className="text-center p-10 text-gray-400">Selecciona un curso.</div>}
+      {modalData && (<div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm"><div className="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200"><div className="bg-ecomundo-blue text-white p-4 flex justify-between items-center" style={{ backgroundColor: COLORS.blue }}><div><h3 className="font-bold">Asignar Materia</h3><p className="text-xs text-blue-200">{modalData.day} | {modalData.slotTime}</p></div><button onClick={() => setModalData(null)} className="hover:bg-white/20 p-1 rounded"><X size={20}/></button></div><div className="p-2 max-h-[60vh] overflow-y-auto"><button onClick={() => assignSubject(null)} className="w-full text-left p-3 hover:bg-red-50 text-red-600 rounded-lg border-b border-gray-100 flex items-center gap-2 mb-2"><Trash2 size={16}/> Quitar asignación (Hora Libre)</button><div className="space-y-1">{courseSubjects.map(s => (<button key={s.id} onClick={() => assignSubject(s.id)} className="w-full text-left p-3 hover:bg-blue-50 text-gray-700 hover:text-blue-900 rounded-lg transition font-medium flex items-center gap-3"><BookOpen size={16} className="text-gray-400"/>{s.name}</button>))}</div></div></div></div>)}
+    </div>
+  );
+};
+
+const WorkloadReportModule = () => {
+  const [reportData, setReportData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  useEffect(() => { const fetchData = async () => { try { const usersSnap = await import("firebase/firestore").then(mod => mod.getDocs(collection(db, 'users'))); const teachers = usersSnap.docs.map(d => ({ id: d.id, ...d.data() })).filter(u => u.rol === 'Docente' || u.rol === 'Admin'); const allocSnap = await import("firebase/firestore").then(mod => mod.getDocs(collection(db, 'allocations'))); const allocations = allocSnap.docs.map(d => d.data()); const subSnap = await import("firebase/firestore").then(mod => mod.getDocs(collection(db, 'subjects'))); const subjectsMap = {}; subSnap.docs.forEach(d => subjectsMap[d.id] = d.data().name); const courseSnap = await import("firebase/firestore").then(mod => mod.getDocs(collection(db, 'courses'))); const coursesMap = {}; courseSnap.docs.forEach(d => coursesMap[d.id] = `${d.data().name} "${d.data().parallel}"`); const report = teachers.map(teacher => { const teacherAllocs = allocations.filter(a => a.teacherId === teacher.id); const subjectsTaught = teacherAllocs.map(a => ({ subject: subjectsMap[a.subjectId] || 'Materia eliminada', course: coursesMap[a.courseId] || 'Curso eliminado' })); return { name: teacher.nombre, email: teacher.email, totalSubjects: teacherAllocs.length, details: subjectsTaught }; }).filter(r => r.totalSubjects > 0); setReportData(report); } catch (error) { console.error("Error generando reporte:", error); } finally { setLoading(false); } }; fetchData(); }, []);
+  if (loading) return <div className="text-center p-10"><Loader2 className="animate-spin mx-auto text-blue-900"/> Generando reporte...</div>;
+  return (<div className="max-w-6xl mx-auto animate-in fade-in duration-500"><h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-2"><FileBarChart size={24} className="text-blue-900"/> Reporte de Carga Horaria</h2><div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden"><div className="p-4 bg-gray-50 border-b border-gray-200 flex justify-between items-center"><span className="text-sm font-bold text-gray-500 uppercase">Docentes con Asignación</span><span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-xs font-bold">{reportData.length} Docentes</span></div><div className="divide-y divide-gray-100">{reportData.map((item, idx) => (<div key={idx} className="p-4 hover:bg-gray-50 transition"><div className="flex justify-between items-start mb-2"><div><h4 className="font-bold text-gray-900">{item.name}</h4><p className="text-xs text-gray-500">{item.email}</p></div><div className="text-right"><span className="block text-2xl font-bold text-blue-900">{item.totalSubjects}</span><span className="text-[10px] text-gray-400 uppercase font-bold">Materias</span></div></div><div className="mt-3 bg-gray-50 rounded-lg p-3 border border-gray-100"><p className="text-[10px] font-bold text-gray-400 uppercase mb-2">Detalle de Asignación</p><div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">{item.details.map((d, i) => (<div key={i} className="flex items-center gap-2 text-xs bg-white p-2 rounded border border-gray-200 shadow-sm"><BookOpen size={12} className="text-blue-400"/><span className="font-bold text-gray-700 truncate">{d.subject}</span><span className="text-gray-400 text-[10px] ml-auto">{d.course}</span></div>))}</div></div></div>))}{reportData.length === 0 && <div className="p-8 text-center text-gray-400 italic">No hay asignaciones registradas.</div>}</div></div></div>);
+};
+
+const ProfileModule = ({ profile }) => (
+  <div className="max-w-5xl mx-auto animate-in fade-in duration-500">
+    <h2 className="text-2xl font-bold text-gray-800 mb-6">Mi Perfil</h2>
+    <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden p-8 flex flex-col md:flex-row gap-8 items-start relative">
+      <div className="w-32 h-32 rounded-full flex items-center justify-center text-5xl text-white shadow-md shrink-0" style={{ backgroundColor: COLORS.blue }}><User size={48} /></div>
+      <div className="flex-1 w-full"><h3 className="text-3xl font-bold text-gray-900">{profile.nombre}</h3><p className="text-gray-500 mb-2">{profile.email}</p><span className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${profile.rol === 'Admin' ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'}`}>{profile.rol}</span>{profile.firma && <div className="absolute top-8 right-8 hidden md:block text-right"><span className="text-xs font-bold text-gray-300 uppercase block mb-1">Firma Registrada</span><img src={profile.firma} alt="Firma" className="h-16 object-contain opacity-80 border p-1 rounded" /></div>}</div>
+    </div>
+    <TeacherDashboard user={profile} />
+  </div>
+);
+
+const TeacherDashboard = ({ user }) => {
+  const [todayClasses, setTodayClasses] = useState([]);
+  const [totalHours, setTotalHours] = useState(0);
+
+  useEffect(() => {
+    const qAlloc = query(collection(db, 'allocations'), where('teacherId', '==', user.uid));
+    const unsubAlloc = onSnapshot(qAlloc, async (allocSnap) => {
+      const myAllocations = allocSnap.docs.map(d => d.data());
+      const mySubjectIds = new Set(myAllocations.map(a => a.subjectId));
+
+      const qSched = query(collection(db, 'schedules'));
+      const unsubscribeSched = onSnapshot(qSched, (schedSnapshot) => {
+        const allClasses = [];
+        let hoursCount = 0;
+        schedSnapshot.docs.forEach(doc => {
+          const grid = doc.data().grid || {};
+          const courseId = doc.data().courseId; 
+          Object.entries(grid).forEach(([key, subjectId]) => {
+            if (mySubjectIds.has(subjectId)) {
+              hoursCount++;
+              const [day, slotId] = key.split('_');
+              allClasses.push({ day, slotId, subjectId, courseId });
+            }
+          });
+        });
+        setTotalHours(hoursCount);
+        const days = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+        const currentDay = days[new Date().getDay()];
+        setTodayClasses(allClasses.filter(c => c.day === currentDay));
+      });
+      return () => unsubscribeSched();
+    });
+    return () => unsubAlloc();
+  }, [user.uid]);
+
+  return (
+    <div className="mt-8 animate-in slide-in-from-bottom-4 duration-500">
+      <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2"><Monitor size={20} className="text-blue-900"/> Dashboard Docente</h3>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+        <div className="bg-gradient-to-br from-blue-900 to-blue-800 rounded-xl p-6 text-white shadow-lg relative overflow-hidden"><div className="absolute top-0 right-0 p-4 opacity-10"><Clock size={64}/></div><div className="relative z-10"><p className="text-blue-200 text-sm font-bold uppercase tracking-wider">Carga Semanal</p><h4 className="text-4xl font-bold mt-2">{totalHours} <span className="text-lg font-normal text-blue-300">Horas</span></h4></div></div>
+        <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm relative md:col-span-2"><div className="flex justify-between items-center mb-4"><div><p className="text-gray-400 text-xs font-bold uppercase tracking-wider">Agenda de Hoy</p><h4 className="text-xl font-bold text-gray-800">{new Date().toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })}</h4></div><div className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-bold">{todayClasses.length} Clases</div></div><div className="space-y-3 max-h-96 overflow-y-auto pr-2">{todayClasses.length === 0 ? <div className="text-center py-4 text-gray-400 italic">No tienes clases asignadas para hoy.</div> : todayClasses.map((c, i) => <ClassItemDetail key={i} classData={c} teacherSignature={user.firma} />)}</div></div>
+      </div>
+    </div>
+  );
+};
+
+// Componente detalle de clase con modal de leccionario (CORREGIDO FEEDBACK)
+const ClassItemDetail = ({ classData, teacherSignature }) => {
+  const [details, setDetails] = useState({ subject: '...', course: '...', time: '...' });
+  const [logData, setLogData] = useState(null); 
+  const [showModal, setShowModal] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  
+  const [topic, setTopic] = useState('');
+  const [observation, setObservation] = useState('');
+
+  const todayStr = new Date().toISOString().split('T')[0];
+  const logId = `${todayStr}_${classData.slotId}_${classData.courseId}`;
+
+  useEffect(() => {
+    const fetchData = async () => {
+      const subSnap = await getDoc(doc(db, 'subjects', classData.subjectId));
+      const courseSnap = await getDoc(doc(db, 'courses', classData.courseId));
+      const slotSnap = await getDoc(doc(db, 'time_slots', classData.slotId));
+      setDetails({ 
+        subject: subSnap.exists() ? subSnap.data().name : 'Desconocida', 
+        course: courseSnap.exists() ? `${courseSnap.data().name} "${courseSnap.data().parallel}"` : 'Desconocido',
+        time: slotSnap.exists() ? `${slotSnap.data().start} - ${slotSnap.data().end}` : '...'
+      });
+      const logSnap = await getDoc(doc(db, 'leccionarios', logId));
+      if (logSnap.exists()) setLogData(logSnap.data());
+    };
+    fetchData();
+  }, [classData, logId]);
+
+  const handleSign = async () => {
+    if (!topic.trim()) return alert("El tema es obligatorio.");
+    if (!teacherSignature) return alert("No tienes una firma digital registrada. Ve a 'Mi Perfil' para gestionarla.");
+
+    if(window.confirm("¿Confirmar firma del leccionario?")) {
+      setIsSaving(true);
+      const data = {
+        date: todayStr,
+        slotId: classData.slotId,
+        courseId: classData.courseId,
+        subjectId: classData.subjectId,
+        subjectName: details.subject,
+        courseName: details.course,
+        time: details.time,
+        topic,
+        observation,
+        status: 'Cargado',
+        signature: teacherSignature,
+        signedAt: new Date().toISOString()
+      };
+
+      try {
+        await setDoc(doc(db, 'leccionarios', logId), data);
+        setLogData(data);
+        alert("¡Guardado y firmado con éxito!");
+        setShowModal(false);
+      } catch (error) {
+        console.error(error);
+        alert("Error al guardar: " + error.message);
+      } finally {
+        setIsSaving(false);
+      }
+    }
+  };
+
+  return (
+    <>
+      <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-100 hover:bg-blue-50 transition">
+        <div className="flex items-center gap-3">
+          <div className="bg-white p-2 rounded border border-gray-200 text-blue-900 font-bold text-xs shadow-sm w-24 text-center">{details.time}</div>
+          <div><div className="font-bold text-gray-800 text-sm">{details.subject}</div><div className="text-xs text-gray-500">{details.course}</div></div>
+        </div>
+        {logData ? (
+          <div className="flex flex-col items-end"><span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider flex items-center gap-1"><CheckCircle2 size={12} /> Firmado</span><button onClick={() => setShowModal(true)} className="text-[10px] text-blue-600 underline mt-1">Ver detalles</button></div>
+        ) : (
+          <button onClick={() => setShowModal(true)} className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded text-xs font-bold transition flex items-center gap-2"><FileSignature size={14} /> Firmar</button>
+        )}
+      </div>
+      {showModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="bg-ecomundo-blue text-white p-4 flex justify-between items-center" style={{ backgroundColor: COLORS.blue }}><div><h3 className="font-bold">Leccionario Digital</h3><p className="text-xs text-blue-200">{details.subject} | {details.course}</p></div><button onClick={() => setShowModal(false)} className="hover:bg-white/20 p-1 rounded"><X size={20}/></button></div>
+            <div className="p-6">
+              {logData ? (
+                <div className="space-y-4">
+                  <div className="bg-green-50 p-4 rounded-lg border border-green-200 mb-4"><p className="text-green-800 text-sm font-bold flex items-center gap-2"><CheckCircle2 size={16}/> Leccionario Cargado Exitosamente</p><p className="text-xs text-green-600 mt-1">Firmado el {new Date(logData.signedAt).toLocaleString()}</p></div>
+                  <div><label className="text-xs font-bold text-gray-400 uppercase">Tema Tratado</label><p className="text-gray-800 font-medium">{logData.topic}</p></div>
+                  <div><label className="text-xs font-bold text-gray-400 uppercase">Observaciones</label><p className="text-gray-800 text-sm">{logData.observation || 'Ninguna'}</p></div>
+                  <div className="pt-4 border-t border-gray-100"><label className="text-xs font-bold text-gray-400 uppercase block mb-2">Firma Digital</label><img src={logData.signature} className="h-12 border rounded bg-white p-1" alt="Firma" /></div>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <div><label className="block text-sm font-bold text-gray-700 mb-1">Tema de Clase <span className="text-red-500">*</span></label><input value={topic} onChange={(e) => setTopic(e.target.value)} className="w-full border border-gray-300 rounded-lg p-2 text-sm focus:border-blue-500 outline-none" placeholder="Ej: Ecuaciones..." /></div>
+                  <div><label className="block text-sm font-bold text-gray-700 mb-1">Observaciones</label><textarea value={observation} onChange={(e) => setObservation(e.target.value)} className="w-full border border-gray-300 rounded-lg p-2 text-sm focus:border-blue-500 outline-none h-24 resize-none" placeholder="Novedades..." /></div>
+                  <div className="bg-yellow-50 p-3 rounded text-xs text-yellow-800 border border-yellow-200"><ShieldCheck size={14} className="inline mr-1"/> Al firmar, se estampará tu firma digital registrada.</div>
+                  <div className="flex justify-end gap-3 pt-2">
+                    <button onClick={() => setShowModal(false)} className="text-gray-500 font-medium text-sm hover:text-gray-700">Cancelar</button>
+                    <button onClick={handleSign} disabled={isSaving} className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-blue-700 flex items-center gap-2 disabled:opacity-50">{isSaving ? <Loader2 className="animate-spin" size={16}/> : <FileSignature size={16}/>} {isSaving ? 'Guardando...' : 'Firmar y Guardar'}</button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+};
+
+// --- AUTH & LOADER ---
+const Loader = () => (<div className="fixed inset-0 z-[100] flex flex-col items-center justify-center text-white" style={{ backgroundColor: COLORS.blue }}><Loader2 className="w-16 h-16 animate-spin mb-4" /><p className="font-bold tracking-widest text-sm animate-pulse">CARGANDO ECOMUNDO...</p></div>);
+const AuthView = ({ mode, setMode, onLogin, onRegister, error }) => { const [email, setEmail] = useState(''); const [password, setPassword] = useState(''); const [regName, setRegName] = useState(''); const [regEmail, setRegEmail] = useState(''); const [regPass, setRegPass] = useState(''); const [regSignature, setRegSignature] = useState(null); const [isSubmitting, setIsSubmitting] = useState(false); const handleFile = (e) => { const f = e.target.files[0]; if(f) { const r = new FileReader(); r.onloadend = () => setRegSignature(r.result); r.readAsDataURL(f); }}; const login = async (e) => { setIsSubmitting(true); await onLogin(e, email, password); setIsSubmitting(false); }; const register = async (e) => { e.preventDefault(); setIsSubmitting(true); await onRegister({ nombre: regName, email: regEmail, password: regPass, firma: regSignature }); setIsSubmitting(false); }; return (<div className="flex-1 flex flex-col md:flex-row h-full"><div className="hidden md:flex md:w-1/2 flex-col justify-center items-center text-white p-12 relative overflow-hidden" style={{ backgroundColor: COLORS.blue }}><div className="absolute top-0 left-0 w-full h-full opacity-10 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]"></div><div className="z-10 text-center"><div className="w-24 h-24 bg-white rounded-full flex items-center justify-center text-5xl mb-6 mx-auto shadow-2xl" style={{ color: COLORS.blue }}><GraduationCap size={48} /></div><h1 className="text-4xl font-bold mb-2">Leccionario Virtual</h1><p className="text-blue-200 text-lg">Unidad Educativa Ecomundo</p></div></div><div className="w-full md:w-1/2 flex items-center justify-center p-8 bg-white relative"><div className="w-full max-w-sm">{error && <div className="mb-4 p-3 bg-red-50 text-red-700 rounded-lg flex items-center gap-2 text-sm"><AlertCircle size={16} />{error}</div>}{mode === 'login' ? (<div className="animate-in fade-in slide-in-from-right-4 duration-300"><h2 className="text-3xl font-black text-gray-800 mb-2">Bienvenido</h2><p className="text-gray-400 mb-8">Ingresa tus credenciales institucionales.</p><form onSubmit={login} className="space-y-5"><input type="email" placeholder="Email" value={email} onChange={e => setEmail(e.target.value)} className="w-full p-3 border rounded-lg" required /><input type="password" placeholder="Contraseña" value={password} onChange={e => setPassword(e.target.value)} className="w-full p-3 border rounded-lg" required /><button type="submit" disabled={isSubmitting} className="w-full text-white font-bold py-3 rounded-lg hover:brightness-90 transition shadow-lg flex justify-center items-center gap-2" style={{ backgroundColor: COLORS.blue }}>{isSubmitting ? <Loader2 className="animate-spin" /> : 'Iniciar Sesión'}</button></form><p className="mt-8 text-center text-sm text-gray-500">¿No tienes cuenta? <button onClick={() => setMode('register')} className="font-bold hover:underline" style={{ color: COLORS.blue }}>Regístrate aquí</button></p></div>) : (<div className="animate-in fade-in slide-in-from-left-4 duration-300"><h2 className="text-2xl font-black text-gray-800 mb-2">Crear Cuenta</h2><form onSubmit={register} className="space-y-4"><input type="text" placeholder="Nombre Completo" value={regName} onChange={e => setRegName(e.target.value)} className="w-full p-3 border rounded-lg" required /><input type="email" placeholder="Email Institucional" value={regEmail} onChange={e => setRegEmail(e.target.value)} className="w-full p-3 border rounded-lg" required /><input type="password" placeholder="Contraseña" value={regPass} onChange={e => setRegPass(e.target.value)} className="w-full p-3 border rounded-lg" required /><div className="border border-dashed p-4 rounded-lg bg-gray-50"><label className="block text-xs font-bold text-gray-500 uppercase mb-2">Firma Digital</label><input type="file" accept="image/*" onChange={handleFile} className="w-full text-xs" /></div><button type="submit" disabled={isSubmitting} className="w-full bg-green-600 text-white font-bold py-3 rounded-lg hover:bg-green-700 transition shadow-lg">{isSubmitting ? 'Registrando...' : 'Registrarse'}</button></form><p className="mt-6 text-center text-sm text-gray-500">¿Ya tienes cuenta? <button onClick={() => setMode('login')} className="font-bold hover:underline" style={{ color: COLORS.blue }}>Inicia Sesión</button></p></div>)}</div></div></div>); };
