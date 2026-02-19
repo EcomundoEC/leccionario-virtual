@@ -1,751 +1,989 @@
-import React, { useState, useEffect } from 'react';
-import { initializeApp } from "firebase/app";
-import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "firebase/auth";
-import { getFirestore, doc, setDoc, getDoc, onSnapshot, collection, addDoc, deleteDoc, updateDoc, query, where, orderBy, writeBatch } from "firebase/firestore";
-import { getAnalytics } from "firebase/analytics";
-import { 
-  GraduationCap, User, PenTool, ShieldCheck, BookOpen, LogOut, 
-  Loader2, AlertCircle, CheckCircle2, Menu, Users, Settings, 
-  Plus, Trash2, Save, X, Edit, ChevronRight, Layers, LayoutGrid, Library,
-  Calendar, Briefcase, Clock, ChevronDown, Monitor, Coffee, Bell, Copy, FileBarChart, Filter, FileSignature, CheckSquare, Square
-} from 'lucide-react';
-
-// --- CONFIGURACIÓN DE COLORES ECOMUNDO ---
-const COLORS = {
-  blue: '#003366',
-  red: '#cc0000',
-  light: '#f0f4f8',
-  gray: '#64748b'
-};
-
-// --- CONFIGURACIÓN FIREBASE ---
-const firebaseConfig = {
-  apiKey: "AIzaSyB1eXkCiF5VZcTin0W5hBQv2X2PEE2bAJc",
-  authDomain: "leccionario-virtual.firebaseapp.com",
-  projectId: "leccionario-virtual",
-  storageBucket: "leccionario-virtual.firebasestorage.app",
-  messagingSenderId: "731785058376",
-  appId: "1:731785058376:web:161550bdc3941e1a64207d",
-  measurementId: "G-ZR0SXQDNY9"
-};
-
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
-let analytics;
-try { analytics = getAnalytics(app); } catch (e) { console.log("Analytics offline"); }
-
-// --- COMPONENTE DE FILA CON SELECCIÓN Y EDICIÓN ---
-const SelectableRow = ({ id, initialValue, subLabel, isSelected, onToggle, onUpdate }) => {
-  const [isEditing, setIsEditing] = useState(false);
-  const [value, setValue] = useState(initialValue);
-
-  // Sincronizar si cambia desde fuera
-  useEffect(() => setValue(initialValue), [initialValue]);
-
-  const handleUpdate = async () => {
-    if (value !== initialValue && value.trim() !== "") {
-      await onUpdate(id, value);
-    }
-    setIsEditing(false);
-  };
-
-  return (
-    <div className={`flex items-center gap-3 p-3 border rounded-lg transition-all ${isSelected ? 'bg-red-50 border-red-200' : 'bg-white border-gray-200 hover:border-blue-300'}`}>
-      
-      {/* Checkbox de Selección */}
-      <button 
-        onClick={() => onToggle(id)}
-        className={`p-1 rounded transition-colors ${isSelected ? 'text-red-600' : 'text-gray-300 hover:text-gray-500'}`}
-      >
-        {isSelected ? <CheckSquare size={20} /> : <Square size={20} />}
-      </button>
-
-      {/* Contenido Editable */}
-      <div className="flex-1">
-        {isEditing ? (
-          <div className="flex items-center gap-2">
-            <input 
-              value={value} 
-              onChange={(e) => setValue(e.target.value)} 
-              className="flex-1 border border-blue-300 rounded px-2 py-1 text-sm outline-none"
-              autoFocus
-            />
-            <button onClick={handleUpdate} className="text-green-600 p-1 hover:bg-green-50 rounded"><Save size={16}/></button>
-            <button onClick={() => { setIsEditing(false); setValue(initialValue); }} className="text-gray-400 p-1 hover:bg-gray-50 rounded"><X size={16}/></button>
-          </div>
-        ) : (
-          <div onClick={() => onToggle(id)} className="cursor-pointer">
-            <div className={`font-medium ${isSelected ? 'text-red-800' : 'text-gray-800'}`}>{initialValue}</div>
-            {subLabel && <div className="text-xs text-gray-400">{subLabel}</div>}
-          </div>
-        )}
-      </div>
-
-      {/* Botón Editar Individual */}
-      {!isEditing && (
-        <button onClick={() => setIsEditing(true)} className="text-blue-400 hover:text-blue-600 p-2 rounded hover:bg-blue-50">
-          <Edit size={16}/>
-        </button>
-      )}
-    </div>
-  );
-};
-
-// --- BARRA DE BORRADO MASIVO ---
-const BulkDeleteToolbar = ({ selectedIds, onDelete, onCancel }) => {
-  if (selectedIds.size === 0) return null;
-
-  return (
-    <div className="sticky top-0 z-10 flex justify-between items-center bg-red-600 text-white p-3 rounded-lg shadow-lg mb-4 animate-in slide-in-from-top-2">
-      <div className="font-bold flex items-center gap-2">
-        <CheckSquare size={18}/>
-        {selectedIds.size} elemento(s) seleccionado(s)
-      </div>
-      <div className="flex gap-2">
-        <button onClick={onCancel} className="px-3 py-1 text-xs font-bold bg-white/20 hover:bg-white/30 rounded text-white">Cancelar</button>
-        <button onClick={onDelete} className="px-3 py-1 text-xs font-bold bg-white text-red-600 hover:bg-red-50 rounded flex items-center gap-1">
-          <Trash2 size={14}/> Eliminar
-        </button>
-      </div>
-    </div>
-  );
-};
-
-export default function EcomundoApp() {
-  const [user, setUser] = useState(null);
-  const [profile, setProfile] = useState(null);
-  const [view, setView] = useState('loading');
-  const [authMode, setAuthMode] = useState('login');
-  const [error, setError] = useState('');
-  
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      if (currentUser) {
-        setUser(currentUser);
-        const profileRef = doc(db, 'users', currentUser.uid);
-        const unsubProfile = onSnapshot(profileRef, (docSnap) => {
-          if (docSnap.exists()) {
-            setProfile({ ...docSnap.data(), uid: currentUser.uid });
-            setView('app');
-          } else {
-            setProfile(null);
-          }
-        });
-        return () => unsubProfile();
-      } else {
-        setUser(null);
-        setProfile(null);
-        setView('auth');
-      }
-    });
-    return () => unsubscribe();
-  }, []);
-
-  const handleLogin = async (e, email, password) => {
-    e.preventDefault();
-    setError('');
-    try { await signInWithEmailAndPassword(auth, email, password); } 
-    catch (err) { setError('Error de credenciales o conexión.'); }
-  };
-
-  const handleRegister = async (formData) => {
-    setError('');
-    try {
-      const userCredential = await createUserWithEmailAndPassword(auth, formData.email, formData.password);
-      const newUser = userCredential.user;
-      const isSuper = ['gasencio@ecomundo.edu.ec', 'ajuanazo@ecomundo.edu.ec'].includes(formData.email.toLowerCase());
-      const newProfile = {
-        nombre: formData.nombre,
-        email: formData.email.toLowerCase(),
-        rol: isSuper ? 'Admin' : 'Docente',
-        isSuperAdmin: isSuper,
-        firma: formData.firma || null,
-        createdAt: new Date().toISOString(),
-        uid: newUser.uid
-      };
-      await setDoc(doc(db, 'users', newUser.uid), newProfile);
-    } catch (err) { setError('Error al registrar: ' + err.message); }
-  };
-
-  const handleLogout = async () => { await signOut(auth); };
-
-  if (view === 'loading') return <Loader />;
-
-  return (
-    <div className="font-sans text-gray-800 h-screen overflow-hidden flex flex-col bg-gray-100">
-      {view === 'auth' ? (
-        <AuthView mode={authMode} setMode={setAuthMode} onLogin={handleLogin} onRegister={handleRegister} error={error} />
-      ) : (
-        <DashboardLayout profile={profile} onLogout={handleLogout} />
-      )}
-    </div>
-  );
-}
-
-// --- LAYOUT PRINCIPAL ---
-const DashboardLayout = ({ profile, onLogout }) => {
-  const [activeModule, setActiveModule] = useState('profile'); 
-  const isAdmin = profile.rol === 'Admin' || profile.isSuperAdmin;
-
-  return (
-    <div className="flex h-screen bg-gray-100">
-      <aside className="w-64 bg-white shadow-xl z-20 hidden md:flex flex-col">
-        <div className="h-16 flex items-center justify-center border-b border-gray-100 bg-ecomundo-blue" style={{ backgroundColor: COLORS.blue }}>
-           <div className="flex items-center gap-2 text-white">
-              <GraduationCap />
-              <span className="font-bold text-lg">Ecomundo</span>
-           </div>
-        </div>
-        
-        <nav className="flex-1 py-6 px-3 space-y-1 overflow-y-auto">
-          <SidebarItem icon={<User size={18}/>} label="Mi Perfil" isActive={activeModule === 'profile'} onClick={() => setActiveModule('profile')} />
-          
-          {isAdmin && (
-            <>
-              <div className="pt-4 pb-2 px-3 text-[10px] font-bold text-gray-400 uppercase tracking-wider">Gestión Académica</div>
-              <SidebarItem icon={<Settings size={18}/>} label="Configuración" isActive={activeModule === 'config'} onClick={() => setActiveModule('config')} />
-              <SidebarItem icon={<Briefcase size={18}/>} label="Distributivo" isActive={activeModule === 'distributive'} onClick={() => setActiveModule('distributive')} />
-              <SidebarItem icon={<Calendar size={18}/>} label="Horario de Clases" isActive={activeModule === 'schedule'} onClick={() => setActiveModule('schedule')} />
-              
-              <div className="pt-4 pb-2 px-3 text-[10px] font-bold text-gray-400 uppercase tracking-wider">Reportes</div>
-              <SidebarItem icon={<FileBarChart size={18}/>} label="Reporte Carga Horaria" isActive={activeModule === 'reports_load'} onClick={() => setActiveModule('reports_load')} />
-
-              <div className="pt-4 pb-2 px-3 text-[10px] font-bold text-gray-400 uppercase tracking-wider">Sistema</div>
-              <SidebarItem icon={<Users size={18}/>} label="Usuarios" isActive={activeModule === 'users'} onClick={() => setActiveModule('users')} />
-            </>
-          )}
-        </nav>
-
-        <div className="p-4 border-t border-gray-100">
-          <button onClick={onLogout} className="flex items-center gap-3 text-gray-500 hover:text-red-600 w-full px-3 py-2 rounded-lg transition-colors text-sm font-medium">
-            <LogOut size={18} /> Cerrar Sesión
-          </button>
-        </div>
-      </aside>
-
-      <div className="flex-1 flex flex-col h-screen overflow-hidden">
-        <header className="md:hidden h-16 bg-ecomundo-blue text-white flex items-center justify-between px-4" style={{ backgroundColor: COLORS.blue }}>
-          <div className="font-bold">Ecomundo</div>
-          <button onClick={onLogout}><LogOut size={20}/></button>
-        </header>
-
-        <main className="flex-1 overflow-y-auto p-4 md:p-8">
-          {activeModule === 'profile' && <ProfileModule profile={profile} />}
-          {activeModule === 'users' && isAdmin && <UsersModule />}
-          {activeModule === 'config' && isAdmin && <ConfigModule />}
-          {activeModule === 'distributive' && isAdmin && <DistributiveModule />}
-          {activeModule === 'schedule' && isAdmin && <ScheduleModule />}
-          {activeModule === 'reports_load' && isAdmin && <WorkloadReportModule />}
-        </main>
-      </div>
-    </div>
-  );
-};
-
-const SidebarItem = ({ icon, label, isActive, onClick }) => (
-  <button 
-    onClick={onClick}
-    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200
-      ${isActive ? 'bg-blue-50 text-blue-900 border-r-4 border-blue-900' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'}`}
-      style={isActive ? { borderColor: COLORS.blue, color: COLORS.blue, backgroundColor: '#f0f9ff' } : {}}
-  >
-    {icon} {label}
-  </button>
-);
-
-// --- MÓDULOS DE CONFIGURACIÓN (CON SELECCIÓN MÚLTIPLE) ---
-
-const ConfigModule = () => {
-  const [activeTab, setActiveTab] = useState('years');
-  const [years, setYears] = useState([]);
-  const [selectedYearId, setSelectedYearId] = useState('');
-
-  useEffect(() => {
-    const q = query(collection(db, 'academic_years')); 
-    const unsubscribe = onSnapshot(q, (snap) => {
-      const data = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-      data.sort((a, b) => b.name.localeCompare(a.name));
-      setYears(data);
-      if (!selectedYearId && data.length > 0) setSelectedYearId(data[0].id);
-    });
-    return () => unsubscribe();
-  }, [selectedYearId]);
-
-  return (
-    <div className="max-w-6xl mx-auto animate-in fade-in duration-500">
-      <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
-        <h2 className="text-2xl font-bold text-gray-800">Configuración Académica</h2>
-        <div className="flex items-center gap-2 bg-white p-2 rounded-lg shadow-sm border border-gray-200">
-          <span className="text-xs font-bold text-gray-500 uppercase px-2">Año Lectivo:</span>
-          <select value={selectedYearId} onChange={(e) => setSelectedYearId(e.target.value)} className="font-bold text-blue-800 outline-none bg-transparent">
-            {years.map(y => <option key={y.id} value={y.id}>{y.name}</option>)}
-            {years.length === 0 && <option value="">Crear primero</option>}
-          </select>
-        </div>
-      </div>
-      <div className="flex gap-2 mb-6 border-b border-gray-200 pb-1 overflow-x-auto">
-        {['years', 'sections', 'areas', 'subjects', 'courses', 'time_slots'].map(tab => (
-          <ConfigTab key={tab} id={tab} label={tab === 'years' ? 'Años' : tab === 'sections' ? 'Secciones' : tab === 'areas' ? 'Áreas' : tab === 'subjects' ? 'Materias' : tab === 'courses' ? 'Cursos' : 'Franjas Horarias'} active={activeTab} set={setActiveTab} />
-        ))}
-      </div>
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-        {activeTab === 'years' && <YearsManager years={years} />}
-        {activeTab !== 'years' && !selectedYearId && <div className="text-center py-10 text-gray-400">Selecciona un Año Lectivo.</div>}
-        {selectedYearId && (
-          <>
-            {activeTab === 'sections' && <GenericCrud collectionName="sections" yearId={selectedYearId} label="Sección" />}
-            {activeTab === 'areas' && <GenericCrud collectionName="areas" yearId={selectedYearId} label="Área" />}
-            {activeTab === 'subjects' && <SubjectsManager yearId={selectedYearId} />}
-            {activeTab === 'courses' && <CoursesManager yearId={selectedYearId} />}
-            {activeTab === 'time_slots' && <TimeSlotsManager yearId={selectedYearId} />}
-          </>
-        )}
-      </div>
-    </div>
-  );
-};
-
-const ConfigTab = ({ id, label, active, set }) => (<button onClick={() => set(id)} className={`px-4 py-2 rounded-t-lg text-sm font-bold border-b-2 transition-all ${active ? 'bg-white text-blue-900 border-blue-900' : 'border-transparent text-gray-500 hover:bg-gray-50'}`}>{label}</button>);
-
-// --- HOOK DE GESTIÓN DE SELECCIÓN ---
-const useSelection = (collectionName) => {
-  const [selectedIds, setSelectedIds] = useState(new Set());
-
-  const toggleSelect = (id) => {
-    const newSet = new Set(selectedIds);
-    if (newSet.has(id)) newSet.delete(id);
-    else newSet.add(id);
-    setSelectedIds(newSet);
-  };
-
-  const deleteSelected = async () => {
-    if (!window.confirm(`¿Estás seguro de eliminar ${selectedIds.size} elementos seleccionados? Esta acción es irreversible.`)) return;
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Leccionario Virtual - Ecomundo</title>
     
-    const batch = writeBatch(db);
-    selectedIds.forEach(id => {
-      const ref = doc(db, collectionName, id);
-      batch.delete(ref);
-    });
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Babel para compilar JSX en el navegador -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
-    try {
-      await batch.commit();
-      setSelectedIds(new Set()); // Limpiar selección tras borrado
-    } catch (e) {
-      alert("Error eliminando: " + e.message);
+    <!-- Mapa de importaciones para ES Modules -->
+    <script type="importmap">
+    {
+        "imports": {
+            "react": "https://esm.sh/react@18.2.0",
+            "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
+            "lucide-react": "https://esm.sh/lucide-react@0.263.1",
+            "firebase/app": "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js",
+            "firebase/auth": "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js",
+            "firebase/firestore": "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js",
+            "firebase/analytics": "https://www.gstatic.com/firebasejs/11.6.1/firebase-analytics.js"
+        }
     }
-  };
+    </script>
+</head>
+<body class="bg-gray-100">
+    <div id="root"></div>
 
-  const cancelSelection = () => setSelectedIds(new Set());
+    <!-- Script principal de la aplicación -->
+    <script type="text/babel" data-type="module">
+        import React, { useState, useEffect } from 'react';
+        import { createRoot } from 'react-dom/client';
+        import { initializeApp } from "firebase/app";
+        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "firebase/auth";
+        import { getFirestore, doc, setDoc, getDoc, onSnapshot, collection, addDoc, deleteDoc, updateDoc, query, where, orderBy, writeBatch, getDocs } from "firebase/firestore";
+        import { getAnalytics } from "firebase/analytics";
+        import { 
+            GraduationCap, User, PenTool, ShieldCheck, BookOpen, LogOut, 
+            Loader2, AlertCircle, CheckCircle2, Menu, Users, Settings, 
+            Plus, Trash2, Save, X, Edit, ChevronRight, Layers, LayoutGrid, Library,
+            Calendar, Briefcase, Clock, ChevronDown, Monitor, Coffee, Bell, Copy, FileBarChart, Filter, FileSignature, CheckSquare, Square
+        } from 'lucide-react';
 
-  return { selectedIds, toggleSelect, deleteSelected, cancelSelection };
-};
+        // --- CONFIGURACIÓN DE COLORES ECOMUNDO ---
+        const COLORS = {
+            blue: '#003366',
+            red: '#cc0000',
+            light: '#f0f4f8',
+            gray: '#64748b'
+        };
 
-// --- MANAGERS RE-IMPLEMENTADOS CON SELECCIÓN MÚLTIPLE ---
+        // --- CONFIGURACIÓN FIREBASE ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyB1eXkCiF5VZcTin0W5hBQv2X2PEE2bAJc",
+            authDomain: "leccionario-virtual.firebaseapp.com",
+            projectId: "leccionario-virtual",
+            storageBucket: "leccionario-virtual.firebasestorage.app",
+            messagingSenderId: "731785058376",
+            appId: "1:731785058376:web:161550bdc3941e1a64207d",
+            measurementId: "G-ZR0SXQDNY9"
+        };
 
-const YearsManager = ({ years }) => {
-  const [name, setName] = useState('');
-  const { selectedIds, toggleSelect, deleteSelected, cancelSelection } = useSelection('academic_years');
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        let analytics;
+        try { analytics = getAnalytics(app); } catch (e) { console.log("Analytics offline"); }
 
-  const add = async (e) => { e.preventDefault(); if(name) { await addDoc(collection(db, 'academic_years'), { name, isActive: true }); setName(''); }};
-  const update = async (id, val) => await updateDoc(doc(db, 'academic_years', id), { name: val });
-  
-  return (
-    <div>
-      <BulkDeleteToolbar selectedIds={selectedIds} onDelete={deleteSelected} onCancel={cancelSelection} />
-      <form onSubmit={add} className="flex gap-2 mb-6"><input value={name} onChange={e=>setName(e.target.value)} placeholder="Ej: 2024-2025" className="flex-1 border p-2 rounded" /><button type="submit" className="bg-green-600 text-white px-4 rounded font-bold">Crear</button></form>
-      <div className="space-y-2">
-        {years.map(y => (
-          <SelectableRow 
-            key={y.id} 
-            id={y.id} 
-            initialValue={y.name} 
-            isSelected={selectedIds.has(y.id)}
-            onToggle={toggleSelect}
-            onUpdate={update}
-          />
-        ))}
-      </div>
-    </div>
-  );
-};
-
-const GenericCrud = ({ collectionName, yearId, label }) => {
-  const [items, setItems] = useState([]);
-  const [name, setName] = useState('');
-  const { selectedIds, toggleSelect, deleteSelected, cancelSelection } = useSelection(collectionName);
-  
-  useEffect(() => {
-    const q = query(collection(db, collectionName), where('academicYearId', '==', yearId));
-    return onSnapshot(q, s => setItems(s.docs.map(d=>({id:d.id, ...d.data()}))));
-  }, [collectionName, yearId]);
-  
-  const add = async (e) => { e.preventDefault(); if(name) { await addDoc(collection(db, collectionName), { name, academicYearId: yearId }); setName(''); }};
-  const update = async (id, val) => await updateDoc(doc(db, collectionName, id), { name: val });
-
-  return (
-    <div>
-      <BulkDeleteToolbar selectedIds={selectedIds} onDelete={deleteSelected} onCancel={cancelSelection} />
-      <h3 className="font-bold text-gray-400 text-xs uppercase mb-4">Gestión de {label}s</h3>
-      <form onSubmit={add} className="flex gap-2 mb-4"><input value={name} onChange={e=>setName(e.target.value)} placeholder={`Nombre ${label}`} className="flex-1 border p-2 rounded" /><button className="bg-blue-600 text-white px-4 rounded"><Plus size={16}/></button></form>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        {items.map(i => (
-          <SelectableRow 
-            key={i.id} 
-            id={i.id} 
-            initialValue={i.name} 
-            isSelected={selectedIds.has(i.id)}
-            onToggle={toggleSelect}
-            onUpdate={update}
-          />
-        ))}
-      </div>
-    </div>
-  );
-};
-
-const SubjectsManager = ({ yearId }) => {
-  const [subjects, setSubjects] = useState([]);
-  const [areas, setAreas] = useState([]);
-  const [name, setName] = useState('');
-  const [areaId, setAreaId] = useState('');
-  const { selectedIds, toggleSelect, deleteSelected, cancelSelection } = useSelection('subjects');
-
-  useEffect(() => onSnapshot(query(collection(db, 'areas'), where('academicYearId', '==', yearId)), s => { const d = s.docs.map(x=>({id:x.id, ...x.data()})); setAreas(d); if(d.length) setAreaId(d[0].id); }), [yearId]);
-  useEffect(() => onSnapshot(query(collection(db, 'subjects'), where('academicYearId', '==', yearId)), s => setSubjects(s.docs.map(d=>({id:d.id, ...d.data()})))), [yearId]);
-  const add = async (e) => { e.preventDefault(); if(name && areaId) { const areaName = areas.find(a=>a.id===areaId)?.name; await addDoc(collection(db, 'subjects'), { name, areaId, areaName, academicYearId: yearId }); setName(''); }};
-  const update = async (id, val) => await updateDoc(doc(db, 'subjects', id), { name: val });
-
-  return (
-    <div>
-      <BulkDeleteToolbar selectedIds={selectedIds} onDelete={deleteSelected} onCancel={cancelSelection} />
-      <h3 className="font-bold text-gray-400 text-xs uppercase mb-4">Gestión de Materias</h3>
-      <form onSubmit={add} className="flex gap-2 mb-4 p-4 bg-gray-50 rounded border"><select value={areaId} onChange={e=>setAreaId(e.target.value)} className="border p-2 rounded w-1/3">{areas.map(a=><option key={a.id} value={a.id}>{a.name}</option>)}</select><input value={name} onChange={e=>setName(e.target.value)} placeholder="Nombre Materia" className="flex-1 border p-2 rounded" /><button className="bg-blue-600 text-white px-4 rounded"><Plus size={16}/></button></form>
-      <div className="space-y-2">
-        {subjects.map(s => (
-          <SelectableRow 
-            key={s.id} 
-            id={s.id} 
-            initialValue={s.name} 
-            subLabel={s.areaName}
-            isSelected={selectedIds.has(s.id)}
-            onToggle={toggleSelect}
-            onUpdate={update}
-          />
-        ))}
-      </div>
-    </div>
-  );
-};
-
-const CoursesManager = ({ yearId }) => {
-  const [courses, setCourses] = useState([]);
-  const [sections, setSections] = useState([]);
-  const [courseName, setCourseName] = useState('');
-  const [parallel, setParallel] = useState('');
-  const [sectionId, setSectionId] = useState('');
-  const { selectedIds, toggleSelect, deleteSelected, cancelSelection } = useSelection('courses');
-
-  useEffect(() => onSnapshot(query(collection(db, 'sections'), where('academicYearId', '==', yearId)), s => { const d = s.docs.map(x=>({id:x.id, ...x.data()})); setSections(d); if(d.length) setSectionId(d[0].id); }), [yearId]);
-  useEffect(() => onSnapshot(query(collection(db, 'courses'), where('academicYearId', '==', yearId)), s => setCourses(s.docs.map(d=>({id:d.id, ...d.data()})))), [yearId]);
-  const add = async (e) => { e.preventDefault(); if(courseName && parallel && sectionId) { const sectionName = sections.find(s=>s.id===sectionId)?.name; await addDoc(collection(db, 'courses'), { name: courseName, parallel, sectionId, sectionName, academicYearId: yearId }); setCourseName(''); setParallel(''); }};
-  const update = async (id, val) => await updateDoc(doc(db, 'courses', id), { name: val });
-  
-  return (
-    <div>
-      <BulkDeleteToolbar selectedIds={selectedIds} onDelete={deleteSelected} onCancel={cancelSelection} />
-      <h3 className="font-bold text-gray-400 text-xs uppercase mb-4">Gestión de Cursos</h3>
-      <form onSubmit={add} className="flex flex-col md:flex-row gap-2 mb-4 p-4 bg-gray-50 rounded border"><select value={sectionId} onChange={e=>setSectionId(e.target.value)} className="border p-2 rounded md:w-1/3">{sections.map(s=><option key={s.id} value={s.id}>{s.name}</option>)}</select><input value={courseName} onChange={e=>setCourseName(e.target.value)} placeholder="Curso (Ej: 10mo)" className="border p-2 rounded flex-1" /><input value={parallel} onChange={e=>setParallel(e.target.value)} placeholder="Paralelo (A)" className="border p-2 rounded w-24" /><button className="bg-blue-600 text-white px-4 rounded font-bold">Crear</button></form>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        {courses.map(c => (
-          <SelectableRow 
-            key={c.id} 
-            id={c.id} 
-            initialValue={`${c.name} "${c.parallel}"`} 
-            subLabel={c.sectionName}
-            isSelected={selectedIds.has(c.id)}
-            onToggle={toggleSelect}
-            onUpdate={update}
-          />
-        ))}
-      </div>
-    </div>
-  );
-};
-
-const TimeSlotsManager = ({ yearId }) => {
-  const [slots, setSlots] = useState([]);
-  const [sections, setSections] = useState([]);
-  const [currentSectionId, setCurrentSectionId] = useState('');
-  const [sourceSectionId, setSourceSectionId] = useState('');
-  const [start, setStart] = useState('');
-  const [end, setEnd] = useState('');
-  const [type, setType] = useState('Clase'); 
-  const { selectedIds, toggleSelect, deleteSelected, cancelSelection } = useSelection('time_slots');
-
-  useEffect(() => onSnapshot(query(collection(db, 'sections'), where('academicYearId', '==', yearId)), s => { const d = s.docs.map(x=>({id:x.id, ...x.data()})); setSections(d); if(d.length > 0 && !currentSectionId) setCurrentSectionId(d[0].id); }), [yearId]);
-  useEffect(() => { if(!currentSectionId) return; const q = query(collection(db, 'time_slots'), where('sectionId', '==', currentSectionId)); const unsub = onSnapshot(q, (snapshot) => { const data = snapshot.docs.map(d => ({ id: d.id, ...d.data() })); data.sort((a, b) => a.start.localeCompare(b.start)); setSlots(data); }); return () => unsub(); }, [currentSectionId]);
-  const add = async (e) => { e.preventDefault(); if(start && end && currentSectionId) { await addDoc(collection(db, 'time_slots'), { start, end, type, academicYearId: yearId, sectionId: currentSectionId }); setStart(''); setEnd(''); }};
-  const copySlots = async () => { if(!sourceSectionId || !currentSectionId || sourceSectionId === currentSectionId) return alert("Selecciona una sección origen válida."); if(!window.confirm("¿Copiar franjas?")) return; const qSource = query(collection(db, 'time_slots'), where('sectionId', '==', sourceSectionId)); const snapSource = await import("firebase/firestore").then(mod => mod.getDocs(qSource)); const batch = writeBatch(db); snapSource.docs.forEach(docSrc => { const data = docSrc.data(); const newRef = doc(collection(db, 'time_slots')); batch.set(newRef, { ...data, sectionId: currentSectionId, academicYearId: yearId }); }); await batch.commit(); alert("Copiado."); };
-
-  return (
-    <div>
-      <BulkDeleteToolbar selectedIds={selectedIds} onDelete={deleteSelected} onCancel={cancelSelection} />
-      <h3 className="font-bold text-gray-400 text-xs uppercase mb-4">Gestión de Franjas Horarias</h3>
-      <div className="mb-6 p-4 bg-blue-50 border border-blue-100 rounded-lg"><label className="block text-xs font-bold text-blue-800 uppercase mb-2">Configurando Horario Para:</label><select value={currentSectionId} onChange={e=>setCurrentSectionId(e.target.value)} className="w-full border border-blue-300 rounded p-2 font-bold text-gray-700">{sections.map(s=><option key={s.id} value={s.id}>{s.name}</option>)}</select></div>
-      <div className="flex gap-2 items-center mb-6 p-3 bg-gray-50 border border-gray-200 rounded-lg"><Copy size={16} className="text-gray-400"/><select value={sourceSectionId} onChange={e=>setSourceSectionId(e.target.value)} className="text-sm border p-1 rounded"><option value="">Copiar de otra sección...</option>{sections.filter(s=>s.id !== currentSectionId).map(s=><option key={s.id} value={s.id}>{s.name}</option>)}</select><button type="button" onClick={copySlots} className="text-xs bg-gray-200 hover:bg-gray-300 px-3 py-1 rounded font-bold">Importar</button></div>
-      {currentSectionId ? (
-        <>
-          <form onSubmit={add} className="flex flex-col md:flex-row gap-2 mb-4 p-4 bg-gray-50 rounded border items-end"><div className="flex-1"><label className="text-xs text-gray-400 block mb-1">Inicio</label><input type="time" value={start} onChange={e=>setStart(e.target.value)} className="border p-2 rounded w-full" /></div><div className="flex-1"><label className="text-xs text-gray-400 block mb-1">Fin</label><input type="time" value={end} onChange={e=>setEnd(e.target.value)} className="border p-2 rounded w-full" /></div><div className="flex-1"><label className="text-xs text-gray-400 block mb-1">Tipo</label><select value={type} onChange={e=>setType(e.target.value)} className="border p-2 rounded w-full"><option value="Clase">Clase</option><option value="Receso">Receso</option></select></div><button className="bg-blue-600 text-white px-4 py-2 rounded font-bold h-10">Agregar</button></form>
-          <div className="space-y-2">
-            {slots.map(s => (
-              <SelectableRow 
-                key={s.id} 
-                id={s.id} 
-                initialValue={`${s.start} - ${s.end}`} 
-                subLabel={s.type}
-                isSelected={selectedIds.has(s.id)}
-                onToggle={toggleSelect}
-                onUpdate={()=>{/* No update logic for slots in this view */}}
-              />
-            ))}
-          </div>
-        </>
-      ) : <div className="text-center text-gray-400">Crea secciones primero.</div>}
-    </div>
-  );
-};
-
-// --- RESTO DE MÓDULOS (DISTRIBUTIVO, HORARIO, PERFIL, ETC.) ---
-const DistributiveModule = () => {
-  const [years, setYears] = useState([]);
-  const [yearId, setYearId] = useState('');
-  const [sections, setSections] = useState([]);
-  const [sectionId, setSectionId] = useState('');
-  const [courses, setCourses] = useState([]);
-  const [courseId, setCourseId] = useState('');
-  const [subjects, setSubjects] = useState([]);
-  const [teachers, setTeachers] = useState([]);
-  const [allocations, setAllocations] = useState({});
-
-  useEffect(() => onSnapshot(query(collection(db, 'academic_years')), s => { const d = s.docs.map(x=>({id:x.id, ...x.data()})); setYears(d); if(d.length) setYearId(d[0].id); }), []);
-  useEffect(() => onSnapshot(query(collection(db, 'users')), s => { const allUsers = s.docs.map(d=>({id:d.id, ...d.data()})); const staff = allUsers.filter(u => u.rol === 'Docente' || u.rol === 'Admin'); setTeachers(staff); }), []);
-  useEffect(() => { if(yearId) onSnapshot(query(collection(db, 'sections'), where('academicYearId', '==', yearId)), s => { const d = s.docs.map(x=>({id:x.id, ...x.data()})); setSections(d); setSectionId(''); setCourseId(''); })}, [yearId]);
-  useEffect(() => { if(sectionId) { onSnapshot(query(collection(db, 'courses'), where('sectionId', '==', sectionId)), s => { const d = s.docs.map(x=>({id:x.id, ...x.data()})); setCourses(d); setCourseId(''); }); } else { setCourses([]); } }, [sectionId]);
-  useEffect(() => { if(yearId) onSnapshot(query(collection(db, 'subjects'), where('academicYearId', '==', yearId)), s => setSubjects(s.docs.map(d=>({id:d.id, ...d.data()})))); }, [yearId]);
-  useEffect(() => { if(courseId) { const q = query(collection(db, 'allocations'), where('courseId', '==', courseId)); return onSnapshot(q, snap => { const allocs = {}; snap.docs.forEach(d => allocs[d.data().subjectId] = d.data().teacherId); setAllocations(allocs); }); } }, [courseId]);
-  const assignTeacher = async (subjectId, teacherId) => { const allocId = `${courseId}_${subjectId}`; await setDoc(doc(db, 'allocations', allocId), { academicYearId: yearId, courseId, subjectId, teacherId }); };
-
-  return (
-    <div className="max-w-6xl mx-auto animate-in fade-in duration-500">
-      <h2 className="text-2xl font-bold text-gray-800 mb-6">Distributivo de Carga Horaria</h2>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 bg-white p-4 rounded-xl shadow-sm border"><div><label className="block text-xs font-bold text-gray-400 uppercase mb-1">1. Año Lectivo</label><select value={yearId} onChange={e=>setYearId(e.target.value)} className="w-full border p-2 rounded font-bold text-blue-900">{years.map(y=><option key={y.id} value={y.id}>{y.name}</option>)}</select></div><div><label className="block text-xs font-bold text-gray-400 uppercase mb-1">2. Sección</label><select value={sectionId} onChange={e=>setSectionId(e.target.value)} className="w-full border p-2 rounded"><option value="">Seleccione Sección...</option>{sections.map(s=><option key={s.id} value={s.id}>{s.name}</option>)}</select></div><div><label className="block text-xs font-bold text-gray-400 uppercase mb-1">3. Curso</label><select value={courseId} onChange={e=>setCourseId(e.target.value)} className="w-full border p-2 rounded" disabled={!sectionId}><option value="">Seleccione Curso...</option>{courses.map(c=><option key={c.id} value={c.id}>{c.name} "{c.parallel}"</option>)}</select></div></div>
-      {courseId ? (<div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden"><table className="w-full text-left text-sm"><thead className="bg-gray-50 uppercase font-bold text-xs text-gray-500"><tr><th className="px-6 py-3">Materia</th><th className="px-6 py-3">Área</th><th className="px-6 py-3">Docente Asignado</th></tr></thead><tbody className="divide-y divide-gray-100">{subjects.map(s => (<tr key={s.id} className="hover:bg-gray-50"><td className="px-6 py-3 font-bold">{s.name}</td><td className="px-6 py-3 text-gray-500">{s.areaName}</td><td className="px-6 py-3"><select value={allocations[s.id] || ''} onChange={(e) => assignTeacher(s.id, e.target.value)} className={`border rounded p-2 w-full ${allocations[s.id] ? 'bg-blue-50 text-blue-800 font-bold border-blue-200' : 'text-gray-400'}`}><option value="">-- Sin Asignar --</option>{teachers.map(t=><option key={t.id} value={t.id}>{t.nombre} ({t.rol})</option>)}</select></td></tr>))}</tbody></table></div>) : <div className="text-center p-10 text-gray-400 border-2 border-dashed rounded-xl">Selecciona los filtros superiores para comenzar la asignación.</div>}
-    </div>
-  );
-};
-
-const ScheduleModule = () => {
-  const [years, setYears] = useState([]);
-  const [yearId, setYearId] = useState('');
-  const [courses, setCourses] = useState([]);
-  const [courseId, setCourseId] = useState('');
-  const [slots, setSlots] = useState([]);
-  const [courseSubjects, setCourseSubjects] = useState([]);
-  const [schedule, setSchedule] = useState({});
-  const [modalData, setModalData] = useState(null);
-  const days = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes'];
-
-  useEffect(() => onSnapshot(query(collection(db, 'academic_years')), s => { const d = s.docs.map(x=>({id:x.id, ...x.data()})); setYears(d); if(d.length) setYearId(d[0].id); }), []);
-  useEffect(() => { if(yearId) onSnapshot(query(collection(db, 'courses'), where('academicYearId', '==', yearId)), s => { const d = s.docs.map(x=>({id:x.id, ...x.data()})); setCourses(d); setCourseId(''); })}, [yearId]);
-  useEffect(() => { if(!courseId || !yearId) return; const selectedCourse = courses.find(c => c.id === courseId); if (!selectedCourse?.sectionId) return; const unsubSlots = onSnapshot(query(collection(db, 'time_slots'), where('sectionId', '==', selectedCourse.sectionId)), (snapshot) => { const data = snapshot.docs.map(d => ({ id: d.id, ...d.data() })); data.sort((a, b) => a.start.localeCompare(b.start)); setSlots(data); }); const unsubSubs = onSnapshot(query(collection(db, 'subjects'), where('academicYearId', '==', yearId)), s => setCourseSubjects(s.docs.map(d=>({id:d.id, ...d.data()})))); return () => { unsubSlots(); unsubSubs(); } }, [courseId, yearId, courses]);
-  useEffect(() => { if(!courseId) return; const unsubSched = onSnapshot(doc(db, 'schedules', courseId), docSnap => { if(docSnap.exists()) setSchedule(docSnap.data().grid || {}); else setSchedule({}); }); return () => unsubSched(); }, [courseId]);
-  const handleCellClick = (day, slot) => { if (slot.type === 'Receso') return; setModalData({ day, slotId: slot.id, slotTime: `${slot.start} - ${slot.end}` }); };
-  const assignSubject = async (subjectId) => { if (!modalData) return; const key = `${modalData.day}_${modalData.slotId}`; const newSchedule = { ...schedule, [key]: subjectId }; setSchedule(newSchedule); await setDoc(doc(db, 'schedules', courseId), { grid: newSchedule, academicYearId: yearId, courseId }, { merge: true }); setModalData(null); };
-
-  return (
-    <div className="max-w-full mx-auto animate-in fade-in duration-500 relative">
-      <h2 className="text-2xl font-bold text-gray-800 mb-6">Gestión de Horarios</h2>
-      <div className="flex gap-4 mb-6 bg-white p-4 rounded-xl shadow-sm border max-w-4xl"><div className="flex-1"><label className="block text-xs font-bold text-gray-400 uppercase mb-1">Año Lectivo</label><select value={yearId} onChange={e=>setYearId(e.target.value)} className="w-full border p-2 rounded font-bold text-blue-900">{years.map(y=><option key={y.id} value={y.id}>{y.name}</option>)}</select></div><div className="flex-1"><label className="block text-xs font-bold text-gray-400 uppercase mb-1">Curso</label><select value={courseId} onChange={e=>setCourseId(e.target.value)} className="w-full border p-2 rounded"><option value="">Seleccione Curso...</option>{courses.map(c=><option key={c.id} value={c.id}>{c.name} "{c.parallel}"</option>)}</select></div></div>
-      {courseId ? (slots.length > 0 ? (<div className="bg-white rounded-xl shadow border border-gray-200 overflow-x-auto"><table className="w-full text-center text-sm border-collapse"><thead><tr><th className="p-3 border-b border-r bg-gray-50 text-gray-500 font-bold w-32">Hora</th>{days.map(d => <th key={d} className="p-3 border-b bg-gray-50 text-blue-900 font-bold">{d}</th>)}</tr></thead><tbody>{slots.map((slot) => (<tr key={slot.id}><td className="p-2 border-b border-r text-xs font-bold text-gray-400">{slot.start} - {slot.end}<div className="text-[10px] font-normal text-gray-300">{slot.type}</div></td>{slot.type === 'Receso' ? (<td colSpan={5} className="bg-orange-50 border-b p-2 text-xs font-bold text-orange-400 tracking-widest uppercase"><Coffee size={14} className="inline mr-2"/> Receso</td>) : (days.map(d => { const subjectId = schedule[`${d}_${slot.id}`]; const subject = courseSubjects.find(s => s.id === subjectId); return (<td key={d} onClick={() => handleCellClick(d, slot)} className="border-b border-r p-1 cursor-pointer hover:bg-blue-50 transition relative h-12">{subject ? (<div className="text-blue-900 font-bold text-xs">{subject.name}</div>) : (<div className="text-gray-200 text-[10px] flex items-center justify-center h-full"><Plus size={14}/></div>)}</td>); }))}</tr>))}</tbody></table></div>) : <div className="text-center p-10 bg-yellow-50 text-yellow-800 rounded-lg border border-yellow-200"><AlertCircle className="mx-auto mb-2"/>No hay franjas horarias configuradas para la SECCIÓN de este curso. Ve a Configuración &gt; Franjas Horarias.</div>) : <div className="text-center p-10 text-gray-400">Selecciona un curso.</div>}
-      {modalData && (<div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm"><div className="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200"><div className="bg-ecomundo-blue text-white p-4 flex justify-between items-center" style={{ backgroundColor: COLORS.blue }}><div><h3 className="font-bold">Asignar Materia</h3><p className="text-xs text-blue-200">{modalData.day} | {modalData.slotTime}</p></div><button onClick={() => setModalData(null)} className="hover:bg-white/20 p-1 rounded"><X size={20}/></button></div><div className="p-2 max-h-[60vh] overflow-y-auto"><button onClick={() => assignSubject(null)} className="w-full text-left p-3 hover:bg-red-50 text-red-600 rounded-lg border-b border-gray-100 flex items-center gap-2 mb-2"><Trash2 size={16}/> Quitar asignación (Hora Libre)</button><div className="space-y-1">{courseSubjects.map(s => (<button key={s.id} onClick={() => assignSubject(s.id)} className="w-full text-left p-3 hover:bg-blue-50 text-gray-700 hover:text-blue-900 rounded-lg transition font-medium flex items-center gap-3"><BookOpen size={16} className="text-gray-400"/>{s.name}</button>))}</div></div></div></div>)}
-    </div>
-  );
-};
-
-const WorkloadReportModule = () => {
-  const [reportData, setReportData] = useState([]);
-  const [loading, setLoading] = useState(true);
-  useEffect(() => { const fetchData = async () => { try { const usersSnap = await import("firebase/firestore").then(mod => mod.getDocs(collection(db, 'users'))); const teachers = usersSnap.docs.map(d => ({ id: d.id, ...d.data() })).filter(u => u.rol === 'Docente' || u.rol === 'Admin'); const allocSnap = await import("firebase/firestore").then(mod => mod.getDocs(collection(db, 'allocations'))); const allocations = allocSnap.docs.map(d => d.data()); const subSnap = await import("firebase/firestore").then(mod => mod.getDocs(collection(db, 'subjects'))); const subjectsMap = {}; subSnap.docs.forEach(d => subjectsMap[d.id] = d.data().name); const courseSnap = await import("firebase/firestore").then(mod => mod.getDocs(collection(db, 'courses'))); const coursesMap = {}; courseSnap.docs.forEach(d => coursesMap[d.id] = `${d.data().name} "${d.data().parallel}"`); const report = teachers.map(teacher => { const teacherAllocs = allocations.filter(a => a.teacherId === teacher.id); const subjectsTaught = teacherAllocs.map(a => ({ subject: subjectsMap[a.subjectId] || 'Materia eliminada', course: coursesMap[a.courseId] || 'Curso eliminado' })); return { name: teacher.nombre, email: teacher.email, totalSubjects: teacherAllocs.length, details: subjectsTaught }; }).filter(r => r.totalSubjects > 0); setReportData(report); } catch (error) { console.error("Error generando reporte:", error); } finally { setLoading(false); } }; fetchData(); }, []);
-  if (loading) return <div className="text-center p-10"><Loader2 className="animate-spin mx-auto text-blue-900"/> Generando reporte...</div>;
-  return (<div className="max-w-6xl mx-auto animate-in fade-in duration-500"><h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-2"><FileBarChart size={24} className="text-blue-900"/> Reporte de Carga Horaria</h2><div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden"><div className="p-4 bg-gray-50 border-b border-gray-200 flex justify-between items-center"><span className="text-sm font-bold text-gray-500 uppercase">Docentes con Asignación</span><span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-xs font-bold">{reportData.length} Docentes</span></div><div className="divide-y divide-gray-100">{reportData.map((item, idx) => (<div key={idx} className="p-4 hover:bg-gray-50 transition"><div className="flex justify-between items-start mb-2"><div><h4 className="font-bold text-gray-900">{item.name}</h4><p className="text-xs text-gray-500">{item.email}</p></div><div className="text-right"><span className="block text-2xl font-bold text-blue-900">{item.totalSubjects}</span><span className="text-[10px] text-gray-400 uppercase font-bold">Materias</span></div></div><div className="mt-3 bg-gray-50 rounded-lg p-3 border border-gray-100"><p className="text-[10px] font-bold text-gray-400 uppercase mb-2">Detalle de Asignación</p><div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">{item.details.map((d, i) => (<div key={i} className="flex items-center gap-2 text-xs bg-white p-2 rounded border border-gray-200 shadow-sm"><BookOpen size={12} className="text-blue-400"/><span className="font-bold text-gray-700 truncate">{d.subject}</span><span className="text-gray-400 text-[10px] ml-auto">{d.course}</span></div>))}</div></div></div>))}{reportData.length === 0 && <div className="p-8 text-center text-gray-400 italic">No hay asignaciones registradas.</div>}</div></div></div>);
-};
-
-const ProfileModule = ({ profile }) => (
-  <div className="max-w-5xl mx-auto animate-in fade-in duration-500">
-    <h2 className="text-2xl font-bold text-gray-800 mb-6">Mi Perfil</h2>
-    <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden p-8 flex flex-col md:flex-row gap-8 items-start relative">
-      <div className="w-32 h-32 rounded-full flex items-center justify-center text-5xl text-white shadow-md shrink-0" style={{ backgroundColor: COLORS.blue }}><User size={48} /></div>
-      <div className="flex-1 w-full"><h3 className="text-3xl font-bold text-gray-900">{profile.nombre}</h3><p className="text-gray-500 mb-2">{profile.email}</p><span className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${profile.rol === 'Admin' ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'}`}>{profile.rol}</span>{profile.firma && <div className="absolute top-8 right-8 hidden md:block text-right"><span className="text-xs font-bold text-gray-300 uppercase block mb-1">Firma Registrada</span><img src={profile.firma} alt="Firma" className="h-16 object-contain opacity-80 border p-1 rounded" /></div>}</div>
-    </div>
-    <TeacherDashboard user={profile} />
-  </div>
-);
-
-const TeacherDashboard = ({ user }) => {
-  const [todayClasses, setTodayClasses] = useState([]);
-  const [totalHours, setTotalHours] = useState(0);
-
-  useEffect(() => {
-    const qAlloc = query(collection(db, 'allocations'), where('teacherId', '==', user.uid));
-    const unsubAlloc = onSnapshot(qAlloc, async (allocSnap) => {
-      const myAllocations = allocSnap.docs.map(d => d.data());
-      const mySubjectIds = new Set(myAllocations.map(a => a.subjectId));
-
-      const qSched = query(collection(db, 'schedules'));
-      const unsubscribeSched = onSnapshot(qSched, (schedSnapshot) => {
-        const allClasses = [];
-        let hoursCount = 0;
-        schedSnapshot.docs.forEach(doc => {
-          const grid = doc.data().grid || {};
-          const courseId = doc.data().courseId; 
-          Object.entries(grid).forEach(([key, subjectId]) => {
-            if (mySubjectIds.has(subjectId)) {
-              hoursCount++;
-              const [day, slotId] = key.split('_');
-              allClasses.push({ day, slotId, subjectId, courseId });
-            }
-          });
-        });
-        setTotalHours(hoursCount);
-        const days = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
-        const currentDay = days[new Date().getDay()];
-        setTodayClasses(allClasses.filter(c => c.day === currentDay));
-      });
-      return () => unsubscribeSched();
-    });
-    return () => unsubAlloc();
-  }, [user.uid]);
-
-  return (
-    <div className="mt-8 animate-in slide-in-from-bottom-4 duration-500">
-      <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2"><Monitor size={20} className="text-blue-900"/> Dashboard Docente</h3>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-        <div className="bg-gradient-to-br from-blue-900 to-blue-800 rounded-xl p-6 text-white shadow-lg relative overflow-hidden"><div className="absolute top-0 right-0 p-4 opacity-10"><Clock size={64}/></div><div className="relative z-10"><p className="text-blue-200 text-sm font-bold uppercase tracking-wider">Carga Semanal</p><h4 className="text-4xl font-bold mt-2">{totalHours} <span className="text-lg font-normal text-blue-300">Horas</span></h4></div></div>
-        <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm relative md:col-span-2"><div className="flex justify-between items-center mb-4"><div><p className="text-gray-400 text-xs font-bold uppercase tracking-wider">Agenda de Hoy</p><h4 className="text-xl font-bold text-gray-800">{new Date().toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })}</h4></div><div className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-bold">{todayClasses.length} Clases</div></div><div className="space-y-3 max-h-96 overflow-y-auto pr-2">{todayClasses.length === 0 ? <div className="text-center py-4 text-gray-400 italic">No tienes clases asignadas para hoy.</div> : todayClasses.map((c, i) => <ClassItemDetail key={i} classData={c} teacherSignature={user.firma} />)}</div></div>
-      </div>
-    </div>
-  );
-};
-
-// Componente detalle de clase con modal de leccionario (CORREGIDO FEEDBACK)
-const ClassItemDetail = ({ classData, teacherSignature }) => {
-  const [details, setDetails] = useState({ subject: '...', course: '...', time: '...' });
-  const [logData, setLogData] = useState(null); 
-  const [showModal, setShowModal] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
-  
-  const [topic, setTopic] = useState('');
-  const [observation, setObservation] = useState('');
-
-  const todayStr = new Date().toISOString().split('T')[0];
-  const logId = `${todayStr}_${classData.slotId}_${classData.courseId}`;
-
-  useEffect(() => {
-    const fetchData = async () => {
-      const subSnap = await getDoc(doc(db, 'subjects', classData.subjectId));
-      const courseSnap = await getDoc(doc(db, 'courses', classData.courseId));
-      const slotSnap = await getDoc(doc(db, 'time_slots', classData.slotId));
-      setDetails({ 
-        subject: subSnap.exists() ? subSnap.data().name : 'Desconocida', 
-        course: courseSnap.exists() ? `${courseSnap.data().name} "${courseSnap.data().parallel}"` : 'Desconocido',
-        time: slotSnap.exists() ? `${slotSnap.data().start} - ${slotSnap.data().end}` : '...'
-      });
-      const logSnap = await getDoc(doc(db, 'leccionarios', logId));
-      if (logSnap.exists()) setLogData(logSnap.data());
-    };
-    fetchData();
-  }, [classData, logId]);
-
-  const handleSign = async () => {
-    if (!topic.trim()) return alert("El tema es obligatorio.");
-    if (!teacherSignature) return alert("No tienes una firma digital registrada. Ve a 'Mi Perfil' para gestionarla.");
-
-    if(window.confirm("¿Confirmar firma del leccionario?")) {
-      setIsSaving(true);
-      const data = {
-        date: todayStr,
-        slotId: classData.slotId,
-        courseId: classData.courseId,
-        subjectId: classData.subjectId,
-        subjectName: details.subject,
-        courseName: details.course,
-        time: details.time,
-        topic,
-        observation,
-        status: 'Cargado',
-        signature: teacherSignature,
-        signedAt: new Date().toISOString()
-      };
-
-      try {
-        await setDoc(doc(db, 'leccionarios', logId), data);
-        setLogData(data);
-        alert("¡Guardado y firmado con éxito!");
-        setShowModal(false);
-      } catch (error) {
-        console.error(error);
-        alert("Error al guardar: " + error.message);
-      } finally {
-        setIsSaving(false);
-      }
-    }
-  };
-
-  return (
-    <>
-      <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-100 hover:bg-blue-50 transition">
-        <div className="flex items-center gap-3">
-          <div className="bg-white p-2 rounded border border-gray-200 text-blue-900 font-bold text-xs shadow-sm w-24 text-center">{details.time}</div>
-          <div><div className="font-bold text-gray-800 text-sm">{details.subject}</div><div className="text-xs text-gray-500">{details.course}</div></div>
-        </div>
-        {logData ? (
-          <div className="flex flex-col items-end"><span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider flex items-center gap-1"><CheckCircle2 size={12} /> Firmado</span><button onClick={() => setShowModal(true)} className="text-[10px] text-blue-600 underline mt-1">Ver detalles</button></div>
-        ) : (
-          <button onClick={() => setShowModal(true)} className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded text-xs font-bold transition flex items-center gap-2"><FileSignature size={14} /> Firmar</button>
-        )}
-      </div>
-      {showModal && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
-          <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-200">
-            <div className="bg-ecomundo-blue text-white p-4 flex justify-between items-center" style={{ backgroundColor: COLORS.blue }}><div><h3 className="font-bold">Leccionario Digital</h3><p className="text-xs text-blue-200">{details.subject} | {details.course}</p></div><button onClick={() => setShowModal(false)} className="hover:bg-white/20 p-1 rounded"><X size={20}/></button></div>
-            <div className="p-6">
-              {logData ? (
-                <div className="space-y-4">
-                  <div className="bg-green-50 p-4 rounded-lg border border-green-200 mb-4"><p className="text-green-800 text-sm font-bold flex items-center gap-2"><CheckCircle2 size={16}/> Leccionario Cargado Exitosamente</p><p className="text-xs text-green-600 mt-1">Firmado el {new Date(logData.signedAt).toLocaleString()}</p></div>
-                  <div><label className="text-xs font-bold text-gray-400 uppercase">Tema Tratado</label><p className="text-gray-800 font-medium">{logData.topic}</p></div>
-                  <div><label className="text-xs font-bold text-gray-400 uppercase">Observaciones</label><p className="text-gray-800 text-sm">{logData.observation || 'Ninguna'}</p></div>
-                  <div className="pt-4 border-t border-gray-100"><label className="text-xs font-bold text-gray-400 uppercase block mb-2">Firma Digital</label><img src={logData.signature} className="h-12 border rounded bg-white p-1" alt="Firma" /></div>
+        // --- COMPONENTES FALTANTES AGREGADOS ---
+        
+        const Loader = () => (
+            <div className="flex h-screen w-screen items-center justify-center bg-gray-50 text-blue-900">
+                <div className="flex flex-col items-center gap-4">
+                    <Loader2 className="animate-spin" size={48} />
+                    <p className="font-bold text-lg animate-pulse">Cargando Leccionario...</p>
                 </div>
-              ) : (
-                <div className="space-y-4">
-                  <div><label className="block text-sm font-bold text-gray-700 mb-1">Tema de Clase <span className="text-red-500">*</span></label><input value={topic} onChange={(e) => setTopic(e.target.value)} className="w-full border border-gray-300 rounded-lg p-2 text-sm focus:border-blue-500 outline-none" placeholder="Ej: Ecuaciones..." /></div>
-                  <div><label className="block text-sm font-bold text-gray-700 mb-1">Observaciones</label><textarea value={observation} onChange={(e) => setObservation(e.target.value)} className="w-full border border-gray-300 rounded-lg p-2 text-sm focus:border-blue-500 outline-none h-24 resize-none" placeholder="Novedades..." /></div>
-                  <div className="bg-yellow-50 p-3 rounded text-xs text-yellow-800 border border-yellow-200"><ShieldCheck size={14} className="inline mr-1"/> Al firmar, se estampará tu firma digital registrada.</div>
-                  <div className="flex justify-end gap-3 pt-2">
-                    <button onClick={() => setShowModal(false)} className="text-gray-500 font-medium text-sm hover:text-gray-700">Cancelar</button>
-                    <button onClick={handleSign} disabled={isSaving} className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-blue-700 flex items-center gap-2 disabled:opacity-50">{isSaving ? <Loader2 className="animate-spin" size={16}/> : <FileSignature size={16}/>} {isSaving ? 'Guardando...' : 'Firmar y Guardar'}</button>
-                  </div>
-                </div>
-              )}
             </div>
-          </div>
-        </div>
-      )}
-    </>
-  );
-};
+        );
 
-// --- AUTH & LOADER ---
-const Loader = () => (<div className="fixed inset-0 z-[100] flex flex-col items-center justify-center text-white" style={{ backgroundColor: COLORS.blue }}><Loader2 className="w-16 h-16 animate-spin mb-4" /><p className="font-bold tracking-widest text-sm animate-pulse">CARGANDO ECOMUNDO...</p></div>);
-const AuthView = ({ mode, setMode, onLogin, onRegister, error }) => { const [email, setEmail] = useState(''); const [password, setPassword] = useState(''); const [regName, setRegName] = useState(''); const [regEmail, setRegEmail] = useState(''); const [regPass, setRegPass] = useState(''); const [regSignature, setRegSignature] = useState(null); const [isSubmitting, setIsSubmitting] = useState(false); const handleFile = (e) => { const f = e.target.files[0]; if(f) { const r = new FileReader(); r.onloadend = () => setRegSignature(r.result); r.readAsDataURL(f); }}; const login = async (e) => { setIsSubmitting(true); await onLogin(e, email, password); setIsSubmitting(false); }; const register = async (e) => { e.preventDefault(); setIsSubmitting(true); await onRegister({ nombre: regName, email: regEmail, password: regPass, firma: regSignature }); setIsSubmitting(false); }; return (<div className="flex-1 flex flex-col md:flex-row h-full"><div className="hidden md:flex md:w-1/2 flex-col justify-center items-center text-white p-12 relative overflow-hidden" style={{ backgroundColor: COLORS.blue }}><div className="absolute top-0 left-0 w-full h-full opacity-10 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]"></div><div className="z-10 text-center"><div className="w-24 h-24 bg-white rounded-full flex items-center justify-center text-5xl mb-6 mx-auto shadow-2xl" style={{ color: COLORS.blue }}><GraduationCap size={48} /></div><h1 className="text-4xl font-bold mb-2">Leccionario Virtual</h1><p className="text-blue-200 text-lg">Unidad Educativa Ecomundo</p></div></div><div className="w-full md:w-1/2 flex items-center justify-center p-8 bg-white relative"><div className="w-full max-w-sm">{error && <div className="mb-4 p-3 bg-red-50 text-red-700 rounded-lg flex items-center gap-2 text-sm"><AlertCircle size={16} />{error}</div>}{mode === 'login' ? (<div className="animate-in fade-in slide-in-from-right-4 duration-300"><h2 className="text-3xl font-black text-gray-800 mb-2">Bienvenido</h2><p className="text-gray-400 mb-8">Ingresa tus credenciales institucionales.</p><form onSubmit={login} className="space-y-5"><input type="email" placeholder="Email" value={email} onChange={e => setEmail(e.target.value)} className="w-full p-3 border rounded-lg" required /><input type="password" placeholder="Contraseña" value={password} onChange={e => setPassword(e.target.value)} className="w-full p-3 border rounded-lg" required /><button type="submit" disabled={isSubmitting} className="w-full text-white font-bold py-3 rounded-lg hover:brightness-90 transition shadow-lg flex justify-center items-center gap-2" style={{ backgroundColor: COLORS.blue }}>{isSubmitting ? <Loader2 className="animate-spin" /> : 'Iniciar Sesión'}</button></form><p className="mt-8 text-center text-sm text-gray-500">¿No tienes cuenta? <button onClick={() => setMode('register')} className="font-bold hover:underline" style={{ color: COLORS.blue }}>Regístrate aquí</button></p></div>) : (<div className="animate-in fade-in slide-in-from-left-4 duration-300"><h2 className="text-2xl font-black text-gray-800 mb-2">Crear Cuenta</h2><form onSubmit={register} className="space-y-4"><input type="text" placeholder="Nombre Completo" value={regName} onChange={e => setRegName(e.target.value)} className="w-full p-3 border rounded-lg" required /><input type="email" placeholder="Email Institucional" value={regEmail} onChange={e => setRegEmail(e.target.value)} className="w-full p-3 border rounded-lg" required /><input type="password" placeholder="Contraseña" value={regPass} onChange={e => setRegPass(e.target.value)} className="w-full p-3 border rounded-lg" required /><div className="border border-dashed p-4 rounded-lg bg-gray-50"><label className="block text-xs font-bold text-gray-500 uppercase mb-2">Firma Digital</label><input type="file" accept="image/*" onChange={handleFile} className="w-full text-xs" /></div><button type="submit" disabled={isSubmitting} className="w-full bg-green-600 text-white font-bold py-3 rounded-lg hover:bg-green-700 transition shadow-lg">{isSubmitting ? 'Registrando...' : 'Registrarse'}</button></form><p className="mt-6 text-center text-sm text-gray-500">¿Ya tienes cuenta? <button onClick={() => setMode('login')} className="font-bold hover:underline" style={{ color: COLORS.blue }}>Inicia Sesión</button></p></div>)}</div></div></div>); };
+        const AuthView = ({ mode, setMode, onLogin, onRegister, error }) => {
+            const [email, setEmail] = useState('');
+            const [password, setPassword] = useState('');
+            const [nombre, setNombre] = useState('');
+
+            const handleSubmit = (e) => {
+                e.preventDefault();
+                if (mode === 'login') onLogin(e, email, password);
+                else onRegister({ nombre, email, password, firma: '' });
+            };
+
+            return (
+                <div className="flex-1 flex flex-col items-center justify-center bg-gradient-to-br from-blue-900 to-blue-700 p-4 relative overflow-hidden">
+                    <div className="bg-white p-8 rounded-2xl shadow-2xl max-w-md w-full z-10">
+                        <div className="flex justify-center mb-6 text-blue-900">
+                            <GraduationCap size={64} />
+                        </div>
+                        <h2 className="text-3xl font-bold mb-8 text-center text-gray-800">
+                            {mode === 'login' ? 'Bienvenido' : 'Crear Cuenta'}
+                        </h2>
+                        {error && <div className="bg-red-50 border-l-4 border-red-500 text-red-700 p-3 mb-6 rounded text-sm font-medium flex items-center gap-2"><AlertCircle size={16}/> {error}</div>}
+                        
+                        <form onSubmit={handleSubmit} className="space-y-4">
+                            {mode === 'register' && (
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Nombre Completo</label>
+                                    <input type="text" placeholder="Ej: Juan Pérez" value={nombre} onChange={e=>setNombre(e.target.value)} className="w-full border-gray-300 border p-3 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all" required />
+                                </div>
+                            )}
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Correo Electrónico</label>
+                                <input type="email" placeholder="correo@ecomundo.edu.ec" value={email} onChange={e=>setEmail(e.target.value)} className="w-full border-gray-300 border p-3 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all" required />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Contraseña</label>
+                                <input type="password" placeholder="••••••••" value={password} onChange={e=>setPassword(e.target.value)} className="w-full border-gray-300 border p-3 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all" required minLength={6} />
+                            </div>
+                            
+                            <button type="submit" className="w-full bg-blue-900 text-white p-3 rounded-lg font-bold hover:bg-blue-800 transition-colors shadow-lg mt-2 flex justify-center items-center gap-2">
+                                {mode === 'login' ? <><LogOut size={18}/> Iniciar Sesión</> : <><User size={18}/> Registrarse</>}
+                            </button>
+                        </form>
+                        
+                        <div className="mt-6 text-center">
+                            <button onClick={() => setMode(mode === 'login' ? 'register' : 'login')} className="text-sm font-medium text-blue-600 hover:text-blue-800 transition-colors">
+                                {mode === 'login' ? '¿No tienes cuenta? Solicita acceso' : '¿Ya tienes cuenta? Inicia sesión'}
+                            </button>
+                        </div>
+                    </div>
+                    {/* Elementos decorativos de fondo */}
+                    <div className="absolute top-[-50px] left-[-50px] w-64 h-64 bg-white/10 rounded-full blur-3xl"></div>
+                    <div className="absolute bottom-[-50px] right-[-50px] w-96 h-96 bg-blue-400/20 rounded-full blur-3xl"></div>
+                </div>
+            );
+        };
+
+        const ProfileModule = ({ profile }) => (
+            <div className="max-w-3xl mx-auto animate-in fade-in duration-500">
+                <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                    <div className="h-32 bg-gradient-to-r from-blue-900 to-blue-700"></div>
+                    <div className="px-8 pb-8">
+                        <div className="relative flex justify-between items-end -mt-12 mb-6">
+                            <div className="bg-white p-2 rounded-full shadow-lg border-4 border-white inline-block">
+                                <div className="bg-blue-100 text-blue-900 w-24 h-24 rounded-full flex items-center justify-center text-4xl font-bold">
+                                    {profile?.nombre?.charAt(0) || 'U'}
+                                </div>
+                            </div>
+                            <span className="bg-blue-100 text-blue-800 px-4 py-1.5 rounded-full text-sm font-bold border border-blue-200 shadow-sm flex items-center gap-2">
+                                <ShieldCheck size={16}/> {profile?.rol}
+                            </span>
+                        </div>
+                        <h2 className="text-3xl font-bold text-gray-800">{profile?.nombre}</h2>
+                        <p className="text-gray-500 font-medium mb-6 flex items-center gap-2 mt-1"><User size={16}/> {profile?.email}</p>
+                        
+                        <div className="border-t border-gray-100 pt-6 mt-6">
+                            <h3 className="font-bold text-gray-800 mb-4">Información de la Cuenta</h3>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="bg-gray-50 p-4 rounded-lg border border-gray-100">
+                                    <div className="text-xs text-gray-500 uppercase font-bold mb-1">ID de Usuario</div>
+                                    <div className="font-mono text-sm text-gray-700 break-all">{profile?.uid}</div>
+                                </div>
+                                <div className="bg-gray-50 p-4 rounded-lg border border-gray-100">
+                                    <div className="text-xs text-gray-500 uppercase font-bold mb-1">Privilegios</div>
+                                    <div className="text-sm font-medium text-gray-700">{profile?.isSuperAdmin ? 'Super Administrador' : 'Estándar'}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+
+        const UsersModule = () => {
+            const [usersList, setUsersList] = useState([]);
+            const [loading, setLoading] = useState(true);
+
+            useEffect(() => {
+                const q = query(collection(db, 'users'));
+                const unsubscribe = onSnapshot(q, (snapshot) => {
+                    const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    // Ordenamos en memoria para evitar configuraciones complejas de índices en Firestore
+                    data.sort((a, b) => (a.nombre || '').localeCompare(b.nombre || ''));
+                    setUsersList(data);
+                    setLoading(false);
+                }, (error) => {
+                    console.error("Error al obtener usuarios: ", error);
+                    setLoading(false);
+                });
+                return () => unsubscribe();
+            }, []);
+
+            if (loading) {
+                return (
+                    <div className="flex justify-center items-center h-64 text-blue-900">
+                        <Loader2 className="animate-spin" size={32} />
+                        <span className="ml-2 font-bold text-lg">Cargando directorio...</span>
+                    </div>
+                );
+            }
+
+            return (
+                <div className="max-w-6xl mx-auto animate-in fade-in duration-500">
+                    <div className="flex justify-between items-center mb-6">
+                        <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-3">
+                            <Users size={28} className="text-blue-900" />
+                            Directorio de Usuarios
+                        </h2>
+                        <div className="bg-blue-100 text-blue-800 px-4 py-1.5 rounded-full text-sm font-bold border border-blue-200 shadow-sm flex items-center gap-2">
+                            <ShieldCheck size={16} /> {usersList.length} Registrados
+                        </div>
+                    </div>
+                    
+                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-left text-sm">
+                                <thead className="bg-gray-50 uppercase font-bold text-xs text-gray-500 border-b border-gray-200">
+                                    <tr>
+                                        <th className="px-6 py-4">Usuario</th>
+                                        <th className="px-6 py-4">Rol / Privilegios</th>
+                                        <th className="px-6 py-4 text-center">Firma Digital</th>
+                                        <th className="px-6 py-4">Fecha de Registro</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-gray-100">
+                                    {usersList.length === 0 && (
+                                        <tr><td colSpan="4" className="px-6 py-8 text-center text-gray-400">No hay usuarios registrados.</td></tr>
+                                    )}
+                                    {usersList.map(u => (
+                                        <tr key={u.id} className="hover:bg-gray-50 transition-colors">
+                                            <td className="px-6 py-4">
+                                                <div className="font-bold text-gray-800 text-base">{u.nombre}</div>
+                                                <div className="text-gray-500 flex items-center gap-1 mt-1 text-xs">
+                                                    <User size={12}/> {u.email}
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <div className="flex flex-col gap-1 items-start">
+                                                    <span className={`px-2.5 py-1 rounded text-xs font-bold ${u.rol === 'Admin' ? 'bg-purple-100 text-purple-800 border border-purple-200' : 'bg-green-100 text-green-800 border border-green-200'}`}>
+                                                        {u.rol}
+                                                    </span>
+                                                    {u.isSuperAdmin && (
+                                                        <span className="flex items-center gap-1 text-[10px] text-gray-500 font-bold uppercase mt-1">
+                                                            <ShieldCheck size={12} className="text-purple-500"/> Super Admin
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4 text-center">
+                                                {u.firma ? (
+                                                    <div className="flex justify-center">
+                                                        <img 
+                                                            src={u.firma} 
+                                                            alt={`Firma de ${u.nombre}`} 
+                                                            className="max-h-12 max-w-[120px] object-contain border border-gray-200 rounded p-1 bg-white shadow-sm" 
+                                                        />
+                                                    </div>
+                                                ) : (
+                                                    <span className="text-gray-400 text-xs italic flex flex-col items-center gap-1">
+                                                        <FileSignature size={16} className="text-gray-300" />
+                                                        Sin firma
+                                                    </span>
+                                                )}
+                                            </td>
+                                            <td className="px-6 py-4 text-gray-500 text-xs font-medium">
+                                                {u.createdAt ? new Date(u.createdAt).toLocaleDateString('es-ES', { year: 'numeric', month: 'short', day: 'numeric' }) : 'N/A'}
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+        
+        const ScheduleModule = () => (
+            <div className="max-w-6xl mx-auto p-8 text-center border-2 border-dashed border-gray-300 rounded-2xl bg-gray-50 text-gray-500">
+                <Calendar size={48} className="mx-auto mb-4 text-gray-300"/>
+                <h3 className="text-xl font-bold mb-2 text-gray-700">Horario de Clases</h3>
+                <p>Módulo en construcción para visualizar y gestionar horarios dinámicos.</p>
+            </div>
+        );
+        
+        const WorkloadReportModule = () => (
+            <div className="max-w-6xl mx-auto p-8 text-center border-2 border-dashed border-gray-300 rounded-2xl bg-gray-50 text-gray-500">
+                <FileBarChart size={48} className="mx-auto mb-4 text-gray-300"/>
+                <h3 className="text-xl font-bold mb-2 text-gray-700">Reportes de Carga Horaria</h3>
+                <p>Herramientas de exportación e impresión en desarrollo.</p>
+            </div>
+        );
+
+
+        // --- COMPONENTE DE FILA CON SELECCIÓN Y EDICIÓN ---
+        const SelectableRow = ({ id, initialValue, subLabel, isSelected, onToggle, onUpdate }) => {
+            const [isEditing, setIsEditing] = useState(false);
+            const [value, setValue] = useState(initialValue);
+
+            // Sincronizar si cambia desde fuera
+            useEffect(() => setValue(initialValue), [initialValue]);
+
+            const handleUpdate = async () => {
+                if (value !== initialValue && value.trim() !== "") {
+                    await onUpdate(id, value);
+                }
+                setIsEditing(false);
+            };
+
+            return (
+                <div className={`flex items-center gap-3 p-3 border rounded-lg transition-all ${isSelected ? 'bg-red-50 border-red-200' : 'bg-white border-gray-200 hover:border-blue-300'}`}>
+                    
+                    {/* Checkbox de Selección */}
+                    <button 
+                        onClick={() => onToggle(id)}
+                        className={`p-1 rounded transition-colors ${isSelected ? 'text-red-600' : 'text-gray-300 hover:text-gray-500'}`}
+                    >
+                        {isSelected ? <CheckSquare size={20} /> : <Square size={20} />}
+                    </button>
+
+                    {/* Contenido Editable */}
+                    <div className="flex-1">
+                        {isEditing ? (
+                            <div className="flex items-center gap-2">
+                                <input 
+                                    value={value} 
+                                    onChange={(e) => setValue(e.target.value)} 
+                                    className="flex-1 border border-blue-300 rounded px-2 py-1 text-sm outline-none"
+                                    autoFocus
+                                />
+                                <button onClick={handleUpdate} className="text-green-600 p-1 hover:bg-green-50 rounded"><Save size={16}/></button>
+                                <button onClick={() => { setIsEditing(false); setValue(initialValue); }} className="text-gray-400 p-1 hover:bg-gray-50 rounded"><X size={16}/></button>
+                            </div>
+                        ) : (
+                            <div onClick={() => onToggle(id)} className="cursor-pointer">
+                                <div className={`font-medium ${isSelected ? 'text-red-800' : 'text-gray-800'}`}>{initialValue}</div>
+                                {subLabel && <div className="text-xs text-gray-400">{subLabel}</div>}
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Botón Editar Individual */}
+                    {!isEditing && (
+                        <button onClick={() => setIsEditing(true)} className="text-blue-400 hover:text-blue-600 p-2 rounded hover:bg-blue-50">
+                            <Edit size={16}/>
+                        </button>
+                    )}
+                </div>
+            );
+        };
+
+        // --- BARRA DE BORRADO MASIVO ---
+        const BulkDeleteToolbar = ({ selectedIds, onDelete, onCancel }) => {
+            if (selectedIds.size === 0) return null;
+
+            return (
+                <div className="sticky top-0 z-10 flex justify-between items-center bg-red-600 text-white p-3 rounded-lg shadow-lg mb-4 animate-in slide-in-from-top-2">
+                    <div className="font-bold flex items-center gap-2">
+                        <CheckSquare size={18}/>
+                        {selectedIds.size} elemento(s) seleccionado(s)
+                    </div>
+                    <div className="flex gap-2">
+                        <button onClick={onCancel} className="px-3 py-1 text-xs font-bold bg-white/20 hover:bg-white/30 rounded text-white transition-colors">Cancelar</button>
+                        <button onClick={onDelete} className="px-3 py-1 text-xs font-bold bg-white text-red-600 hover:bg-red-50 rounded flex items-center gap-1 transition-colors">
+                            <Trash2 size={14}/> Eliminar
+                        </button>
+                    </div>
+                </div>
+            );
+        };
+
+        // --- APLICACIÓN PRINCIPAL ---
+        function EcomundoApp() {
+            const [user, setUser] = useState(null);
+            const [profile, setProfile] = useState(null);
+            const [view, setView] = useState('loading');
+            const [authMode, setAuthMode] = useState('login');
+            const [error, setError] = useState('');
+            
+            useEffect(() => {
+                const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+                    if (currentUser) {
+                        setUser(currentUser);
+                        const profileRef = doc(db, 'users', currentUser.uid);
+                        const unsubProfile = onSnapshot(profileRef, (docSnap) => {
+                            if (docSnap.exists()) {
+                                setProfile({ ...docSnap.data(), uid: currentUser.uid });
+                                setView('app');
+                            } else {
+                                setProfile(null);
+                            }
+                        });
+                        return () => unsubProfile();
+                    } else {
+                        setUser(null);
+                        setProfile(null);
+                        setView('auth');
+                    }
+                });
+                return () => unsubscribe();
+            }, []);
+
+            const handleLogin = async (e, email, password) => {
+                e.preventDefault();
+                setError('');
+                try { await signInWithEmailAndPassword(auth, email, password); } 
+                catch (err) { setError('Error de credenciales o conexión.'); }
+            };
+
+            const handleRegister = async (formData) => {
+                setError('');
+                try {
+                    const userCredential = await createUserWithEmailAndPassword(auth, formData.email, formData.password);
+                    const newUser = userCredential.user;
+                    const isSuper = ['gasencio@ecomundo.edu.ec', 'ajuanazo@ecomundo.edu.ec'].includes(formData.email.toLowerCase());
+                    const newProfile = {
+                        nombre: formData.nombre,
+                        email: formData.email.toLowerCase(),
+                        rol: isSuper ? 'Admin' : 'Docente',
+                        isSuperAdmin: isSuper,
+                        firma: formData.firma || null,
+                        createdAt: new Date().toISOString(),
+                        uid: newUser.uid
+                    };
+                    await setDoc(doc(db, 'users', newUser.uid), newProfile);
+                } catch (err) { setError('Error al registrar: ' + err.message); }
+            };
+
+            const handleLogout = async () => { await signOut(auth); };
+
+            if (view === 'loading') return <Loader />;
+
+            return (
+                <div className="font-sans text-gray-800 h-screen overflow-hidden flex flex-col bg-gray-100">
+                    {view === 'auth' ? (
+                        <AuthView mode={authMode} setMode={setAuthMode} onLogin={handleLogin} onRegister={handleRegister} error={error} />
+                    ) : (
+                        <DashboardLayout profile={profile} onLogout={handleLogout} />
+                    )}
+                </div>
+            );
+        }
+
+        // --- LAYOUT PRINCIPAL ---
+        const DashboardLayout = ({ profile, onLogout }) => {
+            const [activeModule, setActiveModule] = useState('profile'); 
+            const isAdmin = profile?.rol === 'Admin' || profile?.isSuperAdmin;
+
+            return (
+                <div className="flex h-screen bg-gray-100 w-full">
+                    <aside className="w-64 bg-white shadow-xl z-20 hidden md:flex flex-col border-r border-gray-200">
+                        <div className="h-16 flex items-center justify-center border-b border-gray-200" style={{ backgroundColor: COLORS.blue }}>
+                            <div className="flex items-center gap-3 text-white">
+                                <GraduationCap size={24} />
+                                <span className="font-bold text-xl tracking-wide">Ecomundo</span>
+                            </div>
+                        </div>
+                        
+                        <nav className="flex-1 py-6 px-3 space-y-1 overflow-y-auto custom-scrollbar">
+                            <SidebarItem icon={<User size={18}/>} label="Mi Perfil" isActive={activeModule === 'profile'} onClick={() => setActiveModule('profile')} />
+                            
+                            {isAdmin && (
+                                <>
+                                    <div className="pt-6 pb-2 px-3 text-[10px] font-bold text-gray-400 uppercase tracking-wider">Gestión Académica</div>
+                                    <SidebarItem icon={<Settings size={18}/>} label="Configuración" isActive={activeModule === 'config'} onClick={() => setActiveModule('config')} />
+                                    <SidebarItem icon={<Briefcase size={18}/>} label="Distributivo" isActive={activeModule === 'distributive'} onClick={() => setActiveModule('distributive')} />
+                                    <SidebarItem icon={<Calendar size={18}/>} label="Horario de Clases" isActive={activeModule === 'schedule'} onClick={() => setActiveModule('schedule')} />
+                                    
+                                    <div className="pt-6 pb-2 px-3 text-[10px] font-bold text-gray-400 uppercase tracking-wider">Reportes</div>
+                                    <SidebarItem icon={<FileBarChart size={18}/>} label="Reporte Carga Horaria" isActive={activeModule === 'reports_load'} onClick={() => setActiveModule('reports_load')} />
+
+                                    <div className="pt-6 pb-2 px-3 text-[10px] font-bold text-gray-400 uppercase tracking-wider">Sistema</div>
+                                    <SidebarItem icon={<Users size={18}/>} label="Usuarios" isActive={activeModule === 'users'} onClick={() => setActiveModule('users')} />
+                                </>
+                            )}
+                        </nav>
+
+                        <div className="p-4 border-t border-gray-100 bg-gray-50">
+                            <button onClick={onLogout} className="flex items-center justify-center gap-2 bg-white border border-gray-200 text-gray-600 hover:text-red-600 hover:border-red-200 hover:bg-red-50 w-full px-4 py-2.5 rounded-lg transition-all text-sm font-bold shadow-sm">
+                                <LogOut size={16} /> Cerrar Sesión
+                            </button>
+                        </div>
+                    </aside>
+
+                    <div className="flex-1 flex flex-col h-screen overflow-hidden">
+                        <header className="md:hidden h-16 text-white flex items-center justify-between px-4 shadow-md z-10" style={{ backgroundColor: COLORS.blue }}>
+                            <div className="flex items-center gap-2 font-bold text-lg"><GraduationCap/> Ecomundo</div>
+                            <button onClick={onLogout} className="p-2 bg-white/10 rounded-lg hover:bg-white/20 transition-colors"><LogOut size={20}/></button>
+                        </header>
+
+                        <main className="flex-1 overflow-y-auto p-4 md:p-8 bg-slate-50 relative">
+                            {activeModule === 'profile' && <ProfileModule profile={profile} />}
+                            {activeModule === 'users' && isAdmin && <UsersModule />}
+                            {activeModule === 'config' && isAdmin && <ConfigModule />}
+                            {activeModule === 'distributive' && isAdmin && <DistributiveModule />}
+                            {activeModule === 'schedule' && isAdmin && <ScheduleModule />}
+                            {activeModule === 'reports_load' && isAdmin && <WorkloadReportModule />}
+                        </main>
+                    </div>
+                </div>
+            );
+        };
+
+        const SidebarItem = ({ icon, label, isActive, onClick }) => (
+            <button 
+                onClick={onClick}
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200
+                ${isActive ? 'bg-blue-50 text-blue-900 shadow-sm border border-blue-100' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900 border border-transparent'}`}
+                style={isActive ? { color: COLORS.blue } : {}}
+            >
+                <span className={`${isActive ? 'opacity-100' : 'opacity-70'}`}>{icon}</span> {label}
+            </button>
+        );
+
+        // --- MÓDULOS DE CONFIGURACIÓN (CON SELECCIÓN MÚLTIPLE) ---
+
+        const ConfigModule = () => {
+            const [activeTab, setActiveTab] = useState('years');
+            const [years, setYears] = useState([]);
+            const [selectedYearId, setSelectedYearId] = useState('');
+
+            useEffect(() => {
+                const q = query(collection(db, 'academic_years')); 
+                const unsubscribe = onSnapshot(q, (snap) => {
+                    const data = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                    data.sort((a, b) => b.name.localeCompare(a.name));
+                    setYears(data);
+                    if (!selectedYearId && data.length > 0) setSelectedYearId(data[0].id);
+                });
+                return () => unsubscribe();
+            }, [selectedYearId]);
+
+            return (
+                <div className="max-w-6xl mx-auto animate-in fade-in duration-500">
+                    <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4 bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+                        <div>
+                            <h2 className="text-2xl font-bold text-gray-800">Configuración Académica</h2>
+                            <p className="text-sm text-gray-500 mt-1">Administra los parámetros base del sistema.</p>
+                        </div>
+                        <div className="flex items-center gap-3 bg-blue-50 p-2.5 rounded-lg border border-blue-100">
+                            <span className="text-xs font-bold text-blue-800 uppercase px-2 flex items-center gap-1"><Calendar size={14}/> Año Lectivo Activo:</span>
+                            <select value={selectedYearId} onChange={(e) => setSelectedYearId(e.target.value)} className="font-bold text-blue-900 outline-none bg-white border border-blue-200 rounded px-3 py-1.5 cursor-pointer shadow-sm">
+                                {years.map(y => <option key={y.id} value={y.id}>{y.name}</option>)}
+                                {years.length === 0 && <option value="">Crear primero</option>}
+                            </select>
+                        </div>
+                    </div>
+
+                    <div className="flex gap-2 mb-6 border-b border-gray-200 pb-1 overflow-x-auto custom-scrollbar">
+                        {['years', 'sections', 'areas', 'subjects', 'courses', 'time_slots'].map(tab => (
+                            <ConfigTab key={tab} id={tab} label={tab === 'years' ? 'Años' : tab === 'sections' ? 'Secciones' : tab === 'areas' ? 'Áreas' : tab === 'subjects' ? 'Materias' : tab === 'courses' ? 'Cursos' : 'Franjas Horarias'} active={activeTab} set={setActiveTab} />
+                        ))}
+                    </div>
+
+                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                        {activeTab === 'years' && <YearsManager years={years} />}
+                        {activeTab !== 'years' && !selectedYearId && <div className="text-center py-12 flex flex-col items-center justify-center text-gray-400 bg-gray-50 rounded-lg border-2 border-dashed border-gray-200"><AlertCircle size={32} className="mb-2 text-gray-300"/> Selecciona o crea un Año Lectivo para configurar este apartado.</div>}
+                        {selectedYearId && (
+                            <>
+                                {activeTab === 'sections' && <GenericCrud collectionName="sections" yearId={selectedYearId} label="Sección" placeholder="Ej: Matutina / Vespertina" />}
+                                {activeTab === 'areas' && <GenericCrud collectionName="areas" yearId={selectedYearId} label="Área" placeholder="Ej: Ciencias Exactas" />}
+                                {activeTab === 'subjects' && <SubjectsManager yearId={selectedYearId} />}
+                                {activeTab === 'courses' && <CoursesManager yearId={selectedYearId} />}
+                                {activeTab === 'time_slots' && <TimeSlotsManager yearId={selectedYearId} />}
+                            </>
+                        )}
+                    </div>
+                </div>
+            );
+        };
+
+        const ConfigTab = ({ id, label, active, set }) => (
+            <button onClick={() => set(id)} className={`px-5 py-2.5 rounded-t-lg text-sm font-bold border-b-2 transition-all whitespace-nowrap ${active ? 'bg-white text-blue-900 border-blue-900 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]' : 'border-transparent text-gray-500 hover:bg-gray-200 hover:text-gray-700'}`}>
+                {label}
+            </button>
+        );
+
+        // --- HOOK DE GESTIÓN DE SELECCIÓN ---
+        const useSelection = (collectionName) => {
+            const [selectedIds, setSelectedIds] = useState(new Set());
+
+            const toggleSelect = (id) => {
+                const newSet = new Set(selectedIds);
+                if (newSet.has(id)) newSet.delete(id);
+                else newSet.add(id);
+                setSelectedIds(newSet);
+            };
+
+            const deleteSelected = async () => {
+                if (!window.confirm(`¿Estás seguro de eliminar ${selectedIds.size} elementos seleccionados? Esta acción es irreversible.`)) return;
+                
+                const batch = writeBatch(db);
+                selectedIds.forEach(id => {
+                    const ref = doc(db, collectionName, id);
+                    batch.delete(ref);
+                });
+
+                try {
+                    await batch.commit();
+                    setSelectedIds(new Set()); 
+                } catch (e) {
+                    alert("Error eliminando: " + e.message);
+                }
+            };
+
+            const cancelSelection = () => setSelectedIds(new Set());
+
+            return { selectedIds, toggleSelect, deleteSelected, cancelSelection };
+        };
+
+        // --- MANAGERS RE-IMPLEMENTADOS CON SELECCIÓN MÚLTIPLE ---
+
+        const YearsManager = ({ years }) => {
+            const [name, setName] = useState('');
+            const { selectedIds, toggleSelect, deleteSelected, cancelSelection } = useSelection('academic_years');
+
+            const add = async (e) => { e.preventDefault(); if(name) { await addDoc(collection(db, 'academic_years'), { name, isActive: true }); setName(''); }};
+            const update = async (id, val) => await updateDoc(doc(db, 'academic_years', id), { name: val });
+            
+            return (
+                <div>
+                    <BulkDeleteToolbar selectedIds={selectedIds} onDelete={deleteSelected} onCancel={cancelSelection} />
+                    <h3 className="font-bold text-gray-500 text-xs uppercase mb-4 flex items-center gap-2"><Calendar size={14}/> Gestión de Años Lectivos</h3>
+                    <form onSubmit={add} className="flex gap-3 mb-6 bg-gray-50 p-4 rounded-lg border border-gray-200">
+                        <input value={name} onChange={e=>setName(e.target.value)} placeholder="Ej: 2024-2025" className="flex-1 border border-gray-300 p-2.5 rounded focus:ring-2 focus:ring-blue-500 outline-none" required />
+                        <button type="submit" className="bg-blue-600 hover:bg-blue-700 transition-colors text-white px-6 rounded font-bold shadow-sm flex items-center gap-2">
+                            <Plus size={18}/> Crear
+                        </button>
+                    </form>
+                    <div className="space-y-2">
+                        {years.length === 0 && <p className="text-center text-gray-400 py-4">No hay años creados.</p>}
+                        {years.map(y => (
+                            <SelectableRow key={y.id} id={y.id} initialValue={y.name} isSelected={selectedIds.has(y.id)} onToggle={toggleSelect} onUpdate={update} />
+                        ))}
+                    </div>
+                </div>
+            );
+        };
+
+        const GenericCrud = ({ collectionName, yearId, label, placeholder }) => {
+            const [items, setItems] = useState([]);
+            const [name, setName] = useState('');
+            const { selectedIds, toggleSelect, deleteSelected, cancelSelection } = useSelection(collectionName);
+            
+            useEffect(() => {
+                const q = query(collection(db, collectionName), where('academicYearId', '==', yearId));
+                return onSnapshot(q, s => setItems(s.docs.map(d=>({id:d.id, ...d.data()}))));
+            }, [collectionName, yearId]);
+            
+            const add = async (e) => { e.preventDefault(); if(name) { await addDoc(collection(db, collectionName), { name, academicYearId: yearId }); setName(''); }};
+            const update = async (id, val) => await updateDoc(doc(db, collectionName, id), { name: val });
+
+            return (
+                <div>
+                    <BulkDeleteToolbar selectedIds={selectedIds} onDelete={deleteSelected} onCancel={cancelSelection} />
+                    <h3 className="font-bold text-gray-500 text-xs uppercase mb-4 flex items-center gap-2"><Layers size={14}/> Gestión de {label}s</h3>
+                    <form onSubmit={add} className="flex gap-3 mb-6 bg-gray-50 p-4 rounded-lg border border-gray-200">
+                        <input value={name} onChange={e=>setName(e.target.value)} placeholder={placeholder || `Nombre de ${label}`} className="flex-1 border border-gray-300 p-2.5 rounded focus:ring-2 focus:ring-blue-500 outline-none" required />
+                        <button className="bg-blue-600 hover:bg-blue-700 transition-colors text-white px-5 rounded font-bold shadow-sm flex items-center gap-2">
+                            <Plus size={18}/> Añadir
+                        </button>
+                    </form>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {items.length === 0 && <div className="col-span-full text-center text-gray-400 py-4">Agrega registros usando el formulario superior.</div>}
+                        {items.map(i => (
+                            <SelectableRow key={i.id} id={i.id} initialValue={i.name} isSelected={selectedIds.has(i.id)} onToggle={toggleSelect} onUpdate={update} />
+                        ))}
+                    </div>
+                </div>
+            );
+        };
+
+        const SubjectsManager = ({ yearId }) => {
+            const [subjects, setSubjects] = useState([]);
+            const [areas, setAreas] = useState([]);
+            const [name, setName] = useState('');
+            const [areaId, setAreaId] = useState('');
+            const { selectedIds, toggleSelect, deleteSelected, cancelSelection } = useSelection('subjects');
+
+            useEffect(() => onSnapshot(query(collection(db, 'areas'), where('academicYearId', '==', yearId)), s => { const d = s.docs.map(x=>({id:x.id, ...x.data()})); setAreas(d); if(d.length) setAreaId(d[0].id); }), [yearId]);
+            useEffect(() => onSnapshot(query(collection(db, 'subjects'), where('academicYearId', '==', yearId)), s => setSubjects(s.docs.map(d=>({id:d.id, ...d.data()})))), [yearId]);
+            
+            const add = async (e) => { e.preventDefault(); if(name && areaId) { const areaName = areas.find(a=>a.id===areaId)?.name; await addDoc(collection(db, 'subjects'), { name, areaId, areaName, academicYearId: yearId }); setName(''); }};
+            const update = async (id, val) => await updateDoc(doc(db, 'subjects', id), { name: val });
+
+            return (
+                <div>
+                    <BulkDeleteToolbar selectedIds={selectedIds} onDelete={deleteSelected} onCancel={cancelSelection} />
+                    <h3 className="font-bold text-gray-500 text-xs uppercase mb-4 flex items-center gap-2"><BookOpen size={14}/> Gestión de Materias</h3>
+                    
+                    {areas.length === 0 ? (
+                        <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 p-4 rounded-lg mb-6 flex items-center gap-3">
+                            <AlertCircle size={20}/> Debes crear áreas académicas antes de agregar materias.
+                        </div>
+                    ) : (
+                        <form onSubmit={add} className="flex flex-col md:flex-row gap-3 mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                            <select value={areaId} onChange={e=>setAreaId(e.target.value)} className="border border-gray-300 p-2.5 rounded md:w-1/3 outline-none focus:ring-2 focus:ring-blue-500 bg-white">
+                                {areas.map(a=><option key={a.id} value={a.id}>{a.name}</option>)}
+                            </select>
+                            <input value={name} onChange={e=>setName(e.target.value)} placeholder="Nombre Materia (Ej: Matemáticas)" className="flex-1 border border-gray-300 p-2.5 rounded outline-none focus:ring-2 focus:ring-blue-500" required />
+                            <button className="bg-blue-600 hover:bg-blue-700 text-white px-5 rounded font-bold shadow-sm py-2.5 md:py-0 flex justify-center items-center gap-2">
+                                <Plus size={18}/> Crear
+                            </button>
+                        </form>
+                    )}
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {subjects.length === 0 && <div className="col-span-full text-center text-gray-400 py-4">Agrega materias asociándolas a un área.</div>}
+                        {subjects.map(s => (
+                            <SelectableRow key={s.id} id={s.id} initialValue={s.name} subLabel={s.areaName} isSelected={selectedIds.has(s.id)} onToggle={toggleSelect} onUpdate={update} />
+                        ))}
+                    </div>
+                </div>
+            );
+        };
+
+        const CoursesManager = ({ yearId }) => {
+            const [courses, setCourses] = useState([]);
+            const [sections, setSections] = useState([]);
+            const [courseName, setCourseName] = useState('');
+            const [parallel, setParallel] = useState('');
+            const [sectionId, setSectionId] = useState('');
+            const { selectedIds, toggleSelect, deleteSelected, cancelSelection } = useSelection('courses');
+
+            useEffect(() => onSnapshot(query(collection(db, 'sections'), where('academicYearId', '==', yearId)), s => { const d = s.docs.map(x=>({id:x.id, ...x.data()})); setSections(d); if(d.length) setSectionId(d[0].id); }), [yearId]);
+            useEffect(() => onSnapshot(query(collection(db, 'courses'), where('academicYearId', '==', yearId)), s => setCourses(s.docs.map(d=>({id:d.id, ...d.data()})))), [yearId]);
+            
+            const add = async (e) => { e.preventDefault(); if(courseName && parallel && sectionId) { const sectionName = sections.find(s=>s.id===sectionId)?.name; await addDoc(collection(db, 'courses'), { name: courseName, parallel, sectionId, sectionName, academicYearId: yearId }); setCourseName(''); setParallel(''); }};
+            const update = async (id, val) => await updateDoc(doc(db, 'courses', id), { name: val });
+            
+            return (
+                <div>
+                    <BulkDeleteToolbar selectedIds={selectedIds} onDelete={deleteSelected} onCancel={cancelSelection} />
+                    <h3 className="font-bold text-gray-500 text-xs uppercase mb-4 flex items-center gap-2"><LayoutGrid size={14}/> Gestión de Cursos</h3>
+                    
+                    {sections.length === 0 ? (
+                         <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 p-4 rounded-lg mb-6 flex items-center gap-3">
+                             <AlertCircle size={20}/> Crea al menos una sección académica antes de configurar cursos.
+                         </div>
+                    ) : (
+                        <form onSubmit={add} className="flex flex-col md:flex-row gap-3 mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                            <select value={sectionId} onChange={e=>setSectionId(e.target.value)} className="border border-gray-300 p-2.5 rounded md:w-1/3 outline-none focus:ring-2 focus:ring-blue-500 bg-white">
+                                {sections.map(s=><option key={s.id} value={s.id}>{s.name}</option>)}
+                            </select>
+                            <input value={courseName} onChange={e=>setCourseName(e.target.value)} placeholder="Curso (Ej: 10mo EGB)" className="border border-gray-300 p-2.5 rounded flex-1 outline-none focus:ring-2 focus:ring-blue-500" required />
+                            <input value={parallel} onChange={e=>setParallel(e.target.value)} placeholder="Paralelo (Ej: A)" className="border border-gray-300 p-2.5 rounded w-full md:w-32 outline-none focus:ring-2 focus:ring-blue-500" required />
+                            <button className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded font-bold shadow-sm flex justify-center items-center gap-2">
+                                <Plus size={18}/> Crear
+                            </button>
+                        </form>
+                    )}
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                        {courses.length === 0 && <div className="col-span-full text-center text-gray-400 py-4">No hay cursos creados para este año.</div>}
+                        {courses.map(c => (
+                            <SelectableRow key={c.id} id={c.id} initialValue={`${c.name} "${c.parallel}"`} subLabel={c.sectionName} isSelected={selectedIds.has(c.id)} onToggle={toggleSelect} onUpdate={update} />
+                        ))}
+                    </div>
+                </div>
+            );
+        };
+
+        const TimeSlotsManager = ({ yearId }) => {
+            const [slots, setSlots] = useState([]);
+            const [sections, setSections] = useState([]);
+            const [currentSectionId, setCurrentSectionId] = useState('');
+            const [sourceSectionId, setSourceSectionId] = useState('');
+            const [start, setStart] = useState('');
+            const [end, setEnd] = useState('');
+            const [type, setType] = useState('Clase'); 
+            const { selectedIds, toggleSelect, deleteSelected, cancelSelection } = useSelection('time_slots');
+
+            useEffect(() => onSnapshot(query(collection(db, 'sections'), where('academicYearId', '==', yearId)), s => { const d = s.docs.map(x=>({id:x.id, ...x.data()})); setSections(d); if(d.length > 0 && !currentSectionId) setCurrentSectionId(d[0].id); }), [yearId]);
+            useEffect(() => { if(!currentSectionId) return; const q = query(collection(db, 'time_slots'), where('sectionId', '==', currentSectionId)); const unsub = onSnapshot(q, (snapshot) => { const data = snapshot.docs.map(d => ({ id: d.id, ...d.data() })); data.sort((a, b) => a.start.localeCompare(b.start)); setSlots(data); }); return () => unsub(); }, [currentSectionId]);
+            
+            const add = async (e) => { e.preventDefault(); if(start && end && currentSectionId) { await addDoc(collection(db, 'time_slots'), { start, end, type, academicYearId: yearId, sectionId: currentSectionId }); setStart(''); setEnd(''); }};
+            
+            const copySlots = async () => { 
+                if(!sourceSectionId || !currentSectionId || sourceSectionId === currentSectionId) return alert("Selecciona una sección origen válida y diferente a la actual."); 
+                if(!window.confirm("¿Estás seguro de copiar las franjas horarias? Esto agregará las franjas de la sección origen a la sección actual.")) return; 
+                
+                try {
+                    const qSource = query(collection(db, 'time_slots'), where('sectionId', '==', sourceSectionId)); 
+                    const snapSource = await getDocs(qSource); 
+                    const batch = writeBatch(db); 
+                    snapSource.docs.forEach(docSrc => { 
+                        const data = docSrc.data(); 
+                        const newRef = doc(collection(db, 'time_slots')); 
+                        batch.set(newRef, { ...data, sectionId: currentSectionId, academicYearId: yearId }); 
+                    }); 
+                    await batch.commit(); 
+                    alert("Franjas copiadas exitosamente."); 
+                } catch(e) {
+                    alert("Error al copiar franjas: " + e.message);
+                }
+            };
+
+            return (
+                <div>
+                    <BulkDeleteToolbar selectedIds={selectedIds} onDelete={deleteSelected} onCancel={cancelSelection} />
+                    <h3 className="font-bold text-gray-500 text-xs uppercase mb-4 flex items-center gap-2"><Clock size={14}/> Gestión de Franjas Horarias</h3>
+                    
+                    {sections.length === 0 ? (
+                        <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 p-4 rounded-lg mb-6 flex items-center gap-3">
+                             <AlertCircle size={20}/> Requiere configurar secciones previamente.
+                        </div>
+                    ) : (
+                        <>
+                            <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg shadow-sm">
+                                <label className="block text-xs font-bold text-blue-900 uppercase mb-2">Configurando Horario Para la Sección:</label>
+                                <select value={currentSectionId} onChange={e=>setCurrentSectionId(e.target.value)} className="w-full border border-blue-300 rounded-md p-2.5 font-bold text-gray-800 bg-white shadow-sm outline-none">
+                                    {sections.map(s=><option key={s.id} value={s.id}>{s.name}</option>)}
+                                </select>
+                            </div>
+
+                            <div className="flex flex-col sm:flex-row gap-3 items-center mb-6 p-4 bg-gray-50 border border-gray-200 rounded-lg">
+                                <div className="flex items-center gap-2 text-gray-500 w-full sm:w-auto"><Copy size={18}/> <span className="text-sm font-medium">Copiar desde:</span></div>
+                                <select value={sourceSectionId} onChange={e=>setSourceSectionId(e.target.value)} className="text-sm border border-gray-300 p-2 rounded-md flex-1 w-full bg-white outline-none">
+                                    <option value="">Seleccione sección origen...</option>
+                                    {sections.filter(s=>s.id !== currentSectionId).map(s=><option key={s.id} value={s.id}>{s.name}</option>)}
+                                </select>
+                                <button type="button" onClick={copySlots} className="text-sm bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 rounded-md font-bold transition-colors w-full sm:w-auto">Importar Franjas</button>
+                            </div>
+
+                            {currentSectionId && (
+                                <>
+                                    <form onSubmit={add} className="flex flex-col md:flex-row gap-3 mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200 items-end shadow-sm">
+                                        <div className="flex-1 w-full">
+                                            <label className="text-xs font-bold text-gray-500 uppercase block mb-1">Hora Inicio</label>
+                                            <input type="time" value={start} onChange={e=>setStart(e.target.value)} className="border border-gray-300 p-2.5 rounded-md w-full outline-none focus:ring-2 focus:ring-blue-500 bg-white" required />
+                                        </div>
+                                        <div className="flex-1 w-full">
+                                            <label className="text-xs font-bold text-gray-500 uppercase block mb-1">Hora Fin</label>
+                                            <input type="time" value={end} onChange={e=>setEnd(e.target.value)} className="border border-gray-300 p-2.5 rounded-md w-full outline-none focus:ring-2 focus:ring-blue-500 bg-white" required />
+                                        </div>
+                                        <div className="flex-1 w-full">
+                                            <label className="text-xs font-bold text-gray-500 uppercase block mb-1">Tipo de Franja</label>
+                                            <select value={type} onChange={e=>setType(e.target.value)} className="border border-gray-300 p-2.5 rounded-md w-full outline-none focus:ring-2 focus:ring-blue-500 bg-white">
+                                                <option value="Clase">Bloque de Clase</option>
+                                                <option value="Receso">Receso / Lunch</option>
+                                            </select>
+                                        </div>
+                                        <button className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-md font-bold transition-colors shadow-sm w-full md:w-auto flex justify-center items-center gap-2">
+                                            <Plus size={18}/> Agregar
+                                        </button>
+                                    </form>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                        {slots.length === 0 && <div className="col-span-full text-center text-gray-400 py-4">No hay franjas configuradas para esta sección.</div>}
+                                        {slots.map(s => (
+                                            <SelectableRow 
+                                                key={s.id} 
+                                                id={s.id} 
+                                                initialValue={`${s.start} - ${s.end}`} 
+                                                subLabel={s.type}
+                                                isSelected={selectedIds.has(s.id)}
+                                                onToggle={toggleSelect}
+                                                onUpdate={()=>{/* Las horas no se actualizan en línea en esta versión */}}
+                                            />
+                                        ))}
+                                    </div>
+                                </>
+                            )}
+                        </>
+                    )}
+                </div>
+            );
+        };
+
+        // --- DISTRIBUTIVO COMPLETADO ---
+        const DistributiveModule = () => {
+            const [years, setYears] = useState([]);
+            const [yearId, setYearId] = useState('');
+            const [sections, setSections] = useState([]);
+            const [sectionId, setSectionId] = useState('');
+            const [courses, setCourses] = useState([]);
+            const [courseId, setCourseId] = useState('');
+            const [subjects, setSubjects] = useState([]);
+            const [teachers, setTeachers] = useState([]);
+            const [allocations, setAllocations] = useState({});
+
+            useEffect(() => onSnapshot(query(collection(db, 'academic_years')), s => { const d = s.docs.map(x=>({id:x.id, ...x.data()})); setYears(d); if(d.length) setYearId(d[0].id); }), []);
+            useEffect(() => onSnapshot(query(collection(db, 'users')), s => { const allUsers = s.docs.map(d=>({id:d.id, ...d.data()})); const staff = allUsers.filter(u => u.rol === 'Docente' || u.rol === 'Admin'); setTeachers(staff); }), []);
+            useEffect(() => { if(yearId) onSnapshot(query(collection(db, 'sections'), where('academicYearId', '==', yearId)), s => { const d = s.docs.map(x=>({id:x.id, ...x.data()})); setSections(d); setSectionId(''); setCourseId(''); })}, [yearId]);
+            useEffect(() => { if(sectionId) { onSnapshot(query(collection(db, 'courses'), where('sectionId', '==', sectionId)), s => { const d = s.docs.map(x=>({id:x.id, ...x.data()})); setCourses(d); setCourseId(''); }); } else { setCourses([]); } }, [sectionId]);
+            useEffect(() => { if(yearId) onSnapshot(query(collection(db, 'subjects'), where('academicYearId', '==', yearId)), s => setSubjects(s.docs.map(d=>({id:d.id, ...d.data()})))); }, [yearId]);
+            
+            useEffect(() => { 
+                if(courseId) { 
+                    const q = query(collection(db, 'allocations'), where('courseId', '==', courseId)); 
+                    return onSnapshot(q, snap => { 
+                        const allocs = {}; 
+                        snap.docs.forEach(d => allocs[d.data().subjectId] = d.data().teacherId); 
+                        setAllocations(allocs); 
+                    }); 
+                } 
+            }, [courseId]);
+
+            const assignTeacher = async (subjectId, teacherId) => { 
+                const allocId = `${courseId}_${subjectId}`; 
+                if (teacherId) {
+                    await setDoc(doc(db, 'allocations', allocId), { academicYearId: yearId, courseId, subjectId, teacherId }); 
+                } else {
+                    await deleteDoc(doc(db, 'allocations', allocId));
+                }
+            };
+
+            return (
+                <div className="max-w-6xl mx-auto animate-in fade-in duration-500">
+                    <h2 className="text-2xl font-bold text-gray-800 mb-6">Distributivo de Carga Horaria</h2>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 bg-white p-5 rounded-xl shadow-sm border border-gray-200">
+                        <div>
+                            <label className="block text-xs font-bold text-gray-400 uppercase mb-2">1. Año Lectivo</label>
+                            <select value={yearId} onChange={e=>setYearId(e.target.value)} className="w-full border border-gray-300 p-2.5 rounded outline-none font-bold text-blue-900 bg-blue-50">
+                                {years.map(y=><option key={y.id} value={y.id}>{y.name}</option>)}
+                            </select>
+                        </div>
+                        <div>
+                            <label className="block text-xs font-bold text-gray-400 uppercase mb-2">2. Sección</label>
+                            <select value={sectionId} onChange={e=>setSectionId(e.target.value)} className="w-full border border-gray-300 p-2.5 rounded outline-none bg-white">
+                                <option value="">Seleccione Sección...</option>
+                                {sections.map(s=><option key={s.id} value={s.id}>{s.name}</option>)}
+                            </select>
+                        </div>
+                        <div>
+                            <label className="block text-xs font-bold text-gray-400 uppercase mb-2">3. Curso</label>
+                            <select value={courseId} onChange={e=>setCourseId(e.target.value)} className="w-full border border-gray-300 p-2.5 rounded outline-none bg-white disabled:bg-gray-100 disabled:text-gray-400" disabled={!sectionId}>
+                                <option value="">Seleccione Curso...</option>
+                                {courses.map(c=><option key={c.id} value={c.id}>{c.name} "{c.parallel}"</option>)}
+                            </select>
+                        </div>
+                    </div>
+
+                    {courseId ? (
+                        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                            <div className="p-4 border-b border-gray-100 bg-gray-50 flex justify-between items-center">
+                                <h3 className="font-bold text-gray-700">Asignación de Docentes por Materia</h3>
+                                <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded font-bold">Autoguardado activado</span>
+                            </div>
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-left text-sm">
+                                    <thead className="bg-white uppercase font-bold text-xs text-gray-400 border-b border-gray-200">
+                                        <tr>
+                                            <th className="px-6 py-4">Materia</th>
+                                            <th className="px-6 py-4">Área Académica</th>
+                                            <th className="px-6 py-4">Docente Asignado</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-gray-100">
+                                        {subjects.length === 0 && <tr><td colSpan="3" className="px-6 py-8 text-center text-gray-400">No hay materias configuradas para este año lectivo.</td></tr>}
+                                        {subjects.map(s => (
+                                            <tr key={s.id} className="hover:bg-gray-50 transition-colors">
+                                                <td className="px-6 py-4 font-bold text-gray-800">{s.name}</td>
+                                                <td className="px-6 py-4 text-gray-500">{s.areaName}</td>
+                                                <td className="px-6 py-4">
+                                                    <select 
+                                                        value={allocations[s.id] || ''} 
+                                                        onChange={(e) => assignTeacher(s.id, e.target.value)} 
+                                                        className={`border rounded-lg p-2.5 w-full outline-none transition-all ${allocations[s.id] ? 'bg-blue-50 text-blue-900 font-bold border-blue-200 shadow-sm' : 'text-gray-500 bg-white border-gray-300'}`}
+                                                    >
+                                                        <option value="">-- Sin Asignar --</option>
+                                                        {teachers.map(t=><option key={t.id} value={t.id}>{t.nombre} ({t.rol})</option>)}
+                                                    </select>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="text-center p-12 text-gray-400 border-2 border-dashed border-gray-300 rounded-xl bg-gray-50 flex flex-col items-center justify-center">
+                            <Briefcase size={48} className="text-gray-300 mb-4" />
+                            <p className="font-medium text-lg text-gray-500">Seleccione un curso en los filtros superiores</p>
+                            <p className="text-sm">para ver o configurar su distributivo de carga horaria.</p>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        // Renderizado del Componente Principal
+        const root = createRoot(document.getElementById('root'));
+        root.render(<EcomundoApp />);
+    </script>
+</body>
+</html>
