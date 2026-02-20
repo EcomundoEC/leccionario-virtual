@@ -3,643 +3,981 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistema de Login Seguro</title>
-    <!-- Tailwind CSS -->
+    <title>Sistema Escolar Pro</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        .firma-box { background-image: radial-gradient(#e5e7eb 1px, transparent 1px); background-size: 10px 10px; }
+    </style>
 </head>
-<body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen text-gray-800 font-sans">
+<body class="bg-gray-50 min-h-screen text-gray-800 font-sans overflow-hidden flex flex-col">
 
-    <!-- 1. PANTALLA DE ERROR DEL SISTEMA -->
-    <div id="system-error-view" class="hidden min-h-screen items-center justify-center p-4">
-        <div class="bg-red-100 text-red-700 p-6 rounded-lg shadow-md max-w-md w-full text-center border border-red-300">
-            <h2 class="text-xl font-bold mb-2">Error de Autenticación</h2>
-            <p id="system-error-text" class="text-sm font-mono bg-red-50 p-2 rounded mt-2 break-words">No se pudo conectar al servidor.</p>
-            <p class="text-xs mt-4 text-red-600">Revisa tu consola de Firebase -> Authentication -> Sign-in method -> Habilita "Anónimo".</p>
+    <!-- MODALES -->
+    <div id="modal-overlay" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] hidden items-center justify-center p-4 opacity-0 transition-opacity duration-300">
+        <div id="modal-container" class="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-6 transform scale-95 transition-transform duration-300">
+            <h3 id="modal-title" class="text-xl font-bold text-gray-900 mb-2">Mensaje</h3>
+            <div id="modal-body" class="text-gray-600 mb-6 max-h-[60vh] overflow-y-auto pr-2"></div>
+            <div id="modal-actions" class="flex justify-end gap-3 mt-4 pt-4 border-t border-gray-100"></div>
         </div>
     </div>
 
-    <!-- 2. PANTALLA PRINCIPAL (Login / Registro) -->
-    <div id="auth-view" class="min-h-screen flex items-center justify-center p-4 relative">
-        <div class="bg-white p-8 rounded-2xl shadow-xl max-w-md w-full relative overflow-hidden">
-            
-            <!-- Indicador de carga de sistema -->
-            <div id="loading-overlay" class="absolute inset-0 bg-white/80 backdrop-blur-sm flex items-center justify-center z-10 flex-col">
-                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-2"></div>
-                <p class="text-sm text-gray-500 font-medium">Conectando a Firebase...</p>
+    <!-- PANTALLA LOGIN -->
+    <div id="auth-view" class="min-h-screen flex items-center justify-center p-4 relative bg-gradient-to-br from-blue-900 via-indigo-800 to-blue-600 w-full z-50 absolute inset-0">
+        <div class="bg-white p-8 rounded-3xl shadow-2xl max-w-md w-full relative overflow-hidden">
+            <div id="loading-overlay" class="absolute inset-0 bg-white/90 backdrop-blur flex items-center justify-center z-10 flex-col">
+                <div class="animate-spin rounded-full h-10 w-10 border-b-4 border-blue-600 mb-3"></div>
+                <p class="text-sm text-gray-600 font-bold tracking-wide">Conectando al Sistema...</p>
             </div>
-
             <div class="text-center mb-8">
+                <div class="w-16 h-16 bg-blue-100 text-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
+                </div>
                 <h2 id="form-title" class="text-3xl font-extrabold text-gray-900">Iniciar Sesión</h2>
-                <p id="form-subtitle" class="text-gray-500 mt-2">Accede a tu cuenta existente</p>
+                <p id="form-subtitle" class="text-gray-500 mt-2">Accede a tu panel escolar</p>
             </div>
-
-            <!-- Caja de Mensajes (Alertas) -->
-            <div id="message-box" class="hidden p-4 rounded-lg mb-6 text-sm border">
-                <span id="message-text" class="break-words font-mono text-xs"></span>
-            </div>
-
             <form id="auth-form" class="space-y-5">
                 <div id="name-field-container" class="hidden">
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Nombre Completo</label>
-                    <input type="text" id="name-input" class="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Juan Pérez" />
+                    <label class="block text-sm font-bold text-gray-700 mb-1">Nombre Completo</label>
+                    <input type="text" id="name-input" class="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-blue-500 bg-gray-50 focus:bg-white outline-none" placeholder="Ej. Juan Pérez" />
                 </div>
-
+                <div id="firma-field-container" class="hidden">
+                    <label class="block text-sm font-bold text-gray-700 mb-1">Firma (URL de imagen)</label>
+                    <input type="url" id="firma-input" class="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-blue-500 bg-gray-50 focus:bg-white outline-none text-sm" placeholder="https://ejemplo.com/mifirma.png" />
+                    <p class="text-[10px] text-gray-400 mt-1">Opcional. Pega el link de la imagen de tu firma.</p>
+                </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Correo Electrónico</label>
-                    <input type="email" id="email-input" required class="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none" placeholder="tu@email.com" />
+                    <label class="block text-sm font-bold text-gray-700 mb-1">Correo Electrónico</label>
+                    <input type="email" id="email-input" required class="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-blue-500 bg-gray-50 focus:bg-white outline-none" placeholder="correo@escuela.com" />
                 </div>
-
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Contraseña</label>
-                    <input type="password" id="password-input" required class="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none" placeholder="••••••••" />
+                    <label class="block text-sm font-bold text-gray-700 mb-1">Contraseña</label>
+                    <input type="password" id="password-input" required class="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-blue-500 bg-gray-50 focus:bg-white outline-none" placeholder="••••••••" />
                 </div>
-
-                <button type="submit" id="submit-btn" disabled class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-xl transition-all duration-200 flex items-center justify-center disabled:opacity-70 disabled:cursor-not-allowed">
-                    <span id="submit-spinner" class="hidden animate-spin rounded-full h-5 w-5 border-b-2 border-white"></span>
-                    <span id="submit-text">Entrar</span>
+                <button type="submit" id="submit-btn" disabled class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 px-4 rounded-xl transition-all shadow-lg shadow-blue-600/30 flex items-center justify-center disabled:opacity-70">
+                    <span id="submit-spinner" class="hidden animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></span>
+                    <span id="submit-text">Entrar al Sistema</span>
                 </button>
             </form>
-
-            <div class="mt-8 text-center">
+            <div class="mt-8 text-center border-t border-gray-100 pt-6">
                 <p class="text-sm text-gray-600">
-                    <span id="toggle-text">¿No tienes una cuenta?</span>
-                    <button type="button" id="toggle-mode-btn" class="ml-2 text-blue-600 font-semibold hover:text-blue-800">Regístrate aquí</button>
+                    <span id="toggle-text">¿No tienes cuenta?</span>
+                    <button type="button" id="toggle-mode-btn" class="ml-1 text-blue-600 font-extrabold hover:text-blue-800 transition-colors">Regístrate</button>
                 </p>
             </div>
         </div>
     </div>
 
-    <!-- 3. PANTALLA DASHBOARD (Con Menús y Vistas) -->
-    <div id="dashboard-view" class="hidden h-screen bg-gray-50 flex-row overflow-hidden w-full relative">
+    <!-- DASHBOARD -->
+    <div id="dashboard-view" class="hidden flex-1 h-screen flex-row overflow-hidden w-full relative">
         
-        <!-- Barra Lateral de Menús -->
+        <!-- Sidebar -->
         <aside class="w-64 bg-white border-r border-gray-200 flex flex-col h-full shadow-sm z-10 shrink-0">
-            <div class="p-5 border-b border-gray-100 flex items-center justify-center bg-blue-600 text-white">
-                <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
-                <h2 class="font-bold text-lg tracking-wide">Leccionario</h2>
+            <div class="p-5 border-b border-gray-100 flex items-center bg-blue-700 text-white shadow-inner">
+                <div class="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center mr-3 backdrop-blur-sm">
+                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
+                </div>
+                <h2 class="font-extrabold text-lg tracking-wide">Sistema Pro</h2>
             </div>
             
-            <!-- Navegación -->
-            <nav class="flex-1 overflow-y-auto py-4 space-y-1 px-3">
-                <button data-target="view-usuarios" class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors bg-blue-50 text-blue-700">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
-                    Usuarios
+            <nav class="flex-1 overflow-y-auto py-6 space-y-1.5 px-3">
+                <button data-target="view-mipanel" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all bg-blue-50 text-blue-700">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg> Mi Panel
                 </button>
-                <button data-target="view-configuracion" class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100 transition-colors">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-                    Configuración
+                <button data-target="view-usuarios" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold text-gray-600 hover:bg-gray-100 hover:text-gray-900 transition-all">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg> Usuarios
                 </button>
-                <button data-target="view-horarios" class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100 transition-colors">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-                    Gestión de Horarios
+                <button data-target="view-estructura" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold text-gray-600 hover:bg-gray-100 hover:text-gray-900 transition-all">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg> Estructura
                 </button>
-                <button data-target="view-distributivos" class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100 transition-colors">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
-                    Distributivos
+                <button data-target="view-horarios" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold text-gray-600 hover:bg-gray-100 hover:text-gray-900 transition-all">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg> Horarios
                 </button>
-                <button data-target="view-reportes" class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100 transition-colors">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
-                    Reportes
+                <div class="my-4 border-t border-gray-100"></div>
+                <button data-target="view-reportes" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold text-gray-600 hover:bg-gray-100 hover:text-gray-900 transition-all">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg> Reportes
                 </button>
             </nav>
 
-            <!-- Panel de Sesión Actual -->
             <div class="p-4 border-t border-gray-200 bg-gray-50">
-                <div class="flex items-center gap-3 mb-4">
-                    <div id="sidebar-avatar" class="w-10 h-10 bg-indigo-100 text-indigo-700 rounded-full flex items-center justify-center font-bold text-lg shrink-0">U</div>
-                    <div class="overflow-hidden">
-                        <p id="sidebar-name" class="text-sm font-bold text-gray-800 truncate">Usuario</p>
-                        <p id="sidebar-email" class="text-xs text-gray-500 truncate">email@test.com</p>
-                    </div>
-                </div>
-                <button id="logout-btn" class="w-full bg-white hover:bg-red-50 text-red-600 font-semibold py-2 px-4 rounded-lg transition-colors duration-200 text-sm border border-red-200 shadow-sm">
-                    Cerrar Sesión
+                <button id="logout-btn" class="w-full bg-white hover:bg-red-50 text-red-600 font-bold py-2.5 px-4 rounded-xl transition-colors border border-red-200 shadow-sm text-sm flex items-center justify-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg> Salir
                 </button>
             </div>
         </aside>
 
-        <!-- Área Principal de Vistas -->
-        <main class="flex-1 overflow-y-auto bg-white">
+        <!-- Contenido Principal -->
+        <div class="flex-1 flex flex-col min-w-0 bg-gray-50/50">
             
-            <!-- VISTA: USUARIOS -->
-            <div id="view-usuarios" class="dashboard-view-section p-8">
-                <div class="flex justify-between items-center mb-6">
-                    <h1 class="text-2xl font-extrabold text-gray-900">Directorio de Usuarios</h1>
-                    
-                    <!-- Botón para abrir modal de nuevo usuario -->
-                    <div class="flex items-center gap-4">
-                        <span id="users-count" class="bg-blue-100 text-blue-800 text-sm font-medium px-3 py-1 rounded-full">0 registrados</span>
-                        <button id="btn-abrir-modal-usuario" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors shadow-sm flex items-center gap-2">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
-                            Nuevo Usuario
-                        </button>
+            <!-- Navbar Superior -->
+            <header class="bg-white border-b border-gray-200 h-16 flex items-center justify-between px-6 shrink-0 shadow-sm z-10 sticky top-0">
+                <div class="flex items-center gap-4">
+                    <h1 id="current-view-title" class="text-xl font-extrabold text-gray-900 hidden md:block">Mi Panel</h1>
+                    <div id="data-loading-indicator" class="hidden bg-blue-50 text-blue-700 px-3 py-1 rounded-full flex items-center gap-2 text-xs font-bold border border-blue-100">
+                        <div class="animate-spin h-3.5 w-3.5 border-2 border-blue-600 border-t-transparent rounded-full"></div> Sincronizando...
                     </div>
                 </div>
-
-                <div class="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
-                    <table class="min-w-full divide-y divide-gray-200">
-                        <thead class="bg-gray-50">
-                            <tr>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Usuario</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID Sistema</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Firma Digital</th>
-                                <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody id="users-table-body" class="bg-white divide-y divide-gray-200">
-                            <tr><td colspan="4" class="px-6 py-10 text-center text-gray-400">Cargando usuarios...</td></tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <!-- VISTA: CONFIGURACIÓN -->
-            <div id="view-configuracion" class="dashboard-view-section p-8 hidden">
-                <h1 class="text-2xl font-extrabold text-gray-900 mb-6">Configuración del Sistema</h1>
                 
-                <!-- Periodo Lectivo Principal -->
-                <div class="bg-blue-50 border border-blue-200 rounded-xl p-6 mb-8 shadow-sm">
-                    <div class="flex justify-between items-center mb-4">
-                        <div>
-                            <h2 class="text-lg font-bold text-blue-900 flex items-center gap-2">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-                                Periodo Lectivo Activo
-                            </h2>
-                            <p class="text-sm text-blue-700 mt-1">Todas las secciones, áreas y materias se vincularán a este periodo temporal.</p>
+                <div class="flex items-center gap-6">
+                    <div class="flex items-center bg-gray-50 px-3 py-1.5 rounded-xl border border-gray-200 shadow-inner">
+                        <span class="text-[10px] font-extrabold text-gray-400 uppercase tracking-wider mr-2 hidden sm:inline">Año Lectivo:</span>
+                        <select id="navbar-global-anio" class="bg-transparent text-sm font-extrabold text-blue-700 outline-none cursor-pointer pr-2">
+                            <option value="">Seleccione...</option>
+                        </select>
+                    </div>
+                    <div class="flex items-center gap-3 pl-6 border-l border-gray-200 cursor-pointer hover:opacity-80 transition-opacity" onclick="document.querySelector('[data-target=\'view-mipanel\']').click()">
+                        <div class="text-right hidden sm:block">
+                            <p id="topbar-name" class="text-sm font-bold text-gray-800 leading-tight">Cargando...</p>
+                            <p id="topbar-role" class="text-xs font-semibold text-blue-600">Usuario</p>
                         </div>
-                        <button class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors shadow-sm">
-                            + Nuevo Periodo
-                        </button>
-                    </div>
-                    <select class="w-full max-w-md px-4 py-3 rounded-lg border border-blue-300 focus:ring-2 focus:ring-blue-500 outline-none bg-white font-bold text-gray-800 cursor-pointer shadow-sm">
-                        <option>2024 - 2025 (Periodo Actual)</option>
-                        <option>2023 - 2024 (Histórico)</option>
-                    </select>
-                </div>
-
-                <!-- Grid de Configuraciones Secundarias -->
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <!-- Secciones -->
-                    <div class="border border-gray-200 rounded-xl p-5 shadow-sm bg-white">
-                        <h3 class="font-bold text-gray-800 mb-4 flex items-center justify-between border-b pb-2">
-                            Secciones
-                            <button class="bg-gray-100 hover:bg-gray-200 text-gray-600 px-2 py-1 rounded text-xs font-bold transition-colors">+ Añadir</button>
-                        </h3>
-                        <ul class="space-y-2 text-sm text-gray-600">
-                            <li class="flex justify-between bg-gray-50 border border-gray-100 p-3 rounded-lg">Matutina <span class="cursor-pointer text-gray-400 hover:text-blue-600">✎</span></li>
-                            <li class="flex justify-between bg-gray-50 border border-gray-100 p-3 rounded-lg">Vespertina <span class="cursor-pointer text-gray-400 hover:text-blue-600">✎</span></li>
-                            <li class="flex justify-between bg-gray-50 border border-gray-100 p-3 rounded-lg">Nocturna <span class="cursor-pointer text-gray-400 hover:text-blue-600">✎</span></li>
-                        </ul>
-                    </div>
-
-                    <!-- Áreas -->
-                    <div class="border border-gray-200 rounded-xl p-5 shadow-sm bg-white">
-                        <h3 class="font-bold text-gray-800 mb-4 flex items-center justify-between border-b pb-2">
-                            Áreas de Estudio
-                            <button class="bg-gray-100 hover:bg-gray-200 text-gray-600 px-2 py-1 rounded text-xs font-bold transition-colors">+ Añadir</button>
-                        </h3>
-                        <ul class="space-y-2 text-sm text-gray-600">
-                            <li class="flex justify-between bg-gray-50 border border-gray-100 p-3 rounded-lg">Ciencias Exactas <span class="cursor-pointer text-gray-400 hover:text-blue-600">✎</span></li>
-                            <li class="flex justify-between bg-gray-50 border border-gray-100 p-3 rounded-lg">Lengua y Literatura <span class="cursor-pointer text-gray-400 hover:text-blue-600">✎</span></li>
-                            <li class="flex justify-between bg-gray-50 border border-gray-100 p-3 rounded-lg">Ciencias Naturales <span class="cursor-pointer text-gray-400 hover:text-blue-600">✎</span></li>
-                        </ul>
-                    </div>
-
-                    <!-- Materias -->
-                    <div class="border border-gray-200 rounded-xl p-5 shadow-sm bg-white">
-                        <h3 class="font-bold text-gray-800 mb-4 flex items-center justify-between border-b pb-2">
-                            Materias
-                            <button class="bg-gray-100 hover:bg-gray-200 text-gray-600 px-2 py-1 rounded text-xs font-bold transition-colors">+ Añadir</button>
-                        </h3>
-                        <ul class="space-y-2 text-sm text-gray-600">
-                            <li class="flex justify-between bg-gray-50 border border-gray-100 p-3 rounded-lg">Matemáticas <span class="cursor-pointer text-gray-400 hover:text-blue-600">✎</span></li>
-                            <li class="flex justify-between bg-gray-50 border border-gray-100 p-3 rounded-lg">Física <span class="cursor-pointer text-gray-400 hover:text-blue-600">✎</span></li>
-                            <li class="flex justify-between bg-gray-50 border border-gray-100 p-3 rounded-lg">Química <span class="cursor-pointer text-gray-400 hover:text-blue-600">✎</span></li>
-                        </ul>
+                        <div id="topbar-avatar" class="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 text-white rounded-xl flex items-center justify-center font-bold text-lg shadow-sm"></div>
                     </div>
                 </div>
-            </div>
+            </header>
 
-            <!-- VISTA: HORARIOS -->
-            <div id="view-horarios" class="dashboard-view-section p-8 hidden flex-col items-center justify-center min-h-[80vh] text-center">
-                <div class="w-20 h-20 bg-gray-50 text-gray-300 rounded-full flex items-center justify-center mb-4"><svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg></div>
-                <h2 class="text-xl font-bold text-gray-700">Gestión de Horarios</h2>
-                <p class="text-gray-500 mt-2 max-w-md">Módulo en construcción. Aquí podrás crear matrices de horarios semanales y asignar docentes a horas clase específicas.</p>
-            </div>
-
-            <!-- VISTA: DISTRIBUTIVOS -->
-            <div id="view-distributivos" class="dashboard-view-section p-8 hidden flex-col items-center justify-center min-h-[80vh] text-center">
-                <div class="w-20 h-20 bg-gray-50 text-gray-300 rounded-full flex items-center justify-center mb-4"><svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg></div>
-                <h2 class="text-xl font-bold text-gray-700">Distributivos</h2>
-                <p class="text-gray-500 mt-2 max-w-md">Módulo en construcción. Permite revisar la carga horaria total de cada docente y generar documentos de distribución de trabajo.</p>
-            </div>
-
-            <!-- VISTA: REPORTES -->
-            <div id="view-reportes" class="dashboard-view-section p-8 hidden flex-col items-center justify-center min-h-[80vh] text-center">
-                <div class="w-20 h-20 bg-gray-50 text-gray-300 rounded-full flex items-center justify-center mb-4"><svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg></div>
-                <h2 class="text-xl font-bold text-gray-700">Reportes y Estadísticas</h2>
-                <p class="text-gray-500 mt-2 max-w-md">Módulo en construcción. Genera reportes en PDF, exporta a Excel y visualiza el estado del periodo lectivo.</p>
-            </div>
-
-        </main>
-
-        <!-- MODAL: AÑADIR NUEVO USUARIO -->
-        <div id="modal-nuevo-usuario" class="hidden fixed inset-0 bg-gray-900 bg-opacity-50 z-50 flex items-center justify-center p-4 backdrop-blur-sm transition-opacity">
-            <div class="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 relative">
-                <button id="btn-cerrar-modal-x" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                </button>
-                <h3 class="text-xl font-bold mb-5 text-gray-800">Registrar Nuevo Usuario</h3>
+            <main class="flex-1 overflow-y-auto p-4 md:p-8 relative">
                 
-                <form id="form-nuevo-usuario" class="space-y-4">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Nombre Completo</label>
-                        <input type="text" id="new-user-name" required class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Ej. Ana Gómez">
+                <!-- 1. VISTA: MI PANEL (DASHBOARD DEL USUARIO) -->
+                <div id="view-mipanel" class="dashboard-view-section h-full flex flex-col max-w-6xl mx-auto">
+                    
+                    <!-- Tarjeta de Bienvenida -->
+                    <div class="bg-white rounded-3xl p-6 md:p-8 shadow-sm border border-gray-200 mb-8 flex flex-col md:flex-row items-center gap-8 relative overflow-hidden">
+                        <div class="absolute top-0 right-0 w-64 h-64 bg-blue-50 rounded-full -mr-20 -mt-20 z-0"></div>
+                        
+                        <div class="w-24 h-24 bg-gradient-to-br from-blue-500 to-indigo-600 text-white rounded-3xl flex items-center justify-center font-extrabold text-4xl shadow-lg z-10 shrink-0" id="panel-avatar"></div>
+                        
+                        <div class="flex-1 z-10 text-center md:text-left">
+                            <h2 class="text-3xl font-extrabold text-gray-900 mb-1">¡Hola, <span id="panel-name">Usuario</span>!</h2>
+                            <p class="text-gray-500 font-medium mb-4 flex items-center justify-center md:justify-start gap-2">
+                                <span class="bg-blue-100 text-blue-800 px-2 py-0.5 rounded text-xs font-bold uppercase" id="panel-role">Rol</span>
+                                Bienvenido a tu espacio de trabajo.
+                            </p>
+                        </div>
+
+                        <div class="z-10 bg-gray-50 p-4 rounded-2xl border border-gray-200 w-full md:w-64 shrink-0 text-center">
+                            <p class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Tu Firma Digital</p>
+                            <div class="h-16 firma-box bg-white rounded-xl border border-gray-200 flex items-center justify-center overflow-hidden" id="panel-firma-container">
+                                <!-- Imagen insertada vía JS -->
+                            </div>
+                        </div>
                     </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Correo Electrónico</label>
-                        <input type="email" id="new-user-email" required class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none" placeholder="ana@email.com">
+
+                    <!-- Leccionario del Día -->
+                    <div class="flex-1 bg-white rounded-3xl p-6 md:p-8 shadow-sm border border-gray-200 flex flex-col">
+                        <div class="flex justify-between items-center mb-6">
+                            <h3 class="text-xl font-extrabold text-gray-900 flex items-center gap-2">
+                                <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                                Leccionario de Hoy <span id="panel-today-name" class="text-blue-600 ml-1"></span>
+                            </h3>
+                        </div>
+                        
+                        <div id="panel-warning" class="hidden bg-yellow-50 text-yellow-800 p-4 rounded-2xl border border-yellow-200 text-sm font-medium mb-4">
+                            Selecciona un Año Lectivo en la barra superior para ver tu horario.
+                        </div>
+
+                        <div class="flex-1 overflow-y-auto pr-2" id="panel-schedule-list">
+                            <!-- Horario inyectado por JS -->
+                        </div>
                     </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Contraseña</label>
-                        <input type="password" id="new-user-password" required class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none" placeholder="••••••••">
+                </div>
+
+                <!-- 2. VISTA: USUARIOS (Rediseño con Cards) -->
+                <div id="view-usuarios" class="dashboard-view-section hidden h-full flex flex-col max-w-7xl mx-auto">
+                    <div class="flex justify-between items-end mb-6 shrink-0">
+                        <div>
+                            <h1 class="text-3xl font-extrabold text-gray-900">Directorio de Usuarios</h1>
+                            <p class="text-gray-500 text-sm mt-1">Gestión de personal y accesos</p>
+                        </div>
+                        <span id="users-count" class="bg-blue-100 text-blue-800 text-sm font-extrabold px-4 py-2 rounded-xl border border-blue-200">0 Registrados</span>
                     </div>
                     
-                    <div id="modal-error-msg" class="hidden text-sm text-red-600 bg-red-50 p-3 rounded border border-red-200"></div>
-
-                    <div class="flex justify-end gap-3 mt-6 pt-4 border-t border-gray-100">
-                        <button type="button" id="btn-cancelar-modal" class="px-5 py-2.5 text-sm font-semibold text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors">Cancelar</button>
-                        <button type="submit" id="btn-guardar-modal" class="px-5 py-2.5 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors flex items-center">
-                            Guardar Usuario
-                        </button>
+                    <div class="flex-1 overflow-y-auto pr-2 pb-8">
+                        <div id="users-grid" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                            <!-- Cards inyectadas vía JS -->
+                        </div>
                     </div>
-                </form>
-            </div>
+                </div>
+
+                <!-- 3. VISTA: ESTRUCTURA ACADÉMICA -->
+                <div id="view-estructura" class="dashboard-view-section hidden max-w-6xl mx-auto">
+                    <div class="mb-6">
+                        <h1 class="text-3xl font-extrabold text-gray-900">Estructura Académica</h1>
+                        <p class="text-gray-500 text-sm mt-1">Configuración general de la institución</p>
+                    </div>
+                    
+                    <div class="bg-white rounded-3xl border border-gray-200 shadow-sm p-6 mb-8 relative overflow-hidden">
+                        <div class="absolute top-0 right-0 w-32 h-32 bg-indigo-50 rounded-full -mr-10 -mt-10 z-0"></div>
+                        <h2 class="text-lg font-extrabold text-gray-800 mb-4 flex items-center gap-2 relative z-10">
+                            <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                            Gestión de Años Lectivos
+                        </h2>
+                        <form id="form-anios" class="flex flex-col sm:flex-row gap-3 mb-5 relative z-10">
+                            <input type="text" id="input-anio" required placeholder="Ej. 2024-2025" class="flex-1 px-4 py-3 bg-gray-50 border border-gray-300 rounded-xl focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none font-medium">
+                            <button type="button" id="cancel-anios" class="hidden bg-gray-200 hover:bg-gray-300 text-gray-700 px-6 py-3 rounded-xl font-bold transition-colors">Cancelar</button>
+                            <button type="submit" id="submit-anios" class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-xl font-bold transition-colors shadow-md">Guardar Año</button>
+                        </form>
+                        <div class="overflow-x-auto border border-gray-100 rounded-xl max-h-48 overflow-y-auto relative z-10 shadow-inner">
+                            <table class="min-w-full divide-y divide-gray-100"><tbody id="list-anios" class="bg-white divide-y divide-gray-50 text-sm"></tbody></table>
+                        </div>
+                    </div>
+
+                    <div id="estructura-warning" class="bg-yellow-50 text-yellow-800 p-5 rounded-2xl border border-yellow-200 flex items-center gap-3 shadow-sm">
+                        <svg class="w-6 h-6 text-yellow-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        <p class="font-medium text-sm">Para configurar Secciones, Cursos, Áreas y Materias, <strong>selecciona un Año Lectivo</strong> en la barra superior.</p>
+                    </div>
+
+                    <div id="estructura-dependiente" class="hidden grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <!-- SECCIONES -->
+                        <div class="bg-white rounded-3xl border border-gray-200 shadow-sm p-6 flex flex-col hover:border-blue-200 transition-colors">
+                            <h2 class="text-base font-extrabold text-gray-800 mb-4 border-b border-gray-100 pb-3 flex items-center gap-2"><div class="w-2 h-2 rounded-full bg-blue-500"></div> Secciones</h2>
+                            <form id="form-secciones" class="flex gap-2 mb-4 shrink-0">
+                                <input type="text" id="input-seccion" required placeholder="Ej. Matutina" class="flex-1 px-3 py-2.5 bg-gray-50 border border-gray-300 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none">
+                                <button type="button" id="cancel-secciones" class="hidden bg-gray-200 text-gray-700 px-3 py-2.5 rounded-xl text-sm font-bold">X</button>
+                                <button type="submit" id="submit-secciones" class="bg-blue-600 text-white px-4 py-2.5 rounded-xl text-sm font-bold">Añadir</button>
+                            </form>
+                            <div class="overflow-y-auto flex-1 border border-gray-100 rounded-xl max-h-48 bg-gray-50/50"><table class="min-w-full"><tbody id="list-secciones" class="divide-y divide-gray-100 text-sm"></tbody></table></div>
+                        </div>
+
+                        <!-- CURSOS -->
+                        <div class="bg-white rounded-3xl border border-gray-200 shadow-sm p-6 flex flex-col hover:border-green-200 transition-colors">
+                            <h2 class="text-base font-extrabold text-gray-800 mb-4 border-b border-gray-100 pb-3 flex items-center gap-2"><div class="w-2 h-2 rounded-full bg-green-500"></div> Cursos</h2>
+                            <form id="form-cursos" class="flex flex-col gap-2 mb-4 shrink-0">
+                                <select id="select-seccion-cursos" required class="w-full px-3 py-2.5 bg-gray-50 border border-gray-300 rounded-xl text-sm font-medium focus:bg-white focus:ring-2 focus:ring-green-500 outline-none">
+                                    <option value="">Primero seleccione Sección...</option>
+                                </select>
+                                <div class="flex gap-2">
+                                    <input type="text" id="input-curso" required placeholder="Ej. Octavo B" class="flex-1 px-3 py-2.5 bg-gray-50 border border-gray-300 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-green-500 outline-none">
+                                    <button type="button" id="cancel-cursos" class="hidden bg-gray-200 text-gray-700 px-3 py-2.5 rounded-xl text-sm font-bold">X</button>
+                                    <button type="submit" id="submit-cursos" class="bg-green-600 text-white px-4 py-2.5 rounded-xl text-sm font-bold">Añadir</button>
+                                </div>
+                            </form>
+                            <div class="overflow-y-auto flex-1 border border-gray-100 rounded-xl max-h-48 bg-gray-50/50"><table class="min-w-full"><tbody id="list-cursos" class="divide-y divide-gray-100 text-sm"></tbody></table></div>
+                        </div>
+
+                        <!-- ÁREAS -->
+                        <div class="bg-white rounded-3xl border border-gray-200 shadow-sm p-6 flex flex-col hover:border-purple-200 transition-colors">
+                            <h2 class="text-base font-extrabold text-gray-800 mb-4 border-b border-gray-100 pb-3 flex items-center gap-2"><div class="w-2 h-2 rounded-full bg-purple-500"></div> Áreas Académicas</h2>
+                            <form id="form-areas" class="flex gap-2 mb-4 shrink-0">
+                                <input type="text" id="input-area" required placeholder="Ej. Ciencias Exactas" class="flex-1 px-3 py-2.5 bg-gray-50 border border-gray-300 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-purple-500 outline-none">
+                                <button type="button" id="cancel-areas" class="hidden bg-gray-200 text-gray-700 px-3 py-2.5 rounded-xl text-sm font-bold">X</button>
+                                <button type="submit" id="submit-areas" class="bg-purple-600 text-white px-4 py-2.5 rounded-xl text-sm font-bold">Añadir</button>
+                            </form>
+                            <div class="overflow-y-auto flex-1 border border-gray-100 rounded-xl max-h-48 bg-gray-50/50"><table class="min-w-full"><tbody id="list-areas" class="divide-y divide-gray-100 text-sm"></tbody></table></div>
+                        </div>
+
+                        <!-- MATERIAS -->
+                        <div class="bg-white rounded-3xl border border-gray-200 shadow-sm p-6 flex flex-col hover:border-orange-200 transition-colors">
+                            <h2 class="text-base font-extrabold text-gray-800 mb-4 border-b border-gray-100 pb-3 flex items-center gap-2"><div class="w-2 h-2 rounded-full bg-orange-500"></div> Materias</h2>
+                            <form id="form-materias" class="flex flex-col gap-2 mb-4 shrink-0">
+                                <select id="select-area-materias" required class="w-full px-3 py-2.5 bg-gray-50 border border-gray-300 rounded-xl text-sm font-medium focus:bg-white focus:ring-2 focus:ring-orange-500 outline-none">
+                                    <option value="">Primero seleccione Área...</option>
+                                </select>
+                                <div class="flex gap-2">
+                                    <input type="text" id="input-materia" required placeholder="Ej. Matemáticas" class="flex-1 px-3 py-2.5 bg-gray-50 border border-gray-300 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-orange-500 outline-none">
+                                    <button type="button" id="cancel-materias" class="hidden bg-gray-200 text-gray-700 px-3 py-2.5 rounded-xl text-sm font-bold">X</button>
+                                    <button type="submit" id="submit-materias" class="bg-orange-600 text-white px-4 py-2.5 rounded-xl text-sm font-bold">Añadir</button>
+                                </div>
+                            </form>
+                            <div class="overflow-y-auto flex-1 border border-gray-100 rounded-xl max-h-48 bg-gray-50/50"><table class="min-w-full"><tbody id="list-materias" class="divide-y divide-gray-100 text-sm"></tbody></table></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 4. VISTA: HORARIOS (Mejorada) -->
+                <div id="view-horarios" class="dashboard-view-section hidden h-full flex-col max-w-7xl mx-auto">
+                    <div class="mb-6 shrink-0">
+                        <h1 class="text-3xl font-extrabold text-gray-900">Planificación de Horarios</h1>
+                        <p class="text-gray-500 text-sm mt-1">Configura clases y recesos semanales</p>
+                    </div>
+                    
+                    <div id="h-warning" class="bg-yellow-50 text-yellow-800 p-5 rounded-2xl border border-yellow-200 flex items-center gap-3 mb-6 shrink-0 shadow-sm">
+                        <svg class="w-6 h-6 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        <p class="font-medium text-sm">Selecciona un <strong>Año Lectivo</strong> en la barra superior para ver y editar horarios.</p>
+                    </div>
+
+                    <div id="h-content" class="hidden flex-col flex-1 min-h-0">
+                        <!-- Filtros Superiores -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6 shrink-0 bg-white p-5 rounded-2xl shadow-sm border border-gray-200">
+                            <div>
+                                <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Sección</label>
+                                <select id="h-sel-seccion" class="w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded-xl outline-none focus:bg-white focus:ring-2 focus:ring-blue-500 font-medium">
+                                    <option value="">Seleccionar Sección...</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Curso</label>
+                                <select id="h-sel-curso" class="w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded-xl outline-none focus:bg-white focus:ring-2 focus:ring-blue-500 font-medium">
+                                    <option value="">Seleccionar Curso...</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Formulario Nueva Franja -->
+                        <div id="h-form-container" class="hidden bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-2xl border border-blue-100 mb-6 shrink-0 shadow-sm">
+                            <h3 class="font-extrabold text-blue-900 mb-4 flex items-center gap-2"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg> Nueva Franja Horaria</h3>
+                            <form id="form-franjas" class="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-6 gap-4 items-end">
+                                <!-- Tipo y Día -->
+                                <div>
+                                    <label class="block text-xs font-bold text-blue-800 uppercase mb-1">Tipo</label>
+                                    <select id="h-tipo" required class="w-full px-3 py-2.5 border border-blue-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 bg-white text-sm">
+                                        <option value="clase">Clase</option>
+                                        <option value="receso">Receso</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-blue-800 uppercase mb-1">Día</label>
+                                    <select id="h-dia" required class="w-full px-3 py-2.5 border border-blue-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 bg-white text-sm">
+                                        <option value="1">Lunes</option><option value="2">Martes</option><option value="3">Miércoles</option><option value="4">Jueves</option><option value="5">Viernes</option>
+                                        <option value="todos" class="font-bold text-blue-600">Todos los días</option>
+                                    </select>
+                                </div>
+                                <!-- Horas -->
+                                <div>
+                                    <label class="block text-xs font-bold text-blue-800 uppercase mb-1">Inicio</label>
+                                    <input type="time" id="h-inicio" required class="w-full px-3 py-2.5 border border-blue-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 bg-white text-sm">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-blue-800 uppercase mb-1">Fin</label>
+                                    <input type="time" id="h-fin" required class="w-full px-3 py-2.5 border border-blue-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 bg-white text-sm">
+                                </div>
+                                <!-- Materia y Profesor -->
+                                <div class="lg:col-span-2 space-y-4 md:space-y-0 md:flex md:gap-4 lg:block">
+                                    <div class="flex-1 w-full lg:mb-4">
+                                        <label class="block text-xs font-bold text-blue-800 uppercase mb-1">Materia / Descripción</label>
+                                        <input type="text" id="h-desc" required placeholder="Ej. Matemáticas" class="w-full px-3 py-2.5 border border-blue-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 bg-white text-sm">
+                                    </div>
+                                    <div class="flex-1 w-full" id="h-profesor-container">
+                                        <label class="block text-xs font-bold text-blue-800 uppercase mb-1">Profesor</label>
+                                        <select id="h-profesor" class="w-full px-3 py-2.5 border border-blue-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 bg-white text-sm">
+                                            <option value="">Sin asignar...</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                
+                                <div class="lg:col-span-6 flex gap-3 mt-2">
+                                    <button type="button" id="cancel-franjas" class="hidden bg-gray-400 hover:bg-gray-500 text-white px-6 py-2.5 rounded-xl font-bold transition-colors">Cancelar</button>
+                                    <button type="submit" id="submit-franjas" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-xl font-bold transition-colors shadow-md">Guardar Franja</button>
+                                </div>
+                            </form>
+                        </div>
+
+                        <!-- Renderizado de la Semana -->
+                        <div class="bg-white border border-gray-200 rounded-3xl shadow-sm flex-1 overflow-hidden flex flex-col min-h-0">
+                            <div class="p-4 border-b border-gray-100 bg-gray-50 flex justify-between items-center shrink-0">
+                                <h3 class="font-extrabold text-gray-800">Vista Semanal</h3>
+                                <div class="flex gap-4 text-xs font-bold">
+                                    <span class="flex items-center gap-1"><div class="w-3 h-3 bg-blue-100 border border-blue-300 rounded"></div> Clase</span>
+                                    <span class="flex items-center gap-1"><div class="w-3 h-3 bg-yellow-100 border border-yellow-300 rounded"></div> Receso</span>
+                                </div>
+                            </div>
+                            <div class="overflow-x-auto overflow-y-auto flex-1 p-4">
+                                <div class="flex gap-4 min-w-[800px] h-full" id="semana-grid">
+                                    <!-- Inyectado por JS (Lunes a Viernes) -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 5. VISTA: REPORTES -->
+                <div id="view-reportes" class="dashboard-view-section hidden h-full flex flex-col max-w-6xl mx-auto">
+                    <div class="mb-8 shrink-0">
+                        <h1 class="text-3xl font-extrabold text-gray-900">Reportes y Analíticas</h1>
+                        <p class="text-gray-500 text-sm mt-1">Resumen general del sistema escolar</p>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                        <div class="bg-white p-6 rounded-3xl border border-gray-200 shadow-sm flex items-center gap-4">
+                            <div class="w-14 h-14 bg-blue-100 text-blue-600 rounded-2xl flex items-center justify-center"><svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg></div>
+                            <div><p class="text-gray-500 text-sm font-bold uppercase">Usuarios</p><h3 class="text-3xl font-extrabold text-gray-900" id="rep-usuarios">0</h3></div>
+                        </div>
+                        <div class="bg-white p-6 rounded-3xl border border-gray-200 shadow-sm flex items-center gap-4">
+                            <div class="w-14 h-14 bg-green-100 text-green-600 rounded-2xl flex items-center justify-center"><svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg></div>
+                            <div><p class="text-gray-500 text-sm font-bold uppercase">Cursos</p><h3 class="text-3xl font-extrabold text-gray-900" id="rep-cursos">0</h3></div>
+                        </div>
+                        <div class="bg-white p-6 rounded-3xl border border-gray-200 shadow-sm flex items-center gap-4">
+                            <div class="w-14 h-14 bg-purple-100 text-purple-600 rounded-2xl flex items-center justify-center"><svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg></div>
+                            <div><p class="text-gray-500 text-sm font-bold uppercase">Materias</p><h3 class="text-3xl font-extrabold text-gray-900" id="rep-materias">0</h3></div>
+                        </div>
+                        <div class="bg-white p-6 rounded-3xl border border-gray-200 shadow-sm flex items-center gap-4">
+                            <div class="w-14 h-14 bg-orange-100 text-orange-600 rounded-2xl flex items-center justify-center"><svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg></div>
+                            <div><p class="text-gray-500 text-sm font-bold uppercase">Años Lectivos</p><h3 class="text-3xl font-extrabold text-gray-900" id="rep-anios">0</h3></div>
+                        </div>
+                    </div>
+                </div>
+
+            </main>
         </div>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        // IMPORTANTE: Hemos importado deleteDoc y doc para poder eliminar elementos
-        import { getFirestore, collection, getDocs, addDoc, serverTimestamp, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, getDocs, addDoc, updateDoc, deleteDoc, doc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // Tu configuración real de Firebase
-        const firebaseConfig = {
-            apiKey: "AIzaSyB1eXkCiF5VZcTin0W5hBQv2X2PEE2bAJc",
-            authDomain: "leccionario-virtual.firebaseapp.com",
-            projectId: "leccionario-virtual",
-            storageBucket: "leccionario-virtual.firebasestorage.app",
-            messagingSenderId: "731785058376",
-            appId: "1:731785058376:web:161550bdc3941e1a64207d",
-            measurementId: "G-ZR0SXQDNY9"
-        };
-
+        // CONFIGURACIÓN FIREBASE (Mantenida intacta)
+        const firebaseConfig = { apiKey: "AIzaSyB1eXkCiF5VZcTin0W5hBQv2X2PEE2bAJc", authDomain: "leccionario-virtual.firebaseapp.com", projectId: "leccionario-virtual", storageBucket: "leccionario-virtual.firebasestorage.app", messagingSenderId: "731785058376", appId: "1:731785058376:web:161550bdc3941e1a64207d", measurementId: "G-ZR0SXQDNY9" };
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
-        const getUsersCollection = () => collection(db, 'users');
 
-        let isSystemReady = false;
-        let isLoginMode = true;
+        // ESTADO GLOBAL
         let currentUser = null;
-        let isLoading = false;
-        let hasLoadedUsers = false;
+        let isLoginMode = true;
+        let memoryDB = { users: [], anios: [], secciones: [], areas: [], materias: [], cursos: [], franjas: [] };
+        let currentEdit = { anios: null, secciones: null, areas: null, materias: null, cursos: null, franjas: null };
+        let activeGlobalAnio = ""; 
 
-        const views = { systemError: document.getElementById('system-error-view'), auth: document.getElementById('auth-view'), dashboard: document.getElementById('dashboard-view') };
+        const colMap = { 'users': 'users', 'anios': 'anios_lectivos', 'secciones': 'secciones', 'areas': 'areas', 'materias': 'materias', 'cursos': 'cursos', 'franjas': 'franjas_horarias' };
+        const diasSemana = { '1': 'Lunes', '2': 'Martes', '3': 'Miércoles', '4': 'Jueves', '5': 'Viernes' };
+
+        // SISTEMA DE MODALES
+        const modalOverlay = document.getElementById('modal-overlay');
+        const modalContainer = document.getElementById('modal-container');
         
-        // Elementos actualizados del nuevo diseño
-        const elements = { 
-            loadingOverlay: document.getElementById('loading-overlay'), formTitle: document.getElementById('form-title'), formSubtitle: document.getElementById('form-subtitle'), nameContainer: document.getElementById('name-field-container'), nameInput: document.getElementById('name-input'), emailInput: document.getElementById('email-input'), passwordInput: document.getElementById('password-input'), submitBtn: document.getElementById('submit-btn'), submitSpinner: document.getElementById('submit-spinner'), submitText: document.getElementById('submit-text'), toggleModeBtn: document.getElementById('toggle-mode-btn'), toggleText: document.getElementById('toggle-text'), messageBox: document.getElementById('message-box'), messageText: document.getElementById('message-text'), 
-            
-            usersTableBody: document.getElementById('users-table-body'), 
-            usersCount: document.getElementById('users-count'), 
-            sidebarAvatar: document.getElementById('sidebar-avatar'), 
-            sidebarName: document.getElementById('sidebar-name'), 
-            sidebarEmail: document.getElementById('sidebar-email'), 
-            logoutBtn: document.getElementById('logout-btn'), 
-            authForm: document.getElementById('auth-form'),
-            
-            navBtns: document.querySelectorAll('.nav-btn'),
-            dashboardSections: document.querySelectorAll('.dashboard-view-section'),
-
-            // Elementos del Modal de nuevo usuario
-            modalNuevoUsuario: document.getElementById('modal-nuevo-usuario'),
-            btnAbrirModalUsuario: document.getElementById('btn-abrir-modal-usuario'),
-            btnCerrarModalX: document.getElementById('btn-cerrar-modal-x'),
-            btnCancelarModal: document.getElementById('btn-cancelar-modal'),
-            formNuevoUsuario: document.getElementById('form-nuevo-usuario'),
-            modalErrorMsg: document.getElementById('modal-error-msg'),
-            btnGuardarModal: document.getElementById('btn-guardar-modal')
-        };
-
-        // Lógica de Navegación del Menú Lateral
-        elements.navBtns.forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                const targetViewId = e.currentTarget.getAttribute('data-target');
-                
-                elements.navBtns.forEach(b => {
-                    b.classList.remove('bg-blue-50', 'text-blue-700');
-                    b.classList.add('text-gray-600');
-                });
-                e.currentTarget.classList.remove('text-gray-600');
-                e.currentTarget.classList.add('bg-blue-50', 'text-blue-700');
-
-                elements.dashboardSections.forEach(sec => sec.classList.add('hidden'));
-                const targetSection = document.getElementById(targetViewId);
-                targetSection.classList.remove('hidden');
-            });
-        });
-
-        function showMessage(type, text) {
-            elements.messageBox.classList.remove('hidden', 'bg-red-50', 'text-red-600', 'border-red-200', 'bg-yellow-50', 'text-yellow-700', 'border-yellow-200', 'bg-green-50', 'text-green-600', 'border-green-200');
-            if (type === 'error') elements.messageBox.classList.add('bg-red-50', 'text-red-600', 'border-red-200');
-            else if (type === 'warning') elements.messageBox.classList.add('bg-yellow-50', 'text-yellow-700', 'border-yellow-200');
-            else if (type === 'success') elements.messageBox.classList.add('bg-green-50', 'text-green-600', 'border-green-200');
-            else { elements.messageBox.classList.add('hidden'); return; }
-            elements.messageText.textContent = text;
-        }
-
-        function updateUI() {
-            if (isSystemReady) { elements.loadingOverlay.classList.add('hidden'); elements.submitBtn.disabled = isLoading; } 
-            else { elements.loadingOverlay.classList.remove('hidden'); elements.submitBtn.disabled = true; }
-
-            if (isLoading) { elements.submitSpinner.classList.remove('hidden'); elements.submitText.classList.add('hidden'); elements.submitBtn.disabled = true; } 
-            else { elements.submitSpinner.classList.add('hidden'); elements.submitText.classList.remove('hidden'); if (isSystemReady) elements.submitBtn.disabled = false; }
-
-            if (isLoginMode) {
-                elements.formTitle.textContent = 'Iniciar Sesión'; elements.formSubtitle.textContent = 'Accede a tu cuenta existente';
-                elements.nameContainer.classList.add('hidden'); elements.nameInput.required = false;
-                elements.submitText.textContent = 'Entrar'; elements.toggleText.textContent = '¿No tienes una cuenta?'; elements.toggleModeBtn.textContent = 'Regístrate aquí';
-            } else {
-                elements.formTitle.textContent = 'Crear Cuenta'; elements.formSubtitle.textContent = 'Únete a nuestra plataforma';
-                elements.nameContainer.classList.remove('hidden'); elements.nameInput.required = true;
-                elements.submitText.textContent = 'Registrarse'; elements.toggleText.textContent = '¿Ya tienes una cuenta?'; elements.toggleModeBtn.textContent = 'Inicia sesión';
-            }
-
-            if (currentUser) {
-                views.auth.classList.add('hidden'); 
-                views.dashboard.classList.remove('hidden'); 
-                views.dashboard.classList.add('flex');
-                
-                const displayName = currentUser.name || currentUser.email;
-                elements.sidebarName.textContent = displayName; 
-                elements.sidebarAvatar.textContent = displayName.charAt(0).toUpperCase();
-                elements.sidebarEmail.textContent = currentUser.email;
-
-                if (!hasLoadedUsers) {
-                    loadAllUsers();
-                }
-            } else {
-                views.auth.classList.remove('hidden'); 
-                views.dashboard.classList.add('hidden'); 
-                views.dashboard.classList.remove('flex');
-            }
-        }
-
-        elements.toggleModeBtn.addEventListener('click', () => { isLoginMode = !isLoginMode; showMessage('', ''); updateUI(); });
-        
-        elements.logoutBtn.addEventListener('click', () => { 
-            currentUser = null; 
-            hasLoadedUsers = false; 
-            elements.emailInput.value = ''; 
-            elements.passwordInput.value = ''; 
-            elements.nameInput.value = ''; 
-            showMessage('', ''); 
-            
-            elements.navBtns.forEach(b => {
-                b.classList.remove('bg-blue-50', 'text-blue-700');
-                b.classList.add('text-gray-600');
-            });
-            elements.navBtns[0].classList.remove('text-gray-600');
-            elements.navBtns[0].classList.add('bg-blue-50', 'text-blue-700');
-            elements.dashboardSections.forEach(sec => sec.classList.add('hidden'));
-            document.getElementById('view-usuarios').classList.remove('hidden');
-
-            updateUI(); 
-        });
-
-        // --------------------------------------------------------
-        // LÓGICA DE USUARIOS: CARGAR, CREAR, ELIMINAR
-        // --------------------------------------------------------
-
-        // 1. Cargar Usuarios
-        async function loadAllUsers() {
-            try {
-                elements.usersTableBody.innerHTML = '<tr><td colspan="4" class="px-6 py-10 text-center text-gray-400 animate-pulse">Cargando datos de usuarios...</td></tr>';
-                const usersRef = getUsersCollection();
-                const querySnapshot = await getDocs(usersRef);
-                
-                let usersHTML = '';
-                let count = 0;
-
-                querySnapshot.forEach((doc) => {
-                    const data = doc.data();
-                    const name = data.name || data.email;
-                    const initial = name.charAt(0).toUpperCase();
-                    const isCurrentUser = doc.id === currentUser.id;
-                    
-                    usersHTML += `
-                        <tr class="hover:bg-gray-50 transition-colors">
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="flex items-center">
-                                    <div class="flex-shrink-0 h-10 w-10 rounded-full ${isCurrentUser ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'} flex items-center justify-center font-bold">
-                                        ${initial}
-                                    </div>
-                                    <div class="ml-4">
-                                        <div class="text-sm font-medium text-gray-900 flex items-center">
-                                            ${name} 
-                                            ${isCurrentUser ? '<span class="ml-2 bg-blue-100 text-blue-800 text-xs font-bold px-2 py-0.5 rounded">Tú</span>' : ''}
-                                        </div>
-                                        <div class="text-sm text-gray-500">${data.email}</div>
-                                    </div>
-                                </div>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-600 font-mono">
-                                    ${doc.id.substring(0,8)}...
-                                </span>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                <span style="font-family: 'Brush Script MT', 'Lucida Handwriting', cursive; font-size: 1.4rem; color: #1e3a8a; transform: rotate(-5deg); display: inline-block;">
-                                    ${name.split(' ')[0]}
-                                </span>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                ${isCurrentUser 
-                                    ? '<span class="text-gray-400 italic text-xs">No aplicable</span>' 
-                                    : `<button data-id="${doc.id}" class="btn-eliminar-usuario text-red-600 hover:text-white border border-red-200 hover:bg-red-600 px-3 py-1.5 rounded-lg transition-colors font-semibold shadow-sm">Eliminar</button>`
-                                }
-                            </td>
-                        </tr>
-                    `;
-                    count++;
-                });
-
-                if (count === 0) usersHTML = `<tr><td colspan="4" class="px-6 py-10 text-center text-gray-500">No hay usuarios registrados.</td></tr>`;
-
-                elements.usersTableBody.innerHTML = usersHTML;
-                elements.usersCount.textContent = `${count} registrado${count !== 1 ? 's' : ''}`;
-                hasLoadedUsers = true;
-
-            } catch (error) {
-                console.error("Error cargando directorio:", error);
-                elements.usersTableBody.innerHTML = `<tr><td colspan="4" class="px-6 py-10 text-center text-red-500 font-medium">Error al sincronizar datos con Firestore.</td></tr>`;
-            }
-        }
-
-        // 2. Eliminar Usuarios (Delegación de eventos en la tabla)
-        elements.usersTableBody.addEventListener('click', async (e) => {
-            const btnEliminar = e.target.closest('.btn-eliminar-usuario');
-            if (!btnEliminar) return;
-
-            const userId = btnEliminar.getAttribute('data-id');
-            
-            // Usamos un simple confirm del navegador por simplicidad y eficiencia
-            if (confirm('¿Estás seguro de que deseas eliminar este usuario definitivamente de la base de datos?')) {
-                try {
-                    btnEliminar.innerHTML = 'Borrando...';
-                    btnEliminar.disabled = true;
-                    btnEliminar.classList.add('opacity-50', 'cursor-not-allowed');
-
-                    // Lógica real de borrado en Firestore
-                    await deleteDoc(doc(db, 'users', userId));
-                    
-                    // Recargamos la tabla para ver los cambios
-                    await loadAllUsers();
-                } catch (error) {
-                    console.error("Error al eliminar el usuario:", error);
-                    alert("Error: No se pudo eliminar el usuario. Revisa los permisos.");
-                    btnEliminar.innerHTML = 'Eliminar';
-                    btnEliminar.disabled = false;
-                    btnEliminar.classList.remove('opacity-50', 'cursor-not-allowed');
-                }
-            }
-        });
-
-        // 3. Crear Usuarios (Manejo del Modal)
         const closeModal = () => {
-            elements.modalNuevoUsuario.classList.add('hidden');
-            elements.formNuevoUsuario.reset();
-            elements.modalErrorMsg.classList.add('hidden');
+            modalOverlay.classList.remove('opacity-100'); modalContainer.classList.remove('scale-100');
+            setTimeout(() => { modalOverlay.classList.add('hidden'); modalOverlay.classList.remove('flex'); }, 300);
         };
 
-        elements.btnAbrirModalUsuario.addEventListener('click', () => {
-            elements.modalNuevoUsuario.classList.remove('hidden');
-        });
-        elements.btnCerrarModalX.addEventListener('click', closeModal);
-        elements.btnCancelarModal.addEventListener('click', closeModal);
+        const openModal = (title, htmlBody, buttonsHtml) => {
+            document.getElementById('modal-title').textContent = title;
+            document.getElementById('modal-body').innerHTML = htmlBody;
+            document.getElementById('modal-actions').innerHTML = buttonsHtml;
+            modalOverlay.classList.remove('hidden'); modalOverlay.classList.add('flex');
+            setTimeout(() => { modalOverlay.classList.add('opacity-100'); modalContainer.classList.add('scale-100'); }, 10);
+        };
 
-        elements.formNuevoUsuario.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            
-            const name = document.getElementById('new-user-name').value.trim();
-            const email = document.getElementById('new-user-email').value.trim();
-            const password = document.getElementById('new-user-password').value;
+        window.showAlert = (msg) => openModal("Aviso", `<p>${msg}</p>`, `<button onclick="closeModal()" class="bg-blue-600 text-white px-5 py-2.5 rounded-xl font-bold">Aceptar</button>`);
+        window.showConfirm = (msg, onConfirm) => {
+            window.tempConfirmAction = () => { onConfirm(); closeModal(); };
+            openModal("Confirmar", `<p>${msg}</p>`, `<button onclick="closeModal()" class="bg-gray-200 text-gray-800 px-5 py-2.5 rounded-xl font-bold">Cancelar</button><button onclick="tempConfirmAction()" class="bg-red-600 text-white px-5 py-2.5 rounded-xl font-bold">Sí, continuar</button>`);
+        };
 
-            elements.btnGuardarModal.innerHTML = '<span class="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></span> Guardando...';
-            elements.btnGuardarModal.disabled = true;
-            elements.modalErrorMsg.classList.add('hidden');
+        window.showUserData = (userId) => {
+            const user = memoryDB.users.find(u => u.id === userId);
+            if(!user) return;
+            let html = `<div class="bg-gray-50 rounded-2xl p-4 border border-gray-200 text-sm overflow-x-auto"><table class="w-full text-left">`;
+            for (const [key, value] of Object.entries(user)) {
+                let valStr = value;
+                if (typeof value === 'object' && value !== null) valStr = value.seconds ? new Date(value.seconds * 1000).toLocaleString() : JSON.stringify(value);
+                if (key === 'firma' && typeof value === 'string') valStr = `<img src="${value}" class="h-10 border bg-white rounded" onerror="this.outerHTML='<span class=\\'italic text-gray-400\\'>Link inválido</span>'"/>`;
+                html += `<tr class="border-b border-gray-100 last:border-0"><th class="py-3 pr-4 text-gray-500 font-bold capitalize">${key}</th><td class="py-3 text-gray-800 break-all">${valStr}</td></tr>`;
+            }
+            html += `</table></div>`;
+            openModal(`Datos Completos`, html, `<button onclick="closeModal()" class="bg-gray-200 text-gray-800 px-5 py-2.5 rounded-xl font-bold">Cerrar</button>`);
+        };
 
-            try {
-                // Verificar si el correo ya existe
-                const usersRef = getUsersCollection();
-                const querySnapshot = await getDocs(usersRef);
-                let emailExists = false;
+        // NAVEGACIÓN
+        const showLoading = (show) => { const ind = document.getElementById('data-loading-indicator'); if(show) ind.classList.remove('hidden'); else ind.classList.add('hidden'); };
+
+        document.querySelectorAll('.nav-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                document.querySelectorAll('.nav-btn').forEach(b => { b.classList.remove('bg-blue-50', 'text-blue-700'); b.classList.add('text-gray-600'); });
+                e.currentTarget.classList.remove('text-gray-600'); e.currentTarget.classList.add('bg-blue-50', 'text-blue-700');
                 
-                querySnapshot.forEach((doc) => {
-                    if (doc.data().email === email) emailExists = true;
-                });
+                document.querySelectorAll('.dashboard-view-section').forEach(sec => { sec.classList.add('hidden'); sec.classList.remove('flex'); });
+                
+                const targetId = e.currentTarget.getAttribute('data-target');
+                const target = document.getElementById(targetId);
+                target.classList.remove('hidden');
+                target.classList.add('flex');
+                
+                // Actualizar Titulo de la navbar
+                const titles = { 'view-mipanel': 'Mi Panel', 'view-usuarios': 'Usuarios', 'view-estructura': 'Estructura', 'view-horarios': 'Horarios', 'view-reportes': 'Reportes' };
+                document.getElementById('current-view-title').textContent = titles[targetId];
 
-                if (emailExists) {
-                    elements.modalErrorMsg.textContent = "Este correo electrónico ya se encuentra registrado.";
-                    elements.modalErrorMsg.classList.remove('hidden');
-                    return; // Detenemos la ejecución
-                }
-
-                // Guardar nuevo usuario en Firestore
-                await addDoc(usersRef, { 
-                    name, 
-                    email, 
-                    password, 
-                    createdAt: serverTimestamp() 
-                });
-
-                // Si tiene éxito: cerramos y recargamos la tabla
-                closeModal();
-                await loadAllUsers();
-
-            } catch (error) {
-                console.error("Error al crear usuario:", error);
-                elements.modalErrorMsg.textContent = "Error al guardar en la base de datos.";
-                elements.modalErrorMsg.classList.remove('hidden');
-            } finally {
-                elements.btnGuardarModal.innerHTML = 'Guardar Usuario';
-                elements.btnGuardarModal.disabled = false;
-            }
+                if(targetId === 'view-mipanel') renderMiPanel();
+                if(targetId === 'view-reportes') renderReportes();
+            });
         });
 
-
-        // --------------------------------------------------------
-        // INICIALIZACIÓN Y DIAGNÓSTICO DE AUTH/DB
-        // --------------------------------------------------------
-        async function initAuth() {
-            try {
-                await signInAnonymously(auth);
-            } catch (error) {
-                if (error.code === 'auth/admin-restricted-operation' || error.code === 'auth/operation-not-allowed') {
-                    isSystemReady = true; updateUI();
-                    showMessage('warning', '⚠️ Auth Anónimo está apagado. Conectando a Firestore directamente.');
-                } else {
-                    views.auth.classList.add('hidden'); views.systemError.classList.remove('hidden'); views.systemError.classList.add('flex');
-                    document.getElementById('system-error-text').textContent = `CÓDIGO: ${error.code} | MENSAJE: ${error.message}`;
-                }
+        const initAuth = async () => {
+            try { await signInAnonymously(auth); } catch (e) { console.warn(e); } 
+            finally {
+                document.getElementById('loading-overlay').classList.add('hidden');
+                document.getElementById('submit-btn').disabled = false;
             }
-        }
-
-        onAuthStateChanged(auth, (user) => { if (user) { isSystemReady = true; updateUI(); } });
+        };
         initAuth();
 
-        elements.authForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            if (!isSystemReady) return;
-
-            isLoading = true; showMessage('', ''); updateUI();
-            const email = elements.emailInput.value.trim(); const password = elements.passwordInput.value; const name = elements.nameInput.value.trim();
-
-            try {
-                const usersRef = getUsersCollection();
-                const querySnapshot = await getDocs(usersRef); 
+        function updateUI() {
+            if (currentUser) {
+                document.getElementById('auth-view').classList.add('hidden'); 
+                const dbw = document.getElementById('dashboard-view');
+                dbw.classList.remove('hidden'); dbw.classList.add('flex');
                 
-                if (isLoginMode) {
-                    let foundUser = null;
-                    querySnapshot.forEach((doc) => {
-                        const data = doc.data();
-                        if (data.email === email && data.password === password) foundUser = { id: doc.id, ...data };
-                    });
+                const name = currentUser.name || currentUser.email || "Usuario";
+                document.getElementById('topbar-name').textContent = name;
+                document.getElementById('topbar-role').textContent = (currentUser.role || 'Usuario').toUpperCase();
+                document.getElementById('topbar-avatar').textContent = name[0].toUpperCase();
+                
+                // Render initial Dashboard state
+                renderMiPanel();
+            } else {
+                document.getElementById('auth-view').classList.remove('hidden'); 
+                document.getElementById('dashboard-view').classList.add('hidden');
+                document.getElementById('dashboard-view').classList.remove('flex');
+            }
+        }
 
-                    if (foundUser) currentUser = foundUser;
-                    else showMessage('error', 'Correo o contraseña incorrectos.');
-                } else {
-                    let emailExists = false;
-                    querySnapshot.forEach((doc) => { if (doc.data().email === email) emailExists = true; });
+        async function fetchAllData() {
+            showLoading(true);
+            try {
+                const results = await Promise.all([
+                    getDocs(collection(db, 'users')), getDocs(collection(db, 'anios_lectivos')),
+                    getDocs(collection(db, 'secciones')), getDocs(collection(db, 'areas')),
+                    getDocs(collection(db, 'materias')), getDocs(collection(db, 'cursos')), getDocs(collection(db, 'franjas_horarias'))
+                ]);
+                
+                memoryDB.users = results[0].docs.map(d => ({ id: d.id, ...d.data() }));
+                memoryDB.anios = results[1].docs.map(d => ({ id: d.id, ...d.data() }));
+                memoryDB.secciones = results[2].docs.map(d => ({ id: d.id, ...d.data() }));
+                memoryDB.areas = results[3].docs.map(d => ({ id: d.id, ...d.data() }));
+                memoryDB.materias = results[4].docs.map(d => ({ id: d.id, ...d.data() }));
+                memoryDB.cursos = results[5].docs.map(d => ({ id: d.id, ...d.data() }));
+                memoryDB.franjas = results[6].docs.map(d => ({ id: d.id, ...d.data() }));
 
-                    if (emailExists) { showMessage('error', 'Este correo ya está registrado.'); isLoading = false; updateUI(); return; }
+                // Refrescar currentUser con datos actualizados
+                if(currentUser) currentUser = memoryDB.users.find(u => u.id === currentUser.id) || currentUser;
 
-                    const newUser = { email, password, name, createdAt: serverTimestamp() };
-                    const docRef = await addDoc(usersRef, newUser);
-                    currentUser = { id: docRef.id, ...newUser };
+                renderAll();
+                renderMiPanel();
+                renderReportes();
+            } catch (e) { console.error(e); showAlert("Error al sincronizar datos."); } 
+            finally { showLoading(false); }
+        }
+
+        // --- RENDERIZADO GLOBAL ---
+        function renderAll() {
+            // SELECTOR GLOBAL
+            const navAnio = document.getElementById('navbar-global-anio');
+            navAnio.innerHTML = '<option value="">Seleccione...</option>' + memoryDB.anios.map(a => `<option value="${a.id}">${a.nombre}</option>`).join('');
+            if (activeGlobalAnio) navAnio.value = activeGlobalAnio;
+
+            // USUARIOS (Cards)
+            const grid = document.getElementById('users-grid');
+            document.getElementById('users-count').textContent = `${memoryDB.users.length} Registrados`;
+            grid.innerHTML = memoryDB.users.map(u => {
+                const isMe = currentUser && u.id === currentUser.id;
+                const nameDisplay = u.name || '<span class="italic text-red-500">Sin Nombre</span>';
+                const roleBadge = u.role === 'admin' ? 'bg-purple-100 text-purple-800' : 'bg-green-100 text-green-800';
+                
+                // Firma render
+                let firmaHtml = `<span class="text-xs text-gray-400 font-medium">Sin firma registrada</span>`;
+                if(u.firma && u.firma.trim() !== "") {
+                    firmaHtml = `<img src="${u.firma}" class="h-full object-contain max-w-full" onerror="this.outerHTML='<span class=\\'text-xs text-red-400 font-medium\\'>Error al cargar firma</span>'" />`;
                 }
-            } catch (error) {
-                console.error("Fallo Firestore:", error);
-                let errMsg = `CÓDIGO: ${error.code}. `;
-                if (error.code === 'permission-denied') errMsg += "Permiso Denegado. Ve a Firestore Database -> Reglas y pon: allow read, write: if true;";
-                else errMsg += error.message;
-                showMessage('error', errMsg);
-            } finally {
-                isLoading = false; updateUI();
+
+                return `
+                <div class="bg-white rounded-3xl p-6 shadow-sm border border-gray-200 flex flex-col hover:shadow-md transition-shadow">
+                    <div class="flex justify-between items-start mb-4">
+                        <div class="flex items-center gap-3">
+                            <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 text-white rounded-xl flex items-center justify-center font-bold text-xl shadow-sm shrink-0">${(u.name || u.email || 'U')[0].toUpperCase()}</div>
+                            <div class="min-w-0">
+                                <h3 class="font-extrabold text-gray-900 truncate">${nameDisplay} ${isMe ? '<span class="text-[10px] bg-blue-100 text-blue-800 px-1.5 py-0.5 rounded ml-1 uppercase">Tú</span>' : ''}</h3>
+                                <p class="text-xs text-gray-500 truncate">${u.email || 'N/A'}</p>
+                            </div>
+                        </div>
+                        <span class="${roleBadge} text-[10px] px-2 py-1 rounded-lg uppercase font-bold tracking-wider shrink-0">${u.role || 'user'}</span>
+                    </div>
+                    
+                    <div class="mb-5 flex-1 bg-gray-50 rounded-xl p-3 border border-gray-100">
+                        <p class="text-[10px] text-gray-500 font-bold uppercase mb-2 tracking-wider">Firma Digital</p>
+                        <div class="h-16 firma-box bg-white rounded-lg border border-dashed border-gray-300 flex items-center justify-center p-1">
+                            ${firmaHtml}
+                        </div>
+                    </div>
+
+                    <div class="flex justify-between items-center pt-2">
+                        <button onclick="showUserData('${u.id}')" class="text-xs font-bold text-indigo-600 hover:bg-indigo-50 px-3 py-1.5 rounded-lg transition-colors">Detalles</button>
+                        <div class="space-x-1">
+                            ${!isMe ? `<button onclick="deleteItem('users', '${u.id}')" class="text-xs font-bold text-red-600 hover:bg-red-50 px-3 py-1.5 rounded-lg transition-colors">Eliminar</button>` : ''}
+                        </div>
+                    </div>
+                </div>`;
+            }).join('');
+
+            // AÑOS LECTIVOS
+            document.getElementById('list-anios').innerHTML = memoryDB.anios.map(a => `
+                <tr class="hover:bg-gray-50 transition-colors"><td class="px-5 py-3 font-bold text-gray-800">${a.nombre}</td>
+                <td class="px-5 py-3 text-right"><button onclick="editGeneral('anios', '${a.id}')" class="text-blue-600 font-bold mr-4">Editar</button><button onclick="deleteItem('anios', '${a.id}')" class="text-red-600 font-bold">Eliminar</button></td></tr>
+            `).join('');
+
+            // Rellenar Profesor Select in Horarios form
+            const hProf = document.getElementById('h-profesor');
+            const hProfVal = hProf.value;
+            hProf.innerHTML = '<option value="">Sin asignar...</option>' + memoryDB.users.map(u => `<option value="${u.id}">${u.name || u.email}</option>`).join('');
+            hProf.value = hProfVal;
+
+            renderDynamicViews();
+            checkHorariosForm();
+        }
+
+        function renderDynamicViews() {
+            if (activeGlobalAnio) {
+                document.getElementById('estructura-warning').classList.add('hidden');
+                document.getElementById('estructura-dependiente').classList.remove('hidden');
+
+                const seccionesActivas = memoryDB.secciones.filter(x => x.anioId === activeGlobalAnio);
+                const areasActivas = memoryDB.areas.filter(x => x.anioId === activeGlobalAnio);
+                const cursosActivos = memoryDB.cursos.filter(x => x.anioId === activeGlobalAnio);
+                const materiasActivas = memoryDB.materias.filter(x => x.anioId === activeGlobalAnio);
+
+                document.getElementById('list-secciones').innerHTML = seccionesActivas.map(s => `<tr class="hover:bg-white"><td class="px-4 py-3 font-bold text-gray-700">${s.nombre}</td><td class="px-4 py-3 text-right"><button onclick="editGeneral('secciones', '${s.id}')" class="text-blue-600 font-bold mr-3">Editar</button><button onclick="deleteItem('secciones', '${s.id}')" class="text-red-600 font-bold">Borrar</button></td></tr>`).join('');
+                document.getElementById('list-areas').innerHTML = areasActivas.map(a => `<tr class="hover:bg-white"><td class="px-4 py-3 font-bold text-gray-700">${a.nombre}</td><td class="px-4 py-3 text-right"><button onclick="editGeneral('areas', '${a.id}')" class="text-blue-600 font-bold mr-3">Editar</button><button onclick="deleteItem('areas', '${a.id}')" class="text-red-600 font-bold">Borrar</button></td></tr>`).join('');
+                
+                document.getElementById('list-cursos').innerHTML = cursosActivos.map(c => {
+                    const secName = seccionesActivas.find(s => s.id === c.seccionId)?.nombre || 'Sin Sección';
+                    return `<tr class="hover:bg-white"><td class="px-4 py-3 font-bold text-gray-700">${c.nombre} <span class="block text-xs font-medium text-gray-400">${secName}</span></td><td class="px-4 py-3 text-right"><button onclick="editGeneral('cursos', '${c.id}')" class="text-blue-600 font-bold mr-3">Editar</button><button onclick="deleteItem('cursos', '${c.id}')" class="text-red-600 font-bold">Borrar</button></td></tr>`;
+                }).join('');
+
+                document.getElementById('list-materias').innerHTML = materiasActivas.map(m => {
+                    const areaName = areasActivas.find(a => a.id === m.areaId)?.nombre || 'Sin Área';
+                    return `<tr class="hover:bg-white"><td class="px-4 py-3 font-bold text-gray-700">${m.nombre} <span class="block text-xs font-medium text-gray-400">${areaName}</span></td><td class="px-4 py-3 text-right"><button onclick="editGeneral('materias', '${m.id}')" class="text-blue-600 font-bold mr-3">Editar</button><button onclick="deleteItem('materias', '${m.id}')" class="text-red-600 font-bold">Borrar</button></td></tr>`;
+                }).join('');
+
+                const selSec = document.getElementById('select-seccion-cursos');
+                selSec.innerHTML = '<option value="">Primero seleccione Sección...</option>' + seccionesActivas.map(s => `<option value="${s.id}">${s.nombre}</option>`).join('');
+
+                const selArea = document.getElementById('select-area-materias');
+                selArea.innerHTML = '<option value="">Primero seleccione Área...</option>' + areasActivas.map(a => `<option value="${a.id}">${a.nombre}</option>`).join('');
+
+            } else {
+                document.getElementById('estructura-warning').classList.remove('hidden');
+                document.getElementById('estructura-dependiente').classList.add('hidden');
+            }
+        }
+
+        // --- MI PANEL LOGIC ---
+        function renderMiPanel() {
+            if(!currentUser) return;
+            
+            document.getElementById('panel-name').textContent = currentUser.name || currentUser.email.split('@')[0];
+            document.getElementById('panel-role').textContent = currentUser.role || 'Usuario';
+            document.getElementById('panel-avatar').textContent = (currentUser.name || currentUser.email || 'U')[0].toUpperCase();
+            
+            const fCont = document.getElementById('panel-firma-container');
+            if(currentUser.firma && currentUser.firma.trim() !== "") {
+                fCont.innerHTML = `<img src="${currentUser.firma}" class="h-full object-contain" onerror="this.outerHTML='<span class=\\'text-xs text-red-400 font-bold\\'>Error al cargar firma</span>'" />`;
+            } else {
+                fCont.innerHTML = `<span class="text-xs text-gray-400 font-bold">Sin firma</span>`;
+            }
+
+            const w = document.getElementById('panel-warning');
+            const slist = document.getElementById('panel-schedule-list');
+            
+            if(!activeGlobalAnio) {
+                w.classList.remove('hidden');
+                slist.innerHTML = '';
+                document.getElementById('panel-today-name').textContent = "";
+                return;
+            }
+            w.classList.add('hidden');
+
+            const todayNum = new Date().getDay(); // 0=Sun, 1=Mon...
+            let todayStrIndex = todayNum.toString();
+            if(todayNum === 0 || todayNum === 6) todayStrIndex = '1'; // Default a Lunes si es finde
+            
+            document.getElementById('panel-today-name').textContent = `(${diasSemana[todayStrIndex]})`;
+
+            // Filtrar franjas de HOY que le pertenecen al profesor O que son Recesos
+            const franjasHoy = memoryDB.franjas.filter(f => 
+                f.anioId === activeGlobalAnio && 
+                (f.dia === todayStrIndex || f.dia === 'todos') &&
+                (f.tipo === 'receso' || f.profesorId === currentUser.id)
+            ).sort((a, b) => a.horaInicio.localeCompare(b.horaInicio));
+
+            if(franjasHoy.length === 0) {
+                slist.innerHTML = `<div class="text-center py-10 bg-gray-50 rounded-2xl border border-dashed border-gray-300"><p class="text-gray-500 font-bold">No tienes clases asignadas para hoy.</p></div>`;
+            } else {
+                slist.innerHTML = franjasHoy.map(f => {
+                    const isReceso = f.tipo === 'receso';
+                    const bgClass = isReceso ? 'bg-yellow-50 border-yellow-200' : 'bg-blue-50 border-blue-200';
+                    const iconClass = isReceso ? 'text-yellow-600 bg-yellow-100' : 'text-blue-600 bg-blue-100';
+                    
+                    let curSecText = "General";
+                    if(f.cursoId) {
+                        const cur = memoryDB.cursos.find(c => c.id === f.cursoId);
+                        const sec = memoryDB.secciones.find(s => s.id === f.seccionId);
+                        if(cur) curSecText = `${cur.nombre} ${sec ? '('+sec.nombre+')' : ''}`;
+                    }
+
+                    return `
+                    <div class="flex items-center gap-4 mb-3 p-4 rounded-2xl border ${bgClass} transition-transform hover:-translate-y-0.5">
+                        <div class="font-mono text-sm font-extrabold text-gray-700 w-28 shrink-0 flex flex-col items-end border-r border-gray-200/50 pr-4">
+                            <span>${f.horaInicio}</span>
+                            <span class="text-[10px] text-gray-400 mt-1">${f.horaFin}</span>
+                        </div>
+                        <div class="flex-1">
+                            <h4 class="font-extrabold text-gray-900 text-lg">${f.descripcion}</h4>
+                            <p class="text-xs font-bold text-gray-500 uppercase mt-1">${curSecText}</p>
+                        </div>
+                        <div class="w-10 h-10 rounded-xl ${iconClass} flex items-center justify-center shrink-0">
+                            ${isReceso 
+                                ? '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>'
+                                : '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>'}
+                        </div>
+                    </div>`;
+                }).join('');
+            }
+        }
+
+        // --- REPORTES LOGIC ---
+        function renderReportes() {
+            document.getElementById('rep-usuarios').textContent = memoryDB.users.length;
+            document.getElementById('rep-cursos').textContent = memoryDB.cursos.length;
+            document.getElementById('rep-materias').textContent = memoryDB.materias.length;
+            document.getElementById('rep-anios').textContent = memoryDB.anios.length;
+        }
+
+        document.getElementById('navbar-global-anio').addEventListener('change', (e) => {
+            activeGlobalAnio = e.target.value;
+            renderDynamicViews();
+            checkHorariosForm();
+            renderMiPanel();
+        });
+
+        // --- CRUD BÁSICO ---
+        const resetForm = (type) => {
+            currentEdit[type] = null;
+            document.getElementById(`form-${type}`).reset();
+            const btn = document.getElementById(`submit-${type}`);
+            btn.textContent = type === 'anios' ? 'Guardar Año' : type==='franjas' ? 'Guardar Franja' : 'Añadir';
+            document.getElementById(`cancel-${type}`).classList.add('hidden');
+            if(type === 'franjas') {
+                document.getElementById('h-dia').disabled = false;
+                document.getElementById('h-profesor-container').classList.remove('opacity-50');
+                document.getElementById('h-profesor').disabled = false;
+            }
+        };
+
+        ['anios', 'secciones', 'areas', 'materias', 'cursos', 'franjas'].forEach(type => {
+            const btn = document.getElementById(`cancel-${type}`);
+            if(btn) btn.addEventListener('click', () => resetForm(type));
+        });
+
+        const saveItem = async (type, data) => {
+            const btn = document.getElementById(`submit-${type}`);
+            const orig = btn.textContent;
+            btn.textContent = '...'; btn.disabled = true;
+            try {
+                if (currentEdit[type]) await updateDoc(doc(db, colMap[type], currentEdit[type]), data);
+                else await addDoc(collection(db, colMap[type]), { ...data, createdAt: serverTimestamp() });
+                resetForm(type);
+                await fetchAllData();
+            } catch (error) { showAlert("Error al guardar: " + error.message); } 
+            finally { btn.textContent = orig; btn.disabled = false; }
+        };
+
+        document.getElementById('form-anios').addEventListener('submit', (e) => { e.preventDefault(); saveItem('anios', { nombre: document.getElementById('input-anio').value.trim() }); });
+        document.getElementById('form-secciones').addEventListener('submit', (e) => { e.preventDefault(); saveItem('secciones', { nombre: document.getElementById('input-seccion').value.trim(), anioId: activeGlobalAnio }); });
+        document.getElementById('form-areas').addEventListener('submit', (e) => { e.preventDefault(); saveItem('areas', { nombre: document.getElementById('input-area').value.trim(), anioId: activeGlobalAnio }); });
+        document.getElementById('form-cursos').addEventListener('submit', (e) => { e.preventDefault(); saveItem('cursos', { nombre: document.getElementById('input-curso').value.trim(), anioId: activeGlobalAnio, seccionId: document.getElementById('select-seccion-cursos').value }); });
+        document.getElementById('form-materias').addEventListener('submit', (e) => { e.preventDefault(); saveItem('materias', { nombre: document.getElementById('input-materia').value.trim(), anioId: activeGlobalAnio, areaId: document.getElementById('select-area-materias').value }); });
+
+        window.editGeneral = (type, id) => {
+            const item = memoryDB[type].find(x => x.id === id);
+            if(!item) return;
+            currentEdit[type] = id;
+            if(type === 'anios') document.getElementById('input-anio').value = item.nombre;
+            if(type === 'secciones') document.getElementById('input-seccion').value = item.nombre;
+            if(type === 'areas') document.getElementById('input-area').value = item.nombre;
+            if(type === 'cursos') { document.getElementById('input-curso').value = item.nombre; document.getElementById('select-seccion-cursos').value = item.seccionId; }
+            if(type === 'materias') { document.getElementById('input-materia').value = item.nombre; document.getElementById('select-area-materias').value = item.areaId; }
+            document.getElementById(`submit-${type}`).textContent = 'Actualizar';
+            document.getElementById(`cancel-${type}`).classList.remove('hidden');
+        };
+
+        window.deleteItem = (type, id) => {
+            showConfirm("¿Seguro que deseas eliminar este registro permanentemente?", async () => {
+                try { await deleteDoc(doc(db, colMap[type], id)); await fetchAllData(); } catch(e) { showAlert("Error eliminando: " + e.message); }
+            });
+        };
+
+        // --- HORARIOS ---
+        document.getElementById('h-tipo').addEventListener('change', (e) => {
+            const isReceso = e.target.value === 'receso';
+            const diaSel = document.getElementById('h-dia');
+            const profCont = document.getElementById('h-profesor-container');
+            const profSel = document.getElementById('h-profesor');
+            
+            if(isReceso) {
+                diaSel.value = 'todos';
+                // No deshabilitar el input, sino Tailwind falla al leer el valor o el form.
+                // Lo simulamos visualmente.
+                profSel.value = "";
+                profCont.classList.add('opacity-50');
+            } else {
+                diaSel.value = '1';
+                profCont.classList.remove('opacity-50');
             }
         });
+
+        const checkHorariosForm = () => {
+            const w = document.getElementById('h-warning');
+            const c = document.getElementById('h-content');
+            if (!activeGlobalAnio) { w.classList.remove('hidden'); c.classList.add('hidden'); c.classList.remove('flex'); return; }
+            w.classList.add('hidden'); c.classList.remove('hidden'); c.classList.add('flex');
+
+            const selSec = document.getElementById('h-sel-seccion');
+            const selCur = document.getElementById('h-sel-curso');
+            const prevSec = selSec.value; const prevCur = selCur.value;
+            
+            selSec.innerHTML = '<option value="">Seleccionar Sección...</option>' + memoryDB.secciones.filter(x => x.anioId === activeGlobalAnio).map(s => `<option value="${s.id}">${s.nombre}</option>`).join('');
+            
+            let cursosFiltrados = memoryDB.cursos.filter(x => x.anioId === activeGlobalAnio);
+            if(prevSec) cursosFiltrados = cursosFiltrados.filter(x => x.seccionId === prevSec);
+            selCur.innerHTML = '<option value="">Seleccionar Curso...</option>' + cursosFiltrados.map(cu => `<option value="${cu.id}">${cu.nombre}</option>`).join('');
+            
+            selSec.value = prevSec; selCur.value = prevCur;
+
+            const secVal = selSec.value; const curVal = selCur.value;
+            const hForm = document.getElementById('h-form-container');
+            const gridContainer = document.getElementById('semana-grid');
+
+            if(secVal && curVal) {
+                hForm.classList.remove('hidden');
+                gridContainer.innerHTML = '';
+                
+                const franjas = memoryDB.franjas.filter(f => f.anioId === activeGlobalAnio && f.seccionId === secVal && f.cursoId === curVal);
+
+                // Generar Columnas (1 a 5 = Lunes a Viernes)
+                [1,2,3,4,5].forEach(dIdx => {
+                    const diaIdStr = dIdx.toString();
+                    const nombreDia = diasSemana[diaIdStr];
+                    
+                    // Filtrar franjas del día especifico o 'todos'
+                    const franjasDia = franjas.filter(f => f.dia === diaIdStr || f.dia === 'todos').sort((a,b) => a.horaInicio.localeCompare(b.horaInicio));
+                    
+                    let htmlList = franjasDia.map(f => {
+                        const isReceso = f.tipo === 'receso';
+                        const prof = memoryDB.users.find(u => u.id === f.profesorId);
+                        const profName = prof ? prof.name || prof.email.split('@')[0] : 'Sin prof.';
+                        
+                        const bgClass = isReceso ? 'bg-yellow-50 border-yellow-200' : 'bg-blue-50 border-blue-200';
+                        const dotClass = isReceso ? 'bg-yellow-400' : 'bg-blue-500';
+
+                        return `
+                        <div class="mb-3 p-3 rounded-xl border ${bgClass} shadow-sm group relative">
+                            <div class="flex justify-between items-start mb-1">
+                                <span class="text-xs font-bold text-gray-800 flex items-center gap-1.5"><div class="w-2 h-2 rounded-full ${dotClass}"></div>${f.horaInicio} - ${f.horaFin}</span>
+                                <div class="hidden group-hover:flex gap-1 absolute top-2 right-2 bg-white/90 rounded px-1 py-0.5 shadow">
+                                    <button onclick="editFranja('${f.id}')" class="text-[10px] font-bold text-blue-600 px-1">Ed</button>
+                                    <button onclick="deleteItem('franjas', '${f.id}')" class="text-[10px] font-bold text-red-600 px-1">X</button>
+                                </div>
+                            </div>
+                            <h4 class="font-extrabold text-sm text-gray-900 leading-tight mb-1">${f.descripcion}</h4>
+                            ${!isReceso ? `<p class="text-[10px] font-bold text-blue-700 uppercase">${profName}</p>` : ''}
+                        </div>`;
+                    }).join('');
+
+                    if(franjasDia.length === 0) htmlList = `<div class="text-center p-4 border border-dashed border-gray-200 rounded-xl text-gray-400 text-xs font-bold uppercase">Libre</div>`;
+
+                    gridContainer.innerHTML += `
+                        <div class="flex-1 min-w-[150px] border-r border-gray-100 last:border-0 pr-4 last:pr-0">
+                            <h3 class="text-sm font-extrabold text-gray-800 uppercase tracking-wider mb-4 border-b-2 border-indigo-100 pb-2">${nombreDia}</h3>
+                            <div class="flex flex-col">${htmlList}</div>
+                        </div>
+                    `;
+                });
+
+            } else {
+                hForm.classList.add('hidden');
+                gridContainer.innerHTML = '<div class="w-full text-center py-10 text-gray-500 font-bold">Seleccione Sección y Curso para cargar la semana.</div>';
+            }
+        };
+
+        ['h-sel-seccion', 'h-sel-curso'].forEach(id => document.getElementById(id).addEventListener('change', checkHorariosForm));
+
+        document.getElementById('form-franjas').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const isReceso = document.getElementById('h-tipo').value === 'receso';
+            saveItem('franjas', {
+                anioId: activeGlobalAnio,
+                seccionId: document.getElementById('h-sel-seccion').value,
+                cursoId: document.getElementById('h-sel-curso').value,
+                tipo: document.getElementById('h-tipo').value,
+                dia: isReceso ? 'todos' : document.getElementById('h-dia').value,
+                horaInicio: document.getElementById('h-inicio').value,
+                horaFin: document.getElementById('h-fin').value,
+                descripcion: document.getElementById('h-desc').value,
+                profesorId: isReceso ? '' : document.getElementById('h-profesor').value
+            });
+        });
+
+        window.editFranja = (id) => {
+            const f = memoryDB.franjas.find(x => x.id === id);
+            if(!f) return;
+            currentEdit.franjas = id;
+            document.getElementById('h-tipo').value = f.tipo || 'clase';
+            document.getElementById('h-dia').value = f.dia || '1';
+            document.getElementById('h-inicio').value = f.horaInicio;
+            document.getElementById('h-fin').value = f.horaFin;
+            document.getElementById('h-desc').value = f.descripcion;
+            document.getElementById('h-profesor').value = f.profesorId || '';
+            document.getElementById('submit-franjas').textContent = 'Guardar Cambios';
+            document.getElementById('cancel-franjas').classList.remove('hidden');
+            
+            // Trigger visual update for tipo
+            document.getElementById('h-tipo').dispatchEvent(new Event('change'));
+        };
+
+        // --- AUTH ---
+        document.getElementById('auth-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('email-input').value.trim(); 
+            const password = document.getElementById('password-input').value; 
+            const name = document.getElementById('name-input').value.trim();
+            const firma = document.getElementById('firma-input').value.trim();
+
+            document.getElementById('submit-spinner').classList.remove('hidden');
+            document.getElementById('submit-text').classList.add('hidden');
+            document.getElementById('submit-btn').disabled = true;
+
+            try {
+                const snap = await getDocs(collection(db, 'users')); 
+                if (isLoginMode) {
+                    let found = null;
+                    snap.forEach(d => { if (d.data().email?.toLowerCase() === email.toLowerCase() && d.data().password === password) found = { id: d.id, ...d.data() }; });
+                    if (found) { currentUser = found; updateUI(); await fetchAllData(); } else { showAlert("Correo o contraseña incorrectos."); }
+                } else {
+                    let exists = false;
+                    snap.forEach(d => { if (d.data().email?.toLowerCase() === email.toLowerCase()) exists = true; });
+                    if (exists) { showAlert("Este correo ya está registrado."); } 
+                    else {
+                        const newUser = { email, password, name, firma, role: 'admin', createdAt: serverTimestamp() }; // Default role admin en este prototipo
+                        const docRef = await addDoc(collection(db, 'users'), newUser);
+                        currentUser = { id: docRef.id, ...newUser };
+                        updateUI(); await fetchAllData();
+                    }
+                }
+            } catch (error) { showAlert("Error de conexión: " + error.message); } 
+            finally {
+                document.getElementById('submit-spinner').classList.add('hidden');
+                document.getElementById('submit-text').classList.remove('hidden');
+                document.getElementById('submit-btn').disabled = false;
+            }
+        });
+
+        document.getElementById('toggle-mode-btn').addEventListener('click', () => { 
+            isLoginMode = !isLoginMode; 
+            document.getElementById('form-title').textContent = isLoginMode ? 'Iniciar Sesión' : 'Crear Cuenta'; 
+            document.getElementById('form-subtitle').textContent = isLoginMode ? 'Accede a tu panel escolar' : 'Regístrate para continuar'; 
+            document.getElementById('name-field-container').classList.toggle('hidden');
+            document.getElementById('firma-field-container').classList.toggle('hidden');
+            document.getElementById('name-input').required = !isLoginMode;
+            document.getElementById('submit-text').textContent = isLoginMode ? 'Entrar al Sistema' : 'Registrarse'; 
+            document.getElementById('toggle-text').textContent = isLoginMode ? '¿No tienes cuenta?' : '¿Ya tienes una cuenta?'; 
+            document.getElementById('toggle-mode-btn').textContent = isLoginMode ? 'Regístrate' : 'Inicia sesión';
+        });
+
+        document.getElementById('logout-btn').addEventListener('click', () => { 
+            currentUser = null; document.getElementById('email-input').value = ''; document.getElementById('password-input').value = ''; updateUI(); 
+        });
+
     </script>
 </body>
 </html>
